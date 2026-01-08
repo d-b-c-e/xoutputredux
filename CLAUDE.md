@@ -87,11 +87,12 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] New mapping system with OR logic
 - [x] Unit tests for mapping system (14 passing)
 
-### Phase 2: Profile System
-- [ ] Profile model (JSON schema)
-- [ ] Profile storage (`%AppData%\XOutputRenew\profiles\`)
-- [ ] Load/save/duplicate functionality
-- [ ] CLI: `list-profiles`, `list-devices`
+### Phase 2: Profile System ✓ COMPLETE
+- [x] Profile model (JSON schema) - MappingProfileData
+- [x] Profile storage (`%AppData%\XOutputRenew\Profiles\`)
+- [x] Load/save/duplicate functionality - ProfileManager
+- [x] CLI: `list-devices`, `list-profiles`, `duplicate-profile`
+- [x] CLI with System.CommandLine, JSON output support
 
 ### Phase 3: GUI - Core
 - [ ] WPF application with system tray
@@ -389,6 +390,9 @@ public bool HideDevice(string deviceInstancePath)
 
 ### Device Hiding (`XOutputRenew.HidHide`)
 - `HidHideService.cs` - CLI wrapper for HidHide operations
+
+### Application (`XOutputRenew.App`)
+- `Program.cs` - CLI entry point with System.CommandLine
 
 ---
 

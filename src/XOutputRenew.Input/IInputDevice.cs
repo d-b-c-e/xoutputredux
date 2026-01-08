@@ -21,6 +21,11 @@ public interface IInputDevice : IDisposable
     string? HardwareId { get; }
 
     /// <summary>
+    /// Device interface path (for HidHide integration).
+    /// </summary>
+    string? InterfacePath { get; }
+
+    /// <summary>
     /// Input method (DirectInput, RawInput).
     /// </summary>
     InputMethod Method { get; }
