@@ -1,3 +1,5 @@
+using XOutputRenew.Input.DirectInput;
+
 namespace XOutputRenew.Input;
 
 /// <summary>
@@ -5,7 +7,8 @@ namespace XOutputRenew.Input;
 /// </summary>
 public class InputDeviceManager : IDisposable
 {
-    private readonly List<IInputDevice> _devices = [];
+    private readonly DirectInputDeviceProvider _directInputProvider;
+    private readonly Timer _refreshTimer;
     private readonly object _lock = new();
     private bool _disposed;
 
@@ -18,7 +21,10 @@ public class InputDeviceManager : IDisposable
         {
             lock (_lock)
             {
-                return _devices.ToList();
+                var devices = new List<IInputDevice>();
+                devices.AddRange(_directInputProvider.GetDevices());
+                // TODO: Add RawInput devices when implemented
+                return devices;
             }
         }
     }
@@ -33,12 +39,28 @@ public class InputDeviceManager : IDisposable
     /// </summary>
     public event EventHandler<DeviceEventArgs>? DeviceDisconnected;
 
+    public InputDeviceManager()
+    {
+        _directInputProvider = new DirectInputDeviceProvider();
+        _directInputProvider.DeviceConnected += OnDeviceConnected;
+        _directInputProvider.DeviceDisconnected += OnDeviceDisconnected;
+
+        // Refresh every 5 seconds
+        _refreshTimer = new Timer(_ => RefreshDevices(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+    }
+
     /// <summary>
-    /// Refreshes the list of available devices.
+    /// Manually triggers a device refresh.
     /// </summary>
     public void RefreshDevices()
     {
-        // TODO: Implement device discovery using DirectInput and RawInput providers
+        if (_disposed) return;
+
+        lock (_lock)
+        {
+            _directInputProvider.RefreshDevices();
+            // TODO: Refresh RawInput devices when implemented
+        }
     }
 
     /// <summary>
@@ -48,8 +70,35 @@ public class InputDeviceManager : IDisposable
     {
         lock (_lock)
         {
-            return _devices.FirstOrDefault(d => d.UniqueId == uniqueId);
+            return _directInputProvider.GetDevice(uniqueId);
+            // TODO: Check RawInput provider when implemented
         }
+    }
+
+    /// <summary>
+    /// Starts polling a device.
+    /// </summary>
+    public void StartDevice(IInputDevice device)
+    {
+        device.Start();
+    }
+
+    /// <summary>
+    /// Stops polling a device.
+    /// </summary>
+    public void StopDevice(IInputDevice device)
+    {
+        device.Stop();
+    }
+
+    private void OnDeviceConnected(object? sender, DeviceEventArgs e)
+    {
+        DeviceConnected?.Invoke(this, e);
+    }
+
+    private void OnDeviceDisconnected(object? sender, DeviceEventArgs e)
+    {
+        DeviceDisconnected?.Invoke(this, e);
     }
 
     public void Dispose()
@@ -57,14 +106,10 @@ public class InputDeviceManager : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        lock (_lock)
-        {
-            foreach (var device in _devices)
-            {
-                device.Dispose();
-            }
-            _devices.Clear();
-        }
+        _refreshTimer.Dispose();
+        _directInputProvider.DeviceConnected -= OnDeviceConnected;
+        _directInputProvider.DeviceDisconnected -= OnDeviceDisconnected;
+        _directInputProvider.Dispose();
 
         GC.SuppressFinalize(this);
     }

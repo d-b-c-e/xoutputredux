@@ -36,12 +36,10 @@ public interface IInputSource
 /// <summary>
 /// Types of input sources.
 /// </summary>
-[Flags]
 public enum InputSourceType
 {
-    None = 0,
-    Button = 1,
-    Axis = 2,
-    Slider = 4,
-    DPad = 8
+    Button,
+    Axis,
+    Slider,
+    DPad
 }
