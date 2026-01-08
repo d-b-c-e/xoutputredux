@@ -163,11 +163,41 @@ public partial class MainWindow : Window
     private void ProfileListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         bool hasSelection = ProfileListView.SelectedItem != null;
+        EditButton.IsEnabled = hasSelection;
         DuplicateButton.IsEnabled = hasSelection;
         DeleteButton.IsEnabled = hasSelection;
         StartStopButton.IsEnabled = hasSelection;
 
         UpdateStartStopButton();
+    }
+
+    private void ProfileListView_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        EditProfile_Click(sender, e);
+    }
+
+    private void EditProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (ProfileListView.SelectedItem is not ProfileViewModel selected) return;
+
+        if (selected.IsRunning)
+        {
+            MessageBox.Show("Cannot edit a running profile. Stop it first.", "Edit Profile",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var editor = new ProfileEditorWindow(selected.Profile, _deviceManager);
+        editor.Owner = this;
+        editor.ShowDialog();
+
+        if (editor.WasSaved)
+        {
+            // Save the profile to disk
+            _profileManager.SaveProfile(selected.FileName, selected.Profile);
+            RefreshProfiles();
+            StatusText.Text = $"Saved profile: {selected.Name}";
+        }
     }
 
     private void UpdateStartStopButton()

@@ -1,0 +1,161 @@
+<Window x:Class="XOutputRenew.App.ProfileEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Edit Profile"
+        Height="600" Width="900"
+        MinHeight="500" MinWidth="700"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="300"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Profile: " FontSize="18"/>
+                <TextBlock x:Name="ProfileNameText" Text="ProfileName" FontSize="18" FontWeight="Bold"/>
+            </StackPanel>
+            <TextBlock x:Name="ProfileDescText" Text="" Foreground="Gray" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <!-- Xbox Outputs List -->
+        <GroupBox Grid.Row="1" Grid.Column="0" Header="Xbox Controller Outputs" Margin="0,0,10,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Select an output, then press a button/move an axis to map it."
+                           Foreground="Gray" Margin="5,5,5,10" TextWrapping="Wrap"/>
+
+                <ListView x:Name="OutputListView" Grid.Row="1"
+                          SelectionChanged="OutputListView_SelectionChanged">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Output" Width="120" DisplayMemberBinding="{Binding OutputName}"/>
+                            <GridViewColumn Header="Type" Width="70" DisplayMemberBinding="{Binding OutputType}"/>
+                            <GridViewColumn Header="Bindings" Width="250" DisplayMemberBinding="{Binding BindingsSummary}"/>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
+        </GroupBox>
+
+        <!-- Right Panel - Input Monitor & Binding Editor -->
+        <Grid Grid.Row="1" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Input Monitor -->
+            <GroupBox Grid.Row="0" Header="Input Monitor">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+                        <Button x:Name="StartMonitorButton" Content="Start Monitoring"
+                                Padding="10,5" Click="StartMonitor_Click"/>
+                        <Button x:Name="StopMonitorButton" Content="Stop"
+                                Padding="10,5" Margin="5,0,0,0" Click="StopMonitor_Click"
+                                IsEnabled="False"/>
+                    </StackPanel>
+
+                    <ListBox x:Name="InputMonitorList" Grid.Row="1"
+                             FontFamily="Consolas" FontSize="11">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </GroupBox>
+
+            <!-- Capture Panel -->
+            <GroupBox Grid.Row="1" Header="Capture Binding" Margin="0,10,0,0">
+                <StackPanel Margin="5">
+                    <TextBlock x:Name="CaptureStatusText" Text="Select an output from the list"
+                               TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                    <Button x:Name="CaptureButton" Content="Capture Input"
+                            Padding="10,8" Click="CaptureInput_Click"
+                            IsEnabled="False" FontWeight="Bold"
+                            Background="#2196F3" Foreground="White"/>
+
+                    <TextBlock x:Name="CaptureHintText" Text="" Foreground="Gray"
+                               Margin="0,10,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Selected Binding Details -->
+            <GroupBox Grid.Row="2" Header="Binding Settings" Margin="0,10,0,0">
+                <StackPanel Margin="5">
+                    <ListView x:Name="BindingListView" Height="100"
+                              SelectionChanged="BindingListView_SelectionChanged">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Source" Width="180" DisplayMemberBinding="{Binding DisplayName}"/>
+                                <GridViewColumn Header="" Width="40">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="X" Padding="5,2"
+                                                    Click="RemoveBinding_Click"
+                                                    Tag="{Binding}"
+                                                    ToolTip="Remove binding"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <CheckBox x:Name="InvertCheckBox" Grid.Row="0" Grid.ColumnSpan="2"
+                                  Content="Invert" Margin="0,0,0,5"
+                                  IsEnabled="False" Checked="InvertCheckBox_Changed" Unchecked="InvertCheckBox_Changed"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Threshold:"
+                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Slider x:Name="ThresholdSlider" Grid.Row="1" Grid.Column="1"
+                                Minimum="0" Maximum="1" Value="0.5"
+                                IsEnabled="False" ValueChanged="ThresholdSlider_Changed"/>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+        </Grid>
+
+        <!-- Footer Buttons -->
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="Save" Padding="20,8" Click="Save_Click"
+                    Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
+            <Button Content="Cancel" Padding="20,8" Margin="10,0,0,0" Click="Cancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

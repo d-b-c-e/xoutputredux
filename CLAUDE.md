@@ -102,11 +102,13 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Status tab showing ViGEm and HidHide status
 - [x] InputDialog for profile naming
 
-### Phase 4: GUI - Interactive Mapping
-- [ ] "Press button to map" functionality
-- [ ] Visual input display (see current values)
-- [ ] Profile editor with mapping configuration
-- [ ] Multi-input to single output UI
+### Phase 4: GUI - Interactive Mapping ✓ COMPLETE
+- [x] ProfileEditorWindow with full mapping UI
+- [x] "Press button to map" with 10-second capture timeout
+- [x] Real-time input monitor showing device activity
+- [x] Multi-binding UI (OR logic) - add multiple inputs to one output
+- [x] Binding settings: invert, button threshold
+- [x] Double-click profile to edit
 
 ### Phase 5: HidHide Integration
 - [ ] HidHide client library
