@@ -94,11 +94,13 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] CLI: `list-devices`, `list-profiles`, `duplicate-profile`
 - [x] CLI with System.CommandLine, JSON output support
 
-### Phase 3: GUI - Core
-- [ ] WPF application with system tray
-- [ ] Device list view (detected devices)
-- [ ] Profile list view
-- [ ] Start/stop profile controls
+### Phase 3: GUI - Core ✓ COMPLETE
+- [x] WPF application with system tray (minimize to tray)
+- [x] Device list view with refresh
+- [x] Profile list view with create/duplicate/delete
+- [x] Start/stop profile controls with real-time input mapping
+- [x] Status tab showing ViGEm and HidHide status
+- [x] InputDialog for profile naming
 
 ### Phase 4: GUI - Interactive Mapping
 - [ ] "Press button to map" functionality

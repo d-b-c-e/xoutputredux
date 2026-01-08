@@ -97,7 +97,6 @@ public class Program
     private static int LaunchGui(string? startProfile, bool minimized)
     {
         var app = new App();
-        app.InitializeComponent();
 
         // Store startup options for the app to use
         app.Properties["StartProfile"] = startProfile;
