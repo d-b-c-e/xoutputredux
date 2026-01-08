@@ -1,4 +1,5 @@
 using XOutputRenew.Input.DirectInput;
+using XOutputRenew.Input.RawInput;
 
 namespace XOutputRenew.Input;
 
@@ -8,6 +9,7 @@ namespace XOutputRenew.Input;
 public class InputDeviceManager : IDisposable
 {
     private readonly DirectInputDeviceProvider _directInputProvider;
+    private readonly RawInputDeviceProvider _rawInputProvider;
     private readonly Timer _refreshTimer;
     private readonly object _lock = new();
     private bool _disposed;
@@ -23,7 +25,7 @@ public class InputDeviceManager : IDisposable
             {
                 var devices = new List<IInputDevice>();
                 devices.AddRange(_directInputProvider.GetDevices());
-                // TODO: Add RawInput devices when implemented
+                devices.AddRange(_rawInputProvider.GetDevices());
                 return devices;
             }
         }
@@ -45,6 +47,10 @@ public class InputDeviceManager : IDisposable
         _directInputProvider.DeviceConnected += OnDeviceConnected;
         _directInputProvider.DeviceDisconnected += OnDeviceDisconnected;
 
+        _rawInputProvider = new RawInputDeviceProvider();
+        _rawInputProvider.DeviceConnected += OnDeviceConnected;
+        _rawInputProvider.DeviceDisconnected += OnDeviceDisconnected;
+
         // Refresh every 5 seconds
         _refreshTimer = new Timer(_ => RefreshDevices(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
     }
@@ -59,7 +65,7 @@ public class InputDeviceManager : IDisposable
         lock (_lock)
         {
             _directInputProvider.RefreshDevices();
-            // TODO: Refresh RawInput devices when implemented
+            _rawInputProvider.RefreshDevices();
         }
     }
 
@@ -70,8 +76,8 @@ public class InputDeviceManager : IDisposable
     {
         lock (_lock)
         {
-            return _directInputProvider.GetDevice(uniqueId);
-            // TODO: Check RawInput provider when implemented
+            return _directInputProvider.GetDevice(uniqueId)
+                ?? (IInputDevice?)_rawInputProvider.GetDevice(uniqueId);
         }
     }
 
@@ -107,9 +113,14 @@ public class InputDeviceManager : IDisposable
         _disposed = true;
 
         _refreshTimer.Dispose();
+
         _directInputProvider.DeviceConnected -= OnDeviceConnected;
         _directInputProvider.DeviceDisconnected -= OnDeviceDisconnected;
         _directInputProvider.Dispose();
+
+        _rawInputProvider.DeviceConnected -= OnDeviceConnected;
+        _rawInputProvider.DeviceDisconnected -= OnDeviceDisconnected;
+        _rawInputProvider.Dispose();
 
         GC.SuppressFinalize(this);
     }

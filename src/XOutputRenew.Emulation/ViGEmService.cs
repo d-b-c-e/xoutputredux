@@ -1,10 +1,15 @@
+using Nefarius.ViGEm.Client;
+using Nefarius.ViGEm.Client.Exceptions;
+
 namespace XOutputRenew.Emulation;
 
 /// <summary>
 /// Service for managing ViGEm emulation.
+/// Adapted from XOutput.Emulation.ViGEm.ViGEmEmulator
 /// </summary>
 public class ViGEmService : IDisposable
 {
+    private ViGEmClient? _client;
     private bool _disposed;
     private bool _initialized;
 
@@ -22,8 +27,18 @@ public class ViGEmService : IDisposable
 
         try
         {
-            // TODO: Implement ViGEm client initialization
+            _client = new ViGEmClient();
             IsAvailable = true;
+            _initialized = true;
+        }
+        catch (VigemBusNotFoundException)
+        {
+            IsAvailable = false;
+            _initialized = true;
+        }
+        catch (DllNotFoundException)
+        {
+            IsAvailable = false;
             _initialized = true;
         }
         catch
@@ -40,10 +55,11 @@ public class ViGEmService : IDisposable
     /// </summary>
     public XboxController CreateXboxController()
     {
-        if (!IsAvailable)
-            throw new InvalidOperationException("ViGEm is not available");
+        if (!IsAvailable || _client == null)
+            throw new InvalidOperationException("ViGEm is not available. Call Initialize() first and check IsAvailable.");
 
-        return new XboxController();
+        var controller = _client.CreateXbox360Controller();
+        return new XboxController(controller);
     }
 
     public void Dispose()
@@ -51,7 +67,10 @@ public class ViGEmService : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        // TODO: Cleanup ViGEm client
+        _client?.Dispose();
+        _client = null;
+        IsAvailable = false;
+
         GC.SuppressFinalize(this);
     }
 }

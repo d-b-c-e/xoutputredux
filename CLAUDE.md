@@ -79,13 +79,13 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 
 ## Implementation Phases
 
-### Phase 1: Foundation
-- [ ] Solution structure with projects
-- [ ] Port DirectInput handling from XOutput
-- [ ] Port RawInput handling from XOutput
-- [ ] Port ViGEm Xbox emulation from XOutput
-- [ ] New mapping system with OR logic
-- [ ] Basic console test harness
+### Phase 1: Foundation ✓ COMPLETE
+- [x] Solution structure with projects
+- [x] Port DirectInput handling from XOutput
+- [x] Port RawInput handling from XOutput
+- [x] Port ViGEm Xbox emulation from XOutput
+- [x] New mapping system with OR logic
+- [x] Unit tests for mapping system (14 passing)
 
 ### Phase 2: Profile System
 - [ ] Profile model (JSON schema)
@@ -362,6 +362,33 @@ public bool HideDevice(string deviceInstancePath)
     return process.ExitCode == 0;
 }
 ```
+
+---
+
+## Key Source Files
+
+### Input System (`XOutputRenew.Input`)
+- `IInputDevice.cs`, `IInputSource.cs` - Core interfaces
+- `InputSource.cs` - Base class with deadzone handling
+- `InputDeviceManager.cs` - Device discovery and lifecycle
+- `IdHelper.cs` - Device identification (SHA256, hardware ID extraction)
+- `DirectInput/` - DirectInput device/source/provider
+- `RawInput/` - RawInput device/source/provider (HidSharp)
+
+### Mapping System (`XOutputRenew.Core/Mapping`)
+- `XboxOutput.cs` - Xbox controller output enum
+- `InputBinding.cs` - Single input binding with transform settings
+- `OutputMapping.cs` - Multiple inputs → one output with OR logic
+- `MappingProfile.cs` - Complete profile with serialization
+- `MappingEngine.cs` - Real-time input evaluation
+- `ProfileManager.cs` - Profile load/save/manage
+
+### Emulation (`XOutputRenew.Emulation`)
+- `ViGEmService.cs` - ViGEm client wrapper
+- `XboxController.cs` - Emulated Xbox 360 controller
+
+### Device Hiding (`XOutputRenew.HidHide`)
+- `HidHideService.cs` - CLI wrapper for HidHide operations
 
 ---
 
