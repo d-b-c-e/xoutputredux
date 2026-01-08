@@ -251,3 +251,123 @@ dotnet test
 - .NET 8.0 Runtime
 - ViGEmBus driver installed (https://github.com/nefarius/ViGEmBus/releases)
 - HidHide driver installed (optional, for device hiding) (https://github.com/nefarius/HidHide/releases)
+
+---
+
+## External Dependencies - Technical Analysis
+
+### ViGEmBus (Virtual Gamepad Emulation Bus)
+
+**Status**: RETIRED (September 2023) - but still functional
+
+**What Happened**: Trademark conflict with ViGEM GmbH led to project retirement. No active successor yet (VirtualPad in development but not ready).
+
+**Key Points**:
+- Last stable driver: v1.22.0 (November 2023)
+- Last .NET client: Nefarius.ViGEm.Client v1.21.256
+- Still works on Windows 10/11, just no new development
+- XOutput's implementation pattern is correct and proven
+
+**Usage Pattern** (from XOutput, validated):
+```csharp
+// Initialize once (expensive operation)
+var client = new ViGEmClient();  // Throws if driver not installed
+
+// Create controller
+var controller = client.CreateXbox360Controller();
+controller.AutoSubmitReport = false;  // Manual batching
+controller.Connect();
+
+// Send input (batch multiple changes, then submit)
+controller.SetButtonState(Xbox360Button.A, true);
+controller.SetAxisValue(Xbox360Axis.LeftThumbX, axisValue);  // -32768 to 32767
+controller.SetSliderValue(Xbox360Slider.LeftTrigger, triggerValue);  // 0-255
+controller.SubmitReport();
+
+// Force feedback
+controller.FeedbackReceived += (s, e) => {
+    double large = e.LargeMotor / 255.0;
+    double small = e.SmallMotor / 255.0;
+};
+```
+
+**Value Conversions**:
+- Axes: `(normalized - 0.5) * 2 * 32767` → -32768 to 32767
+- Triggers: `normalized * 255` → 0 to 255
+- Buttons: boolean
+
+**Gotchas**:
+- NOT thread-safe - synchronize access
+- `ViGEmClient()` constructor is expensive - create once
+- Always set `AutoSubmitReport = false` for batch updates
+
+---
+
+### HidHide (Device Hiding)
+
+**Status**: ACTIVELY MAINTAINED - recent commits December 2024
+
+**Purpose**: Kernel-mode filter driver that hides HID devices from applications unless whitelisted.
+
+**Key Points**:
+- No .NET NuGet package - use CLI or P/Invoke
+- CLI approach recommended for simplicity
+- Does NOT require admin after installation
+- Device Instance Paths used for identification
+
+**CLI Commands** (via `HidHideCLI.exe`):
+```bash
+# Cloaking control
+--cloak-on              # Enable hiding
+--cloak-off             # Disable hiding
+--cloak-state           # Query state
+
+# Device management
+--dev-hide <path>       # Hide device by instance path
+--dev-unhide <path>     # Unhide device
+--dev-list              # List hidden devices
+--dev-gaming            # List gaming devices (JSON)
+
+# Application whitelist
+--app-reg <exe-path>    # Whitelist application
+--app-unreg <exe-path>  # Remove from whitelist
+--app-list              # List whitelisted apps
+```
+
+**Device Instance Path Format**:
+```
+USB\VID_046D&PID_C294\123456
+HID\VID_28DE&PID_1205&COL01
+```
+
+**Checking if Installed** (Registry):
+```csharp
+using Microsoft.Win32;
+var key = Registry.ClassesRoot.OpenSubKey(
+    @"Installer\Dependencies\NSS.Drivers.HidHide.x64");
+bool installed = key?.GetValue("Version") != null;
+```
+
+**Integration Approach** (CLI wrapper):
+```csharp
+public bool HideDevice(string deviceInstancePath)
+{
+    var process = Process.Start(new ProcessStartInfo {
+        FileName = "HidHideCLI.exe",
+        Arguments = $"--dev-hide \"{deviceInstancePath}\"",
+        CreateNoWindow = true,
+        UseShellExecute = false
+    });
+    process.WaitForExit();
+    return process.ExitCode == 0;
+}
+```
+
+---
+
+## Workspace Reference
+
+Additional source repositories in workspace for reference:
+- `E:\Source\XOutputRenew\XOutput` - Original XOutput (archived)
+- `E:\Source\XOutputRenew\ViGEmBus` - ViGEmBus driver source
+- `E:\Source\XOutputRenew\HidHide` - HidHide driver source
