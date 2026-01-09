@@ -59,14 +59,24 @@
                             <Button Content="Refresh" Padding="15,5" Click="RefreshDevices_Click"/>
                             <TextBlock x:Name="DeviceCountText" VerticalAlignment="Center" Margin="15,0,0,0"
                                        Foreground="Gray"/>
+                            <Separator Margin="20,0"/>
+                            <CheckBox x:Name="ListenForInputCheckBox" Content="Listen for Input"
+                                      VerticalAlignment="Center" Checked="ListenForInput_Changed"
+                                      Unchecked="ListenForInput_Changed"/>
                         </StackPanel>
 
                         <ListView x:Name="DeviceListView" Grid.Row="1"
                                   SelectionChanged="DeviceListView_SelectionChanged">
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Show Device Info" Click="ShowDeviceInfo_Click"/>
+                                    <MenuItem Header="Rename Device..." Click="RenameDevice_Click"/>
+                                </ContextMenu>
+                            </ListView.ContextMenu>
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Name" Width="200"
-                                                    DisplayMemberBinding="{Binding Name}"/>
+                                                    DisplayMemberBinding="{Binding DisplayName}"/>
                                     <GridViewColumn Header="Method" Width="100"
                                                     DisplayMemberBinding="{Binding Method}"/>
                                     <GridViewColumn Header="Hardware ID" Width="180"
@@ -75,6 +85,16 @@
                                                     DisplayMemberBinding="{Binding SourcesSummary}"/>
                                 </GridView>
                             </ListView.View>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                            <Setter Property="Background" Value="#FFFFCC00"/>
+                                            <Setter Property="FontWeight" Value="Bold"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.ItemContainerStyle>
                         </ListView>
                     </Grid>
                 </TabItem>

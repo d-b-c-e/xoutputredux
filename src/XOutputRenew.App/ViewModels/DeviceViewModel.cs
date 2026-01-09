@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using XOutputRenew.Input;
 
 namespace XOutputRenew.App.ViewModels;
@@ -5,8 +6,11 @@ namespace XOutputRenew.App.ViewModels;
 /// <summary>
 /// View model for displaying an input device.
 /// </summary>
-public class DeviceViewModel
+public class DeviceViewModel : INotifyPropertyChanged
 {
+    private bool _isActive;
+    private string? _friendlyName;
+
     public string UniqueId { get; }
     public string Name { get; }
     public string Method { get; }
@@ -14,6 +18,43 @@ public class DeviceViewModel
     public string? InterfacePath { get; }
     public string SourcesSummary { get; }
     public IInputDevice Device { get; }
+
+    /// <summary>
+    /// User-assigned friendly name for the device.
+    /// </summary>
+    public string? FriendlyName
+    {
+        get => _friendlyName;
+        set
+        {
+            _friendlyName = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FriendlyName)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayName)));
+        }
+    }
+
+    /// <summary>
+    /// Display name (FriendlyName if set, otherwise Name).
+    /// </summary>
+    public string DisplayName => !string.IsNullOrEmpty(FriendlyName) ? FriendlyName : Name;
+
+    /// <summary>
+    /// Whether this device is currently receiving input.
+    /// </summary>
+    public bool IsActive
+    {
+        get => _isActive;
+        set
+        {
+            if (_isActive != value)
+            {
+                _isActive = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsActive)));
+            }
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public DeviceViewModel(IInputDevice device)
     {
@@ -24,6 +65,22 @@ public class DeviceViewModel
         HardwareId = device.HardwareId;
         InterfacePath = device.InterfacePath;
         SourcesSummary = BuildSourcesSummary(device.Sources);
+    }
+
+    /// <summary>
+    /// Gets formatted device info for clipboard.
+    /// </summary>
+    public string GetDeviceInfo()
+    {
+        return $"""
+            Device Name: {Name}
+            Friendly Name: {FriendlyName ?? "(not set)"}
+            Unique ID: {UniqueId}
+            Hardware ID: {HardwareId ?? "(none)"}
+            Interface Path: {InterfacePath ?? "(none)"}
+            Input Method: {Method}
+            Sources: {SourcesSummary}
+            """;
     }
 
     private static string BuildSourcesSummary(IReadOnlyList<IInputSource> sources)

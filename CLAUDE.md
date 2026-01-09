@@ -110,6 +110,12 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Binding settings: invert, button threshold
 - [x] Double-click profile to edit
 
+### Phase 4.5: Device Tab Enhancements ✓ COMPLETE
+- [x] De-duplicate devices (same device from DirectInput/RawInput)
+- [x] "Listen for Input" checkbox - highlights devices receiving input
+- [x] Right-click context menu: Copy Device Info, Rename Device
+- [x] Device friendly names (persisted to device-settings.json)
+
 ### Phase 5: HidHide Integration
 - [ ] HidHide client library
 - [ ] Auto-hide devices on profile start
@@ -397,6 +403,57 @@ public bool HideDevice(string deviceInstancePath)
 
 ### Application (`XOutputRenew.App`)
 - `Program.cs` - CLI entry point with System.CommandLine
+- `MainWindow.xaml/.cs` - Main GUI with device/profile tabs
+- `ProfileEditorWindow.xaml/.cs` - Interactive mapping editor
+- `DeviceSettings.cs` - Persists device friendly names
+- `AppLogger.cs` - File-based logging for debugging
+- `ViewModels/` - DeviceViewModel, ProfileViewModel
+
+---
+
+## Logging & Debugging
+
+### Log Files
+- **Location**: `%AppData%\XOutputRenew\logs\xoutputrenew-YYYY-MM-DD.log`
+- **Format**: `timestamp [LEVEL] [CallerMethod] message`
+- **Levels**: INFO, WARN, ERROR
+
+### Reading Logs
+```powershell
+# View today's log
+Get-Content "$env:APPDATA\XOutputRenew\logs\xoutputrenew-$(Get-Date -Format 'yyyy-MM-dd').log" -Tail 50
+
+# Or from bash
+cat "$APPDATA/XOutputRenew/logs/xoutputrenew-$(date +%Y-%m-%d).log"
+```
+
+### Using the Logger
+```csharp
+AppLogger.Initialize();  // Call once at startup
+AppLogger.Info("Something happened");
+AppLogger.Warning("Something concerning");
+AppLogger.Error("Something failed", exception);
+```
+
+---
+
+## Data Storage Locations
+
+| Data | Location |
+|------|----------|
+| Profiles | `%AppData%\XOutputRenew\Profiles\*.json` |
+| Device Settings | `%AppData%\XOutputRenew\device-settings.json` |
+| Logs | `%AppData%\XOutputRenew\logs\` |
+
+---
+
+## Known Issues
+
+### Clipboard Copy Fails (CLIPBRD_E_CANT_OPEN)
+- **Symptom**: "Copy Device Info" fails with clipboard error
+- **Cause**: Another application holding clipboard lock (clipboard managers, Remote Desktop)
+- **Workaround**: Info is shown in a dialog instead when copy fails
+- **Solution**: Close clipboard managers or check Remote Desktop clipboard settings
 
 ---
 

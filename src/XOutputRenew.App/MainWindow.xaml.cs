@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 using XOutputRenew.App.ViewModels;
 using XOutputRenew.Core.Mapping;
 using XOutputRenew.Emulation;
@@ -19,6 +20,7 @@ public partial class MainWindow : Window
     private readonly ProfileManager _profileManager;
     private readonly ViGEmService _vigemService;
     private readonly HidHideService _hidHideService;
+    private readonly DeviceSettings _deviceSettings;
 
     private readonly ObservableCollection<DeviceViewModel> _devices = new();
     private readonly ObservableCollection<ProfileViewModel> _profiles = new();
@@ -27,6 +29,9 @@ public partial class MainWindow : Window
     private MappingEngine? _activeMappingEngine;
     private ProfileViewModel? _runningProfile;
     private bool _isExiting;
+    private bool _isListeningForInput;
+    private readonly Dictionary<string, DateTime> _deviceLastInput = new();
+    private readonly DispatcherTimer _inputHighlightTimer;
 
     public MainWindow()
     {
@@ -37,6 +42,12 @@ public partial class MainWindow : Window
         _profileManager = new ProfileManager(ProfileManager.GetDefaultProfilesDirectory());
         _vigemService = new ViGEmService();
         _hidHideService = new HidHideService();
+        _deviceSettings = new DeviceSettings();
+        _deviceSettings.Load();
+
+        // Timer to clear input highlights after inactivity
+        _inputHighlightTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _inputHighlightTimer.Tick += InputHighlightTimer_Tick;
 
         // Bind collections
         DeviceListView.ItemsSource = _devices;
@@ -48,6 +59,9 @@ public partial class MainWindow : Window
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        AppLogger.Initialize();
+        AppLogger.Info("MainWindow loaded");
+
         RefreshDevices();
         RefreshProfiles();
         CheckDriverStatus();
@@ -112,7 +126,10 @@ public partial class MainWindow : Window
 
         foreach (var device in _deviceManager.Devices)
         {
-            _devices.Add(new DeviceViewModel(device));
+            var vm = new DeviceViewModel(device);
+            // Apply saved friendly name
+            vm.FriendlyName = _deviceSettings.GetFriendlyName(device.UniqueId);
+            _devices.Add(vm);
         }
 
         DeviceCountText.Text = $"{_devices.Count} device(s) detected";
@@ -154,6 +171,101 @@ public partial class MainWindow : Window
     private void DeviceListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         // Could show device details panel in the future
+    }
+
+    private void ShowDeviceInfo_Click(object sender, RoutedEventArgs e)
+    {
+        if (DeviceListView.SelectedItem is not DeviceViewModel selected) return;
+
+        var text = selected.GetDeviceInfo();
+        var dialog = new TextDisplayDialog("Device Info", text);
+        dialog.Owner = this;
+        dialog.ShowDialog();
+    }
+
+    private void RenameDevice_Click(object sender, RoutedEventArgs e)
+    {
+        if (DeviceListView.SelectedItem is not DeviceViewModel selected) return;
+
+        var dialog = new InputDialog("Rename Device", "Enter a friendly name for this device:",
+            selected.FriendlyName ?? selected.Name);
+
+        if (dialog.ShowDialog() == true)
+        {
+            var newName = string.IsNullOrWhiteSpace(dialog.InputText) ? null : dialog.InputText.Trim();
+            selected.FriendlyName = newName;
+            _deviceSettings.SetFriendlyName(selected.UniqueId, newName);
+            StatusText.Text = newName != null
+                ? $"Renamed device to: {newName}"
+                : $"Cleared friendly name for: {selected.Name}";
+        }
+    }
+
+    private void ListenForInput_Changed(object sender, RoutedEventArgs e)
+    {
+        _isListeningForInput = ListenForInputCheckBox.IsChecked == true;
+
+        if (_isListeningForInput)
+        {
+            // Start listening on all devices
+            foreach (var vm in _devices)
+            {
+                vm.Device.InputChanged += Device_InputChanged_Listen;
+                vm.Device.Start();
+            }
+            _inputHighlightTimer.Start();
+            StatusText.Text = "Listening for input - press buttons to identify devices";
+        }
+        else
+        {
+            // Stop listening
+            foreach (var vm in _devices)
+            {
+                vm.Device.InputChanged -= Device_InputChanged_Listen;
+                vm.Device.Stop();
+                vm.IsActive = false;
+            }
+            _inputHighlightTimer.Stop();
+            _deviceLastInput.Clear();
+            StatusText.Text = "Stopped listening for input";
+        }
+    }
+
+    private void Device_InputChanged_Listen(object? sender, InputChangedEventArgs e)
+    {
+        if (sender is not IInputDevice device) return;
+
+        // Only highlight on significant input changes
+        bool isSignificant = e.NewValue > 0.5 || Math.Abs(e.NewValue - 0.5) > 0.3;
+        if (!isSignificant) return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            _deviceLastInput[device.UniqueId] = DateTime.Now;
+
+            var vm = _devices.FirstOrDefault(d => d.UniqueId == device.UniqueId);
+            if (vm != null)
+            {
+                vm.IsActive = true;
+            }
+        });
+    }
+
+    private void InputHighlightTimer_Tick(object? sender, EventArgs e)
+    {
+        var now = DateTime.Now;
+        var timeout = TimeSpan.FromMilliseconds(500);
+
+        foreach (var vm in _devices)
+        {
+            if (_deviceLastInput.TryGetValue(vm.UniqueId, out var lastInput))
+            {
+                if (now - lastInput > timeout)
+                {
+                    vm.IsActive = false;
+                }
+            }
+        }
     }
 
     #endregion
@@ -428,6 +540,14 @@ public partial class MainWindow : Window
 
         // Actually closing - cleanup
         StopProfile();
+
+        // Stop input listening if active
+        if (_isListeningForInput)
+        {
+            ListenForInputCheckBox.IsChecked = false;
+        }
+        _inputHighlightTimer.Stop();
+
         TrayIcon.Dispose();
         _deviceManager.Dispose();
         _vigemService.Dispose();

@@ -15,7 +15,7 @@ public class InputDeviceManager : IDisposable
     private bool _disposed;
 
     /// <summary>
-    /// All currently known devices.
+    /// All currently known devices (de-duplicated, preferring DirectInput).
     /// </summary>
     public IReadOnlyList<IInputDevice> Devices
     {
@@ -24,8 +24,31 @@ public class InputDeviceManager : IDisposable
             lock (_lock)
             {
                 var devices = new List<IInputDevice>();
-                devices.AddRange(_directInputProvider.GetDevices());
-                devices.AddRange(_rawInputProvider.GetDevices());
+                var seenHardwareIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                // Add DirectInput devices first (preferred)
+                foreach (var device in _directInputProvider.GetDevices())
+                {
+                    devices.Add(device);
+                    if (!string.IsNullOrEmpty(device.HardwareId))
+                    {
+                        seenHardwareIds.Add(device.HardwareId);
+                    }
+                }
+
+                // Add RawInput devices only if not already seen via DirectInput
+                foreach (var device in _rawInputProvider.GetDevices())
+                {
+                    if (string.IsNullOrEmpty(device.HardwareId) || !seenHardwareIds.Contains(device.HardwareId))
+                    {
+                        devices.Add(device);
+                        if (!string.IsNullOrEmpty(device.HardwareId))
+                        {
+                            seenHardwareIds.Add(device.HardwareId);
+                        }
+                    }
+                }
+
                 return devices;
             }
         }
