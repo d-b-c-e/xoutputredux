@@ -30,6 +30,13 @@ public partial class App : Application
         mainWindow.Show();
     }
 
+    protected override void OnExit(ExitEventArgs e)
+    {
+        AppLogger.Info("Application shutting down");
+        AppLogger.Shutdown();
+        base.OnExit(e);
+    }
+
     private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         AppLogger.Error("Unhandled UI exception", e.Exception);

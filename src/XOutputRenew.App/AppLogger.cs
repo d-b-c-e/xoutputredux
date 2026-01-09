@@ -1,10 +1,12 @@
+using System.Collections.Concurrent;
 using System.IO;
 using System.Runtime.CompilerServices;
 
 namespace XOutputRenew.App;
 
 /// <summary>
-/// Simple file logger for debugging.
+/// Async buffered file logger for debugging.
+/// Uses background thread to batch writes for performance.
 /// </summary>
 public static class AppLogger
 {
@@ -14,8 +16,14 @@ public static class AppLogger
         "logs",
         $"xoutputrenew-{DateTime.Now:yyyy-MM-dd}.log");
 
-    private static readonly object Lock = new();
-    private static bool _initialized;
+    private static readonly ConcurrentQueue<string> LogQueue = new();
+    private static readonly AutoResetEvent LogSignal = new(false);
+    private static Thread? _writerThread;
+    private static volatile bool _initialized;
+    private static volatile bool _shutdown;
+
+    private const int FlushIntervalMs = 100; // Batch writes every 100ms
+    private const int MaxBatchSize = 500;    // Max lines per batch
 
     public static void Initialize()
     {
@@ -28,13 +36,39 @@ public static class AppLogger
             {
                 Directory.CreateDirectory(dir);
             }
+
             _initialized = true;
-            Log("INFO", "Application started");
+            _shutdown = false;
+
+            // Start background writer thread
+            _writerThread = new Thread(WriterLoop)
+            {
+                Name = "LogWriter",
+                IsBackground = true,
+                Priority = ThreadPriority.BelowNormal
+            };
+            _writerThread.Start();
+
+            Log("INFO", "Application started (async logging)");
         }
         catch
         {
             // Ignore initialization errors
         }
+    }
+
+    public static void Shutdown()
+    {
+        if (!_initialized) return;
+
+        _shutdown = true;
+        LogSignal.Set(); // Wake up writer thread
+
+        // Wait for writer to finish (with timeout)
+        _writerThread?.Join(1000);
+
+        // Flush any remaining messages synchronously
+        FlushRemaining();
     }
 
     public static void Info(string message, [CallerMemberName] string? caller = null)
@@ -69,14 +103,77 @@ public static class AppLogger
             var callerInfo = caller != null ? $"[{caller}] " : "";
             var line = $"{timestamp} [{level}] {callerInfo}{message}";
 
-            lock (Lock)
+            LogQueue.Enqueue(line);
+
+            // Signal writer thread if queue is getting large
+            if (LogQueue.Count > MaxBatchSize)
             {
-                File.AppendAllText(LogPath, line + Environment.NewLine);
+                LogSignal.Set();
             }
         }
         catch
         {
             // Ignore logging errors
+        }
+    }
+
+    private static void WriterLoop()
+    {
+        try
+        {
+            // Keep file open for better performance
+            using var writer = new StreamWriter(LogPath, append: true)
+            {
+                AutoFlush = false
+            };
+
+            while (!_shutdown)
+            {
+                // Wait for signal or timeout
+                LogSignal.WaitOne(FlushIntervalMs);
+
+                // Write batch of messages
+                int written = 0;
+                while (written < MaxBatchSize && LogQueue.TryDequeue(out var line))
+                {
+                    writer.WriteLine(line);
+                    written++;
+                }
+
+                if (written > 0)
+                {
+                    writer.Flush();
+                }
+            }
+
+            // Final flush on shutdown
+            while (LogQueue.TryDequeue(out var line))
+            {
+                writer.WriteLine(line);
+            }
+            writer.Flush();
+        }
+        catch
+        {
+            // Ignore writer errors
+        }
+    }
+
+    private static void FlushRemaining()
+    {
+        try
+        {
+            if (LogQueue.IsEmpty) return;
+
+            using var writer = new StreamWriter(LogPath, append: true);
+            while (LogQueue.TryDequeue(out var line))
+            {
+                writer.WriteLine(line);
+            }
+        }
+        catch
+        {
+            // Ignore flush errors
         }
     }
 

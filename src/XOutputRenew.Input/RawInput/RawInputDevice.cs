@@ -32,8 +32,6 @@ public class RawInputDevice : IInputDevice
     private readonly byte[] _inputBuffer;
     private readonly RawInputSource[] _sources;
 
-    private Thread? _pollThread;
-    private CancellationTokenSource? _cts;
     private bool _running;
     private bool _disposed;
 
@@ -65,9 +63,6 @@ public class RawInputDevice : IInputDevice
         _inputReceiver = reportDescriptor.CreateHidDeviceInputReceiver();
         _inputParser = deviceItem.CreateDeviceItemInputParser();
 
-        // Start receiving input
-        _inputReceiver.Start(hidStream);
-
         // Enumerate sources from report descriptor
         var sources = reportDescriptor.InputReports
             .SelectMany(ir => ir.DataItems)
@@ -84,13 +79,10 @@ public class RawInputDevice : IInputDevice
         if (_running || _disposed) return;
 
         _running = true;
-        _cts = new CancellationTokenSource();
-        _pollThread = new Thread(PollLoop)
-        {
-            Name = $"RawInput-{Name}",
-            IsBackground = true
-        };
-        _pollThread.Start();
+
+        // Use event-based approach for immediate response
+        _inputReceiver.Received += InputReceiver_Received;
+        _inputReceiver.Start(_hidStream);
 
         InputLogger.Log($"Started: {Name} (Sources: {_sources.Length}, ReceiverRunning: {_inputReceiver.IsRunning})");
     }
@@ -100,61 +92,21 @@ public class RawInputDevice : IInputDevice
         if (!_running) return;
 
         _running = false;
-        _cts?.Cancel();
-
-        // Wait for thread to finish (with timeout)
-        _pollThread?.Join(500);
-        _cts?.Dispose();
-        _cts = null;
-        _pollThread = null;
+        _inputReceiver.Received -= InputReceiver_Received;
     }
 
-    private int _pollCount;
-    private DateTime _lastPollLog = DateTime.MinValue;
-
-    private void PollLoop()
+    private void InputReceiver_Received(object? sender, EventArgs e)
     {
-        InputLogger.Log($"[{Name}] Poll loop started");
+        if (!_running) return;
+
         try
         {
-            while (_running && !_cts.Token.IsCancellationRequested)
-            {
-                _pollCount++;
-                try
-                {
-                    if (!_inputReceiver.IsRunning)
-                    {
-                        InputLogger.Log($"[{Name}] Receiver stopped - disconnecting");
-                        _running = false;
-                        Disconnected?.Invoke(this, EventArgs.Empty);
-                        break;
-                    }
-
-                    ProcessReports();
-
-                    // Log poll activity periodically
-                    if ((DateTime.Now - _lastPollLog).TotalSeconds >= 5)
-                    {
-                        _lastPollLog = DateTime.Now;
-                        InputLogger.Log($"[{Name}] Poll loop alive: {_pollCount} iterations, {_reportCount} reports received");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    InputLogger.Log($"[{Name}] Poll error: {ex.Message}");
-                    _running = false;
-                    Disconnected?.Invoke(this, EventArgs.Empty);
-                    break;
-                }
-
-                Thread.Sleep(PollingIntervalMs);
-            }
+            ProcessReports();
         }
-        catch (OperationCanceledException)
+        catch (Exception ex)
         {
-            // Normal cancellation
+            InputLogger.Log($"[{Name}] Receive error: {ex.Message}");
         }
-        InputLogger.Log($"[{Name}] Poll loop ended");
     }
 
     private int _reportCount;
