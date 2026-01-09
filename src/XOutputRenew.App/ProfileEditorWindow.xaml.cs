@@ -25,6 +25,8 @@ public partial class ProfileEditorWindow : Window
     private BindingViewModel? _selectedBinding;
     private readonly DispatcherTimer _captureTimer;
     private DateTime _captureStartTime;
+    private readonly Dictionary<string, double> _captureBaseline = new(); // device:sourceIndex -> baseline value
+    private const int CaptureGracePeriodMs = 300; // Grace period to establish baseline before detecting
 
     public bool WasSaved { get; private set; }
 
@@ -126,7 +128,7 @@ public partial class ProfileEditorWindow : Window
             // If capturing, check for significant input
             if (_isCapturing && _selectedOutput != null)
             {
-                bool isSignificant = IsSignificantInput(e, _selectedOutput.Output);
+                bool isSignificant = IsSignificantInput(device, e, _selectedOutput.Output);
                 if (isSignificant)
                 {
                     CaptureBinding(device, e.Source);
@@ -135,23 +137,46 @@ public partial class ProfileEditorWindow : Window
         });
     }
 
-    private bool IsSignificantInput(InputChangedEventArgs e, XboxOutput output)
+    private bool IsSignificantInput(IInputDevice device, InputChangedEventArgs e, XboxOutput output)
     {
-        // For buttons: value crosses threshold
+        var key = $"{device.UniqueId}:{e.Source.Index}";
+        var elapsed = DateTime.Now - _captureStartTime;
+
+        // During grace period, just update baselines but don't trigger
+        // This allows initial device values to settle before detection
+        if (elapsed.TotalMilliseconds < CaptureGracePeriodMs)
+        {
+            _captureBaseline[key] = e.NewValue;
+            return false;
+        }
+
+        // For buttons: value crosses threshold (high)
         if (output.IsButton())
         {
             return e.NewValue > 0.7;
         }
 
-        // For axes/triggers: significant movement from center/rest
+        // For axes/triggers: check for significant CHANGE from baseline
+        // This prevents jittery axes from triggering capture
+        if (!_captureBaseline.TryGetValue(key, out var baseline))
+        {
+            // First reading after grace period - record as baseline, don't trigger
+            _captureBaseline[key] = e.NewValue;
+            return false;
+        }
+
+        double delta = Math.Abs(e.NewValue - baseline);
+
         if (output.IsAxis())
         {
-            return Math.Abs(e.NewValue - 0.5) > 0.3;
+            // Axis needs to move significantly from where it was when capture started
+            return delta > 0.4;
         }
 
         if (output.IsTrigger())
         {
-            return e.NewValue > 0.5;
+            // Trigger needs to be pressed significantly from its baseline
+            return delta > 0.4 && e.NewValue > 0.5;
         }
 
         return false;
@@ -178,6 +203,8 @@ public partial class ProfileEditorWindow : Window
     {
         _isCapturing = true;
         _captureStartTime = DateTime.Now;
+        _captureBaseline.Clear(); // Will be populated during grace period
+
         CaptureButton.Content = "Cancel Capture";
         CaptureButton.Background = new SolidColorBrush(Color.FromRgb(0xF4, 0x43, 0x36));
         CaptureHintText.Text = "Press a button or move an axis on your controller...";
@@ -259,6 +286,10 @@ public partial class ProfileEditorWindow : Window
     {
         _selectedOutput = OutputListView.SelectedItem as OutputViewModel;
 
+        // Clear the capture hint text when switching outputs
+        CaptureHintText.Text = "";
+        CaptureHintText.Foreground = new SolidColorBrush(Colors.Gray);
+
         if (_selectedOutput != null)
         {
             CaptureButton.IsEnabled = true;
@@ -276,6 +307,21 @@ public partial class ProfileEditorWindow : Window
         {
             StopCapturing();
         }
+    }
+
+    private void ClearBindings_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedOutput == null) return;
+
+        // Clear all bindings for the selected output
+        var bindingsToRemove = _selectedOutput.Mapping.Bindings.ToList();
+        foreach (var binding in bindingsToRemove)
+        {
+            _profile.RemoveBinding(_selectedOutput.Output, binding);
+        }
+
+        _selectedOutput.RefreshBindings();
+        RefreshBindingsList();
     }
 
     private void RefreshBindingsList()
@@ -327,6 +373,32 @@ public partial class ProfileEditorWindow : Window
         {
             _selectedBinding.Binding.ButtonThreshold = ThresholdSlider.Value;
         }
+    }
+
+    private void InvertHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        MessageBox.Show(
+            "Invert flips the input value:\n\n" +
+            "- For axes: Left becomes right, up becomes down\n" +
+            "- For triggers/buttons: Pressed becomes released\n\n" +
+            "Select a binding from the list above to enable this option.",
+            "Invert Help",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void ThresholdHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        MessageBox.Show(
+            "Threshold sets the activation point when mapping an analog input to a button.\n\n" +
+            "For example, if you map a trigger (0-100%) to the A button:\n" +
+            "- Threshold 0.5 = Button pressed when trigger is >50%\n" +
+            "- Threshold 0.2 = Button pressed when trigger is >20%\n\n" +
+            "This setting only applies when mapping to button outputs.\n" +
+            "Select a binding from the list above to enable this option.",
+            "Threshold Help",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 
     private void RemoveBinding_Click(object sender, RoutedEventArgs e)

@@ -31,9 +31,9 @@ public class RawInputDevice : IInputDevice
     private readonly DeviceItemInputParser _inputParser;
     private readonly byte[] _inputBuffer;
     private readonly RawInputSource[] _sources;
-    private readonly Thread? _pollThread;
-    private readonly CancellationTokenSource _cts = new();
 
+    private Thread? _pollThread;
+    private CancellationTokenSource? _cts;
     private bool _running;
     private bool _disposed;
 
@@ -77,13 +77,6 @@ public class RawInputDevice : IInputDevice
             .ToArray();
 
         _sources = sources;
-
-        // Create polling thread (not started yet)
-        _pollThread = new Thread(PollLoop)
-        {
-            Name = $"RawInput-{Name}",
-            IsBackground = true
-        };
     }
 
     public void Start()
@@ -91,7 +84,13 @@ public class RawInputDevice : IInputDevice
         if (_running || _disposed) return;
 
         _running = true;
-        _pollThread?.Start();
+        _cts = new CancellationTokenSource();
+        _pollThread = new Thread(PollLoop)
+        {
+            Name = $"RawInput-{Name}",
+            IsBackground = true
+        };
+        _pollThread.Start();
     }
 
     public void Stop()
@@ -99,7 +98,13 @@ public class RawInputDevice : IInputDevice
         if (!_running) return;
 
         _running = false;
-        _cts.Cancel();
+        _cts?.Cancel();
+
+        // Wait for thread to finish (with timeout)
+        _pollThread?.Join(500);
+        _cts?.Dispose();
+        _cts = null;
+        _pollThread = null;
     }
 
     private void PollLoop()
@@ -185,7 +190,6 @@ public class RawInputDevice : IInputDevice
         _disposed = true;
 
         Stop();
-        _cts.Dispose();
 
         try
         {

@@ -8,23 +8,23 @@
 - [x] Plug it back in, refresh - does it reappear?
 
 ## Profile Management
-- [ ] Create a new profile
-- [ ] Duplicate a profile - does the copy have all the same mappings?
+- [x] Create a new profile
+- [x] Duplicate a profile - does the copy have all the same mappings?
 - [ ] Delete a profile
-- [ ] Verify profiles persist after closing and reopening the app
+- [x] Verify profiles persist after closing and reopening the app
 
 ## Interactive Mapping (Profile Editor)
-- [ ] Double-click a profile to edit
-- [ ] Start input monitoring - do you see real-time values?
-- [ ] Select a button output (e.g., A), capture a button press
-- [ ] Select an axis output (e.g., LeftStickX), capture an axis movement
-- [ ] Select a trigger output, capture a trigger/pedal
-- [ ] Add a second binding to the same output (test OR logic)
-- [ ] Remove a binding
+- [x] Double-click a profile to edit
+- [x] Start input monitoring - do you see real-time values?
+- [x] Select a button output (e.g., A), capture a button press
+- [x] Select an axis output (e.g., LeftStickX), capture an axis movement
+- [x] Select a trigger output, capture a trigger/pedal
+- [x] Add a second binding to the same output (test OR logic)
+- [x] Remove a binding
 - [ ] Test invert checkbox - does it work correctly?
 - [ ] Let capture timeout (10 seconds) - does it handle gracefully?
 - [ ] Cancel capture mid-way
-- [ ] Save and verify mappings persist
+- [x] Save and verify mappings persist
 
 ## Emulation Testing
 - [ ] Start a profile with mappings

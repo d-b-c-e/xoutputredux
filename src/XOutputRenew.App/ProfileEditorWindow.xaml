@@ -42,6 +42,11 @@
 
                 <ListView x:Name="OutputListView" Grid.Row="1"
                           SelectionChanged="OutputListView_SelectionChanged">
+                    <ListView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Clear Bindings" Click="ClearBindings_Click"/>
+                        </ContextMenu>
+                    </ListView.ContextMenu>
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="Output" Width="120" DisplayMemberBinding="{Binding OutputName}"/>
@@ -130,21 +135,30 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <CheckBox x:Name="InvertCheckBox" Grid.Row="0" Grid.ColumnSpan="2"
+                        <CheckBox x:Name="InvertCheckBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
                                   Content="Invert" Margin="0,0,0,5"
                                   IsEnabled="False" Checked="InvertCheckBox_Changed" Unchecked="InvertCheckBox_Changed"/>
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="Blue"
+                                   Cursor="Hand" Margin="5,0,0,5" VerticalAlignment="Center"
+                                   MouseLeftButtonUp="InvertHelp_Click"
+                                   ToolTip="Click for help"/>
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Threshold:"
                                    VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <Slider x:Name="ThresholdSlider" Grid.Row="1" Grid.Column="1"
                                 Minimum="0" Maximum="1" Value="0.5"
                                 IsEnabled="False" ValueChanged="ThresholdSlider_Changed"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="Blue"
+                                   Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
+                                   MouseLeftButtonUp="ThresholdHelp_Click"
+                                   ToolTip="Click for help"/>
                     </Grid>
                 </StackPanel>
             </GroupBox>
