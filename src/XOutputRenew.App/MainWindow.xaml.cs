@@ -231,6 +231,21 @@ public partial class MainWindow : Window
         }
     }
 
+    private void VerboseLogging_Changed(object sender, RoutedEventArgs e)
+    {
+        InputLogger.VerboseEnabled = VerboseLoggingCheckBox.IsChecked == true;
+        if (InputLogger.VerboseEnabled)
+        {
+            AppLogger.Info($"Verbose input logging ENABLED - check log file: {AppLogger.GetLogPath()}");
+            StatusText.Text = $"Verbose logging enabled - log: {AppLogger.GetLogPath()}";
+        }
+        else
+        {
+            AppLogger.Info("Verbose input logging disabled");
+            StatusText.Text = "Verbose logging disabled";
+        }
+    }
+
     private void Device_InputChanged_Listen(object? sender, InputChangedEventArgs e)
     {
         if (sender is not IInputDevice device) return;

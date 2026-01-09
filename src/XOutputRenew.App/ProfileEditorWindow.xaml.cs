@@ -49,6 +49,9 @@ public partial class ProfileEditorWindow : Window
         _captureTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _captureTimer.Tick += CaptureTimer_Tick;
 
+        // Wire up input logging to app logger
+        InputLogger.LogAction = msg => AppLogger.Info(msg);
+
         LoadOutputs();
 
         Closed += ProfileEditorWindow_Closed;
@@ -107,6 +110,19 @@ public partial class ProfileEditorWindow : Window
         {
             device.InputChanged -= Device_InputChanged_Monitor;
             device.Stop();
+        }
+    }
+
+    private void VerboseLogging_Changed(object sender, RoutedEventArgs e)
+    {
+        InputLogger.VerboseEnabled = VerboseLoggingCheckBox.IsChecked == true;
+        if (InputLogger.VerboseEnabled)
+        {
+            AppLogger.Info($"Verbose input logging ENABLED - check log file: {AppLogger.GetLogPath()}");
+        }
+        else
+        {
+            AppLogger.Info("Verbose input logging disabled");
         }
     }
 

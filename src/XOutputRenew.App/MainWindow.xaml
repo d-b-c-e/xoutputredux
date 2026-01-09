@@ -63,6 +63,10 @@
                             <CheckBox x:Name="ListenForInputCheckBox" Content="Listen for Input"
                                       VerticalAlignment="Center" Checked="ListenForInput_Changed"
                                       Unchecked="ListenForInput_Changed"/>
+                            <CheckBox x:Name="VerboseLoggingCheckBox" Content="Verbose Log"
+                                      VerticalAlignment="Center" Margin="15,0,0,0"
+                                      Checked="VerboseLogging_Changed" Unchecked="VerboseLogging_Changed"
+                                      ToolTip="Enable detailed logging to diagnose devices that don't register input. Check log file in %AppData%\XOutputRenew\logs"/>
                         </StackPanel>
 
                         <ListView x:Name="DeviceListView" Grid.Row="1"

@@ -74,12 +74,17 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
-                        <Button x:Name="StartMonitorButton" Content="Start Monitoring"
-                                Padding="10,5" Click="StartMonitor_Click"/>
-                        <Button x:Name="StopMonitorButton" Content="Stop"
-                                Padding="10,5" Margin="5,0,0,0" Click="StopMonitor_Click"
-                                IsEnabled="False"/>
+                    <StackPanel Grid.Row="0" Margin="5">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="StartMonitorButton" Content="Start Monitoring"
+                                    Padding="10,5" Click="StartMonitor_Click"/>
+                            <Button x:Name="StopMonitorButton" Content="Stop"
+                                    Padding="10,5" Margin="5,0,0,0" Click="StopMonitor_Click"
+                                    IsEnabled="False"/>
+                        </StackPanel>
+                        <CheckBox x:Name="VerboseLoggingCheckBox" Content="Verbose Logging (check log file)"
+                                  Margin="0,5,0,0" Checked="VerboseLogging_Changed" Unchecked="VerboseLogging_Changed"
+                                  ToolTip="Enable detailed logging to diagnose devices that don't register input"/>
                     </StackPanel>
 
                     <ListBox x:Name="InputMonitorList" Grid.Row="1"

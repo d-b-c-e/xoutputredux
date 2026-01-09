@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Threading;
+using XOutputRenew.Input;
 
 namespace XOutputRenew.App;
 
@@ -14,6 +15,9 @@ public partial class App : Application
 
         // Initialize logging early
         AppLogger.Initialize();
+
+        // Wire up input logging to app logger
+        InputLogger.LogAction = msg => AppLogger.Info(msg);
 
         // Global exception handlers
         DispatcherUnhandledException += App_DispatcherUnhandledException;
