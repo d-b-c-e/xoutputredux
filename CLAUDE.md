@@ -457,6 +457,72 @@ AppLogger.Error("Something failed", exception);
 
 ---
 
+## Recent Session Notes (2026-01-08)
+
+### Fixes Implemented
+
+**Event-Driven Input Handling**
+- Changed RawInputDevice from polling (1ms loop) to event-driven using HidSharp's `Received` event
+- Eliminates 5-second delay that was occurring with VelocityOne Multi-Shift and other devices
+- Input now registers immediately when device sends data
+
+**Async Buffered Logging**
+- Replaced synchronous `File.AppendAllText` (opened/closed file per message) with async buffered approach
+- Uses `ConcurrentQueue<string>` for message buffering
+- Background writer thread batches writes every 100ms
+- Eliminates I/O blocking on input threads
+- `AppLogger.Shutdown()` called on app exit to flush remaining messages
+
+**Profile Editor Improvements**
+- Fixed ThreadStateException when restarting capture (threads created fresh in Start())
+- Added 300ms grace period for capture baseline to prevent axis noise from triggering
+- Added help buttons ("?") for Invert and Threshold settings with tooltips
+- Clear capture hint text when switching outputs
+- Added "Clear Bindings" context menu option
+
+**VelocityOne Multi-Shift Support**
+- Device sends two HID report types: Report ID 1 (standard) and Report ID 36 (vendor-specific)
+- Added try-catch around parse/process to handle vendor-specific reports gracefully
+- Device now works correctly with event-driven approach
+
+### Testing Status
+
+**Devices Tested:**
+- MOZA R12 steering wheel base - Working (DirectInput)
+- VelocityOne Multi-Shift gear shifter - Working (RawInput, after event-driven fix)
+
+**Still Need Testing:**
+- [ ] Profile save/load cycle - verify bindings persist correctly
+- [ ] Multiple devices in one profile
+- [ ] Actual emulation output - verify Xbox controller works in games
+- [ ] Start/stop profile multiple times
+- [ ] Run profile on app startup (`--start-profile`)
+- [ ] Minimized mode (`--minimized`)
+- [ ] HidHide integration (Phase 5)
+
+### Next Steps
+
+1. **Continue Profile Editor Testing**
+   - Create a complete profile with multiple devices
+   - Test all Xbox outputs (buttons, axes, triggers, d-pad)
+   - Verify bindings save and reload correctly
+
+2. **Emulation Testing**
+   - Start a profile and verify virtual Xbox controller appears
+   - Test in a game (e.g., Forza Horizon, any Xbox controller game)
+   - Verify input values map correctly
+
+3. **HidHide Integration (Phase 5)**
+   - Implement auto-hide devices on profile start
+   - Auto-unhide on profile stop
+   - Whitelist XOutputRenew.exe
+
+4. **CLI & IPC (Phase 6)**
+   - Named pipe server for runtime control
+   - `--start`, `--stop`, `--status` commands to control running instance
+
+---
+
 ## Workspace Reference
 
 Additional source repositories in workspace for reference:

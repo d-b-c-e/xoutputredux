@@ -109,6 +109,29 @@ XOutputRenew/
     └── XOutputRenew.Tests/
 ```
 
+## Current Status
+
+**In Development** - Core functionality is working, active testing in progress.
+
+### What's Working
+- Device detection (DirectInput and RawInput/HID devices)
+- Profile creation and editing with interactive "press to map" capture
+- Real-time input monitoring with device highlighting
+- Multi-input OR logic (multiple buttons can trigger same Xbox output)
+- ViGEm integration for Xbox 360 controller emulation
+- System tray with minimize/restore
+- Device renaming and info display
+- Verbose logging for debugging device issues
+
+### Devices Tested
+- MOZA R12 steering wheel base (DirectInput)
+- Turtle Beach VelocityOne Multi-Shift gear shifter (RawInput)
+
+### Still In Progress
+- HidHide integration (auto-hide devices during emulation)
+- Full CLI/IPC for controlling running instance
+- Extended in-game testing
+
 ## Background
 
 XOutputRenew is a modernized reimplementation inspired by the archived [XOutput](https://github.com/csutorasa/XOutput) project. It focuses on:
