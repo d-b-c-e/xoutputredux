@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using XOutputRenew.Core.ForceFeedback;
 
 namespace XOutputRenew.Core.Mapping;
 
@@ -27,6 +28,11 @@ public class MappingProfile
     /// Last modified date.
     /// </summary>
     public DateTime ModifiedAt { get; set; } = DateTime.Now;
+
+    /// <summary>
+    /// Force feedback settings for this profile.
+    /// </summary>
+    public ForceFeedbackSettings? ForceFeedbackSettings { get; set; }
 
     /// <summary>
     /// All output mappings indexed by Xbox output.
@@ -106,7 +112,8 @@ public class MappingProfile
             Name = Name + " (Copy)",
             Description = Description,
             CreatedAt = DateTime.Now,
-            ModifiedAt = DateTime.Now
+            ModifiedAt = DateTime.Now,
+            ForceFeedbackSettings = ForceFeedbackSettings?.Clone()
         };
 
         foreach (var kvp in _mappings)
@@ -156,6 +163,7 @@ public class MappingProfileData
     public DateTime CreatedAt { get; set; }
     public DateTime ModifiedAt { get; set; }
     public List<OutputMappingData> Mappings { get; set; } = new();
+    public ForceFeedbackSettingsData? ForceFeedback { get; set; }
 
     /// <summary>
     /// Creates data from a profile.
@@ -167,7 +175,10 @@ public class MappingProfileData
             Name = profile.Name,
             Description = profile.Description,
             CreatedAt = profile.CreatedAt,
-            ModifiedAt = profile.ModifiedAt
+            ModifiedAt = profile.ModifiedAt,
+            ForceFeedback = profile.ForceFeedbackSettings != null
+                ? ForceFeedbackSettingsData.FromSettings(profile.ForceFeedbackSettings)
+                : null
         };
 
         foreach (var kvp in profile.Mappings)
@@ -191,7 +202,8 @@ public class MappingProfileData
             Name = Name,
             Description = Description,
             CreatedAt = CreatedAt,
-            ModifiedAt = ModifiedAt
+            ModifiedAt = ModifiedAt,
+            ForceFeedbackSettings = ForceFeedback?.ToSettings()
         };
 
         foreach (var mappingData in Mappings)

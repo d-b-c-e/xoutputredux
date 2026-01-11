@@ -14,6 +14,7 @@ public class DirectInputDeviceProvider : IDisposable
     private readonly SharpDX.DirectInput.DirectInput _directInput;
     private readonly Dictionary<string, DirectInputDevice> _devices = new();
     private readonly object _lock = new();
+    private IntPtr _windowHandle;
     private bool _disposed;
 
     public event EventHandler<DeviceEventArgs>? DeviceConnected;
@@ -22,6 +23,31 @@ public class DirectInputDeviceProvider : IDisposable
     public DirectInputDeviceProvider()
     {
         _directInput = new SharpDX.DirectInput.DirectInput();
+    }
+
+    /// <summary>
+    /// Sets the window handle used for exclusive cooperative level (required for FFB).
+    /// This will clear existing devices so they can be recreated with FFB support on next refresh.
+    /// </summary>
+    public void SetWindowHandle(IntPtr handle)
+    {
+        if (_windowHandle == handle) return;
+
+        _windowHandle = handle;
+
+        // If we're setting a valid window handle, we need to recreate devices
+        // so they can be initialized with FFB support (requires exclusive cooperative level)
+        if (handle != IntPtr.Zero)
+        {
+            lock (_lock)
+            {
+                foreach (var device in _devices.Values)
+                {
+                    device.Dispose();
+                }
+                _devices.Clear();
+            }
+        }
     }
 
     /// <summary>
@@ -139,12 +165,17 @@ public class DirectInputDeviceProvider : IDisposable
             // Set buffer size for event handling
             joystick.Properties.BufferSize = 128;
 
+            // Detect force feedback capability
+            bool hasForceFeedback = instance.ForceFeedbackDriverGuid != Guid.Empty;
+
             var device = new DirectInputDevice(
                 joystick,
                 uniqueId,
                 instance.ProductName,
                 hardwareId,
-                interfacePath
+                interfacePath,
+                hasForceFeedback,
+                _windowHandle
             );
 
             _devices[uniqueId] = device;

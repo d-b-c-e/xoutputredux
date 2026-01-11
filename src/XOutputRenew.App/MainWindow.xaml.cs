@@ -28,6 +28,7 @@ public partial class MainWindow : Window
 
     private XboxController? _activeController;
     private MappingEngine? _activeMappingEngine;
+    private ForceFeedbackService? _ffbService;
     private ProfileViewModel? _runningProfile;
     private bool _isExiting;
     private bool _isListeningForInput;
@@ -78,6 +79,13 @@ public partial class MainWindow : Window
 
         // Enable dark title bar
         DarkModeHelper.EnableDarkTitleBar(this);
+
+        // Set window handle for DirectInput force feedback (required for exclusive mode)
+        var windowHandle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        _deviceManager.SetWindowHandle(windowHandle);
+
+        // Initialize force feedback service
+        _ffbService = new ForceFeedbackService(_deviceManager);
 
         RefreshDevices();
         RefreshProfiles();
@@ -517,6 +525,9 @@ public partial class MainWindow : Window
                 device.Start();
             }
 
+            // Attach force feedback service
+            _ffbService?.Attach(_activeController, profile.Profile);
+
             profile.IsRunning = true;
             _runningProfile = profile;
             UpdateStartStopButton();
@@ -540,6 +551,9 @@ public partial class MainWindow : Window
 
     private void StopProfile()
     {
+        // Detach force feedback service first
+        _ffbService?.Detach();
+
         // Stop devices
         foreach (var device in _deviceManager.Devices)
         {
@@ -656,6 +670,7 @@ public partial class MainWindow : Window
         }
         _inputHighlightTimer.Stop();
 
+        _ffbService?.Dispose();
         AppLogger.Shutdown();
         TrayIcon.Dispose();
         _deviceManager.Dispose();

@@ -2,8 +2,7 @@
 
 ## Device Detection
 - [x] Refresh devices - do all your controllers appear?
-- [ ] Verify device names are recognizable
-  Feedback:  I see two devices listed that I don't know what they are.  "Controller (TS-UFB01B-X)" - it's listed twice actually with the same Hardware ID, so I suspect maybe it listing twice is a bug, but otherwise it would be nice to know what it is.  It might be my two Stream Decks.  Can we add a right-click context menu on the device to Copy info about it for debugging purposes, and what about a "Rename" function so we can give it a friendly name once we figure out what it is?  Secondly, can we put a checkbox on this tab that says "Listen for input" and if these devices are registering any input, it highlights that row?  That was a nice feature from Xoutput I liked, so you could press a button on a device and it would highlight, telling you what the device actually was.  
+- [x] Verify device names are recognizable
 - [x] Unplug a device, refresh - does it disappear?
 - [x] Plug it back in, refresh - does it reappear?
 
@@ -52,11 +51,25 @@
 .\XOutputRenew.App.exe --start-profile=YourProfileName --minimized
 ```
 
+## Force Feedback (FFB)
+- [ ] Open Profile Editor - does FFB section appear at bottom of right panel?
+- [ ] FFB Device dropdown shows only FFB-capable devices (DirectInput devices with FFB support)
+- [ ] Enable FFB checkbox enables/disables the other controls
+- [ ] Select a target device from dropdown
+- [ ] Select motor mode (Large/Small/Combined/Swap)
+- [ ] Adjust gain slider (0-200%)
+- [ ] Save profile and reopen - do FFB settings persist?
+- [ ] Start profile with FFB enabled - run a game with rumble
+- [ ] Verify physical device receives force feedback
+- [ ] Test different gain values - does intensity change?
+- [ ] Stop profile - does FFB stop immediately?
+
 ## Edge Cases
 - [ ] Start a profile with no mappings - does it handle gracefully?
 - [ ] Edit a running profile - should be blocked with message
 - [ ] Delete a running profile - should be blocked with message
 - [ ] Start app with ViGEm not installed - does it show clear error?
+- [ ] Start profile with FFB device disconnected - does it handle gracefully?
 
 ## Notes
 Keep notes on anything that feels wrong, confusing, or broken below:

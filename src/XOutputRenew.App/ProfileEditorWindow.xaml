@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Edit Profile"
-        Height="600" Width="900"
-        MinHeight="500" MinWidth="700"
+        Height="800" Width="900"
+        MinHeight="700" MinWidth="700"
         WindowStartupLocation="CenterOwner"
         Background="#1E1E1E"
         Icon="pack://application:,,,/console-controller.png">
@@ -117,6 +117,115 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
         </Style>
+
+        <!-- ComboBox Style with Dark Popup -->
+        <SolidColorBrush x:Key="SelectionBrush" Color="#3E3E42"/>
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Background="{StaticResource ControlBackgroundBrush}"
+                                          BorderBrush="{StaticResource BorderBrush}"
+                                          BorderThickness="1"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition Width="20"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.Column="1" Background="{StaticResource ControlBackgroundBrush}">
+                                                    <Path x:Name="Arrow" Fill="{StaticResource ForegroundBrush}"
+                                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                          Data="M 0 0 L 4 4 L 8 0 Z"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite"
+                                              IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              Margin="6,3,23,3"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Left">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                            <Popup x:Name="Popup" Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Grid x:Name="DropDown"
+                                      SnapsToDevicePixels="True"
+                                      MinWidth="{TemplateBinding ActualWidth}"
+                                      MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder"
+                                            Background="{StaticResource ControlBackgroundBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1"/>
+                                    <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ComboBoxItem Style -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Bd"
+                                Background="{StaticResource ControlBackgroundBrush}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectionBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="10" Background="{StaticResource BackgroundBrush}">
@@ -182,6 +291,7 @@
         <Grid Grid.Row="1" Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
@@ -280,6 +390,66 @@
                                    Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
                                    MouseLeftButtonUp="ThresholdHelp_Click"
                                    ToolTip="Click for help"/>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Force Feedback Settings -->
+            <GroupBox Grid.Row="3" Header="Force Feedback" Margin="0,10,0,0">
+                <StackPanel Margin="5">
+                    <CheckBox x:Name="FfbEnabledCheckBox" Content="Enable Force Feedback"
+                              Checked="FfbEnabled_Changed" Unchecked="FfbEnabled_Changed"
+                              ToolTip="Route rumble from games to a physical device"/>
+
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Target Device:"
+                                   VerticalAlignment="Center" Margin="0,0,10,5"/>
+                        <ComboBox x:Name="FfbDeviceComboBox" Grid.Row="0" Grid.Column="1"
+                                  Margin="0,0,0,5" IsEnabled="False"
+                                  SelectionChanged="FfbDevice_Changed"
+                                  Background="{StaticResource ControlBackgroundBrush}"
+                                  Foreground="{StaticResource ForegroundBrush}"
+                                  BorderBrush="{StaticResource BorderBrush}"/>
+
+                        <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,10,5">
+                            <TextBlock Text="Motor Mode:" VerticalAlignment="Center"/>
+                            <TextBlock Text="?" FontWeight="Bold" Foreground="#0078D4"
+                                       Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
+                                       MouseLeftButtonUp="MotorModeHelp_Click"
+                                       ToolTip="Click for help"/>
+                        </StackPanel>
+                        <ComboBox x:Name="FfbModeComboBox" Grid.Row="1" Grid.Column="1"
+                                  Margin="0,0,0,5" IsEnabled="False"
+                                  SelectionChanged="FfbMode_Changed"
+                                  Background="{StaticResource ControlBackgroundBrush}"
+                                  Foreground="{StaticResource ForegroundBrush}"
+                                  BorderBrush="{StaticResource BorderBrush}">
+                            <ComboBoxItem Content="Large Motor" Tag="Large"/>
+                            <ComboBoxItem Content="Small Motor" Tag="Small"/>
+                            <ComboBoxItem Content="Combined (Max)" Tag="Combined"/>
+                            <ComboBoxItem Content="Swap (Small as Primary)" Tag="Swap"/>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Gain:"
+                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                            <Slider x:Name="FfbGainSlider" Width="150"
+                                    Minimum="0" Maximum="2" Value="1"
+                                    IsEnabled="False" ValueChanged="FfbGain_Changed"
+                                    ToolTip="Intensity multiplier (0-200%)"/>
+                            <TextBlock x:Name="FfbGainText" Text="100%" VerticalAlignment="Center"
+                                       Margin="10,0,0,0" Width="40"/>
+                        </StackPanel>
                     </Grid>
                 </StackPanel>
             </GroupBox>

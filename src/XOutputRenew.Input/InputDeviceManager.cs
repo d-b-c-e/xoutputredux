@@ -79,6 +79,14 @@ public class InputDeviceManager : IDisposable
     }
 
     /// <summary>
+    /// Sets the window handle used for DirectInput exclusive cooperative level (required for FFB).
+    /// </summary>
+    public void SetWindowHandle(IntPtr handle)
+    {
+        _directInputProvider.SetWindowHandle(handle);
+    }
+
+    /// <summary>
     /// Manually triggers a device refresh.
     /// </summary>
     public void RefreshDevices()

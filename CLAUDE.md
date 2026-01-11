@@ -473,6 +473,49 @@ AppLogger.Error("Something failed", exception);
 
 ## Recent Session Notes
 
+### Session 2026-01-11
+
+**Force Feedback (FFB) Implementation**
+- Added complete FFB support to route rumble from games to physical devices (steering wheels)
+- Data flow: Game → ViGEm Xbox Controller → ForceFeedbackReceived → ForceFeedbackService → DirectInputDevice → Physical device
+
+**New Files Created:**
+- `Core/ForceFeedback/ForceFeedbackSettings.cs` - Profile FFB config (Enabled, TargetDeviceId, Mode, Gain)
+- `Input/ForceFeedback/IForceFeedbackDevice.cs` - Interface for FFB-capable devices
+- `Input/ForceFeedback/ForceFeedbackTarget.cs` - FFB actuator representation
+- `Input/DirectInput/DirectDeviceForceFeedback.cs` - SharpDX ConstantForce effect wrapper
+- `App/ForceFeedbackService.cs` - Routes FFB from ViGEm to physical devices
+
+**Modified Files:**
+- `Core/Mapping/MappingProfile.cs` - Added ForceFeedbackSettings property and serialization
+- `Input/DirectInput/DirectInputDevice.cs` - Implements IForceFeedbackDevice, FFB thread (10Hz)
+- `Input/DirectInput/DirectInputDeviceProvider.cs` - FFB capability detection, window handle for exclusive mode
+- `Input/InputDeviceManager.cs` - Added SetWindowHandle() method
+- `App/MainWindow.xaml.cs` - Wire up ForceFeedbackService on profile start/stop
+- `App/ProfileEditorWindow.xaml/.cs` - FFB settings UI (device, mode, gain controls)
+
+**FFB Motor Modes:**
+- Large: Use only large motor rumble
+- Small: Use only small motor rumble
+- Combined: Use max of both motors (default)
+- Swap: Use small motor as primary
+
+**Technical Details:**
+- Exclusive cooperative level required for FFB output (needs window handle)
+- FFB runs on dedicated thread per device at 10Hz (100ms interval)
+- Separate from input polling thread (1ms)
+- ConstantForce effect preferred; falls back to any available effect
+- Gain multiplier: 0-200% intensity scaling
+
+**Profile Editor UI:**
+- New "Force Feedback" GroupBox in right panel
+- Enable checkbox toggles other controls
+- Target Device dropdown shows only FFB-capable DirectInput devices
+- Motor Mode dropdown with 4 options
+- Gain slider (0-200%) with percentage display
+
+---
+
 ### Session 2026-01-10 (Part 2)
 
 **Test Tab - Visual Xbox Controller**

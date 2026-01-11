@@ -1,10 +1,13 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
+using XOutputRenew.Core.ForceFeedback;
 using XOutputRenew.Core.Mapping;
 using XOutputRenew.Input;
+using XOutputRenew.Input.ForceFeedback;
 
 namespace XOutputRenew.App;
 
@@ -31,6 +34,10 @@ public partial class ProfileEditorWindow : Window
     private DateTime _captureStartTime;
     private readonly Dictionary<string, double> _captureBaseline = new(); // device:sourceIndex -> baseline value
     private const int CaptureGracePeriodMs = 300; // Grace period to establish baseline before detecting
+
+    // Force feedback
+    private readonly List<FfbDeviceItem> _ffbDevices = new();
+    private bool _isLoadingFfbSettings;
 
     public bool WasSaved { get; private set; }
 
@@ -60,6 +67,7 @@ public partial class ProfileEditorWindow : Window
         InputLogger.LogAction = msg => AppLogger.Info(msg);
 
         LoadOutputs();
+        LoadForceFeedbackSettings();
 
         Closed += ProfileEditorWindow_Closed;
         Loaded += (s, e) => DarkModeHelper.EnableDarkTitleBar(this);
@@ -528,6 +536,169 @@ public partial class ProfileEditorWindow : Window
 
     #endregion
 
+    #region Force Feedback Settings
+
+    private void LoadForceFeedbackSettings()
+    {
+        _isLoadingFfbSettings = true;
+
+        // Populate FFB device combo with devices that support FFB
+        _ffbDevices.Clear();
+        FfbDeviceComboBox.Items.Clear();
+
+        // Add "None" option
+        var noneItem = new FfbDeviceItem { DeviceId = null, DisplayName = "(None)" };
+        _ffbDevices.Add(noneItem);
+        FfbDeviceComboBox.Items.Add(new ComboBoxItem { Content = noneItem.DisplayName, Tag = noneItem });
+
+        foreach (var device in _deviceManager.Devices)
+        {
+            if (device is IForceFeedbackDevice ffbDevice && ffbDevice.SupportsForceFeedback)
+            {
+                var item = new FfbDeviceItem { DeviceId = device.UniqueId, DisplayName = device.Name };
+                _ffbDevices.Add(item);
+                FfbDeviceComboBox.Items.Add(new ComboBoxItem { Content = item.DisplayName, Tag = item });
+            }
+        }
+
+        // Load current settings
+        var settings = _profile.ForceFeedbackSettings;
+        if (settings != null)
+        {
+            FfbEnabledCheckBox.IsChecked = settings.Enabled;
+            UpdateFfbControlsEnabled(settings.Enabled);
+
+            // Select the target device
+            for (int i = 0; i < _ffbDevices.Count; i++)
+            {
+                if (_ffbDevices[i].DeviceId == settings.TargetDeviceId)
+                {
+                    FfbDeviceComboBox.SelectedIndex = i;
+                    break;
+                }
+            }
+
+            // Select the mode
+            string modeTag = settings.Mode.ToString();
+            for (int i = 0; i < FfbModeComboBox.Items.Count; i++)
+            {
+                if (FfbModeComboBox.Items[i] is ComboBoxItem item &&
+                    item.Tag?.ToString() == modeTag)
+                {
+                    FfbModeComboBox.SelectedIndex = i;
+                    break;
+                }
+            }
+
+            FfbGainSlider.Value = settings.Gain;
+            FfbGainText.Text = $"{(int)(settings.Gain * 100)}%";
+        }
+        else
+        {
+            // Defaults
+            FfbEnabledCheckBox.IsChecked = false;
+            UpdateFfbControlsEnabled(false);
+            FfbDeviceComboBox.SelectedIndex = 0;
+            FfbModeComboBox.SelectedIndex = 2; // Combined
+            FfbGainSlider.Value = 1.0;
+            FfbGainText.Text = "100%";
+        }
+
+        _isLoadingFfbSettings = false;
+    }
+
+    private void UpdateFfbControlsEnabled(bool enabled)
+    {
+        FfbDeviceComboBox.IsEnabled = enabled;
+        FfbModeComboBox.IsEnabled = enabled;
+        FfbGainSlider.IsEnabled = enabled;
+    }
+
+    private void FfbEnabled_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_isLoadingFfbSettings) return;
+
+        bool enabled = FfbEnabledCheckBox.IsChecked == true;
+        UpdateFfbControlsEnabled(enabled);
+        UpdateFfbSettings();
+    }
+
+    private void FfbDevice_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isLoadingFfbSettings) return;
+        UpdateFfbSettings();
+    }
+
+    private void FfbMode_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isLoadingFfbSettings) return;
+        UpdateFfbSettings();
+    }
+
+    private void FfbGain_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        // FfbGainText may be null during XAML initialization
+        if (_isLoadingFfbSettings || FfbGainText == null) return;
+
+        FfbGainText.Text = $"{(int)(FfbGainSlider.Value * 100)}%";
+        UpdateFfbSettings();
+    }
+
+    private void MotorModeHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        MessageBox.Show(
+            "Xbox controllers have two rumble motors that games use differently:\n\n" +
+            "LARGE MOTOR (Low Frequency)\n" +
+            "• Heavy, deep rumble for impacts and collisions\n" +
+            "• Used for: crashes, explosions, engine rumble\n" +
+            "• Best for: steering wheels, bass shakers\n\n" +
+            "SMALL MOTOR (High Frequency)\n" +
+            "• Light, buzzy vibration for feedback\n" +
+            "• Used for: road texture, gunfire, alerts\n" +
+            "• Best for: subtle tactile feedback\n\n" +
+            "MODE OPTIONS:\n\n" +
+            "• Large Motor - Only use the large motor signal\n" +
+            "  Best for wheels where you want strong, clear effects\n\n" +
+            "• Small Motor - Only use the small motor signal\n" +
+            "  Best for feeling subtle details like road texture\n\n" +
+            "• Combined (Recommended) - Use whichever motor is stronger\n" +
+            "  Best overall experience, captures all game feedback\n\n" +
+            "• Swap - Use small motor signal as primary\n" +
+            "  For games that incorrectly use the small motor for main effects",
+            "Motor Mode Help",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void UpdateFfbSettings()
+    {
+        if (_profile.ForceFeedbackSettings == null)
+        {
+            _profile.ForceFeedbackSettings = new ForceFeedbackSettings();
+        }
+
+        var settings = _profile.ForceFeedbackSettings;
+        settings.Enabled = FfbEnabledCheckBox.IsChecked == true;
+
+        // Get selected device
+        if (FfbDeviceComboBox.SelectedItem is ComboBoxItem deviceItem &&
+            deviceItem.Tag is FfbDeviceItem ffbDevice)
+        {
+            settings.TargetDeviceId = ffbDevice.DeviceId;
+        }
+
+        // Get selected mode
+        if (FfbModeComboBox.SelectedItem is ComboBoxItem modeItem &&
+            modeItem.Tag is string modeTag)
+        {
+            settings.Mode = Enum.Parse<ForceFeedbackMode>(modeTag);
+        }
+
+        settings.Gain = FfbGainSlider.Value;
+    }
+
+    #endregion
+
     #region Save/Cancel
 
     private void Save_Click(object sender, RoutedEventArgs e)
@@ -549,6 +720,16 @@ public partial class ProfileEditorWindow : Window
                     ButtonThreshold = binding.ButtonThreshold
                 });
             }
+        }
+
+        // Copy force feedback settings
+        if (_profile.ForceFeedbackSettings != null)
+        {
+            _originalProfile.ForceFeedbackSettings = _profile.ForceFeedbackSettings.Clone();
+        }
+        else
+        {
+            _originalProfile.ForceFeedbackSettings = null;
         }
 
         WasSaved = true;
@@ -649,5 +830,14 @@ public class BindingViewModel
         Binding = binding;
         Output = output;
     }
+}
+
+/// <summary>
+/// Helper class for FFB device combo items.
+/// </summary>
+public class FfbDeviceItem
+{
+    public string? DeviceId { get; set; }
+    public string DisplayName { get; set; } = "";
 }
 
