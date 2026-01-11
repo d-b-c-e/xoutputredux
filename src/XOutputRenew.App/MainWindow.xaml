@@ -28,6 +28,7 @@
         <SolidColorBrush x:Key="ForegroundDimBrush" Color="#9E9E9E"/>
         <SolidColorBrush x:Key="AccentBrush" Color="#0078D4"/>
         <SolidColorBrush x:Key="AccentGreenBrush" Color="#4CAF50"/>
+        <SolidColorBrush x:Key="SelectionBrush" Color="#3E3E42"/>
 
         <!-- TabControl Style -->
         <Style TargetType="TabControl">
@@ -136,11 +137,102 @@
             <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
         </Style>
 
-        <!-- ComboBox Style -->
+        <!-- ComboBox ToggleButton Template -->
+        <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="20"/>
+                </Grid.ColumnDefinitions>
+                <Border x:Name="Border" Grid.ColumnSpan="2"
+                        Background="{StaticResource ControlBackgroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"/>
+                <Border Grid.Column="0" Margin="1"
+                        Background="{StaticResource ControlBackgroundBrush}"/>
+                <Path x:Name="Arrow" Grid.Column="1"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Data="M 0 0 L 4 4 L 8 0 Z"
+                      Fill="{StaticResource ForegroundBrush}"/>
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Border" Property="Background" Value="{StaticResource ControlHoverBrush}"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <!-- ComboBox Style with dark popup -->
         <Style TargetType="ComboBox">
-            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Template="{StaticResource ComboBoxToggleButton}"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press"/>
+                            <ContentPresenter x:Name="ContentSite"
+                                              IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              Margin="6,3,23,3"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Left"/>
+                            <Popup x:Name="Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Grid x:Name="DropDown"
+                                      SnapsToDevicePixels="True"
+                                      MinWidth="{TemplateBinding ActualWidth}"
+                                      MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder"
+                                            Background="{StaticResource ControlBackgroundBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1"/>
+                                    <ScrollViewer Margin="2" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ComboBoxItem Style (dropdown items) - custom template for dark mode -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Bd"
+                                Background="{StaticResource ControlBackgroundBrush}"
+                                Padding="4,2">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectionBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectionBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- TextBlock default style -->
@@ -184,6 +276,7 @@
         <!-- System Tray Icon -->
         <tb:TaskbarIcon x:Name="TrayIcon"
                         ToolTipText="XOutputRenew"
+                        IconSource="app.ico"
                         Visibility="Visible">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>

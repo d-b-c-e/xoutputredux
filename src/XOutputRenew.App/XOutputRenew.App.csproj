@@ -8,6 +8,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>XOutputRenew.App</RootNamespace>
     <StartupObject>XOutputRenew.App.Program</StartupObject>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +18,7 @@
 
   <ItemGroup>
     <Resource Include="console-controller.png" />
+    <Resource Include="app.ico" />
   </ItemGroup>
 
   <ItemGroup>
