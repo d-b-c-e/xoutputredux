@@ -116,6 +116,17 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Right-click context menu: Copy Device Info, Rename Device
 - [x] Device friendly names (persisted to device-settings.json)
 
+### Phase 4.6: Profile & Options Enhancements ✓ COMPLETE
+- [x] Profile context menu (Edit, Rename, Duplicate, Delete)
+- [x] Removed Edit/Duplicate/Delete buttons from toolbar (cleaner UI)
+- [x] Profile rename with overwrite confirmation
+- [x] Options tab with settings:
+  - Minimize to tray on close (toggle)
+  - Start with Windows (registry-based)
+  - Startup profile selection (auto-start a profile on launch)
+  - Run as Administrator status and restart button
+- [x] AppSettings persisted to `%AppData%\XOutputRenew\app-settings.json`
+
 ### Phase 5: HidHide Integration
 - [ ] HidHide client library
 - [ ] Auto-hide devices on profile start
@@ -403,10 +414,11 @@ public bool HideDevice(string deviceInstancePath)
 
 ### Application (`XOutputRenew.App`)
 - `Program.cs` - CLI entry point with System.CommandLine
-- `MainWindow.xaml/.cs` - Main GUI with device/profile tabs
+- `MainWindow.xaml/.cs` - Main GUI with Devices/Profiles/Status/Options tabs
 - `ProfileEditorWindow.xaml/.cs` - Interactive mapping editor
 - `DeviceSettings.cs` - Persists device friendly names
-- `AppLogger.cs` - File-based logging for debugging
+- `AppSettings.cs` - Persists app options (minimize to tray, start with Windows, startup profile)
+- `AppLogger.cs` - File-based async logging for debugging
 - `ViewModels/` - DeviceViewModel, ProfileViewModel
 
 ---
@@ -443,6 +455,7 @@ AppLogger.Error("Something failed", exception);
 |------|----------|
 | Profiles | `%AppData%\XOutputRenew\Profiles\*.json` |
 | Device Settings | `%AppData%\XOutputRenew\device-settings.json` |
+| App Settings | `%AppData%\XOutputRenew\app-settings.json` |
 | Logs | `%AppData%\XOutputRenew\logs\` |
 
 ---
@@ -457,9 +470,33 @@ AppLogger.Error("Something failed", exception);
 
 ---
 
-## Recent Session Notes (2026-01-08)
+## Recent Session Notes
 
-### Fixes Implemented
+### Session 2026-01-10
+
+**Profile Context Menu**
+- Moved Edit, Duplicate, Delete from toolbar buttons to right-click context menu on profile list
+- Added Rename option with overwrite confirmation for existing profiles
+- Cleaner UI with only "New Profile" and "Start/Stop" buttons in toolbar
+
+**Options Tab Added**
+- New tab in main window with three sections:
+  - **Behavior**: "Minimize to tray when closing" checkbox - when unchecked, X button exits app
+  - **Startup**: "Start with Windows" checkbox (uses registry HKCU\Software\Microsoft\Windows\CurrentVersion\Run), Startup Profile dropdown
+  - **Administrator**: Shows current admin status, "Restart as Administrator" button
+
+**Bug Fix: Profile Rename**
+- Fixed issue where RenameProfile only moved file but didn't update name inside JSON
+- Now properly saves profile with new name, then deletes old file
+- Added overwrite confirmation when renaming to existing profile name
+- Added detailed error output parameter for debugging
+
+**New Files**
+- `AppSettings.cs` - Settings model with registry helpers for Start with Windows
+
+---
+
+### Session 2026-01-08
 
 **Event-Driven Input Handling**
 - Changed RawInputDevice from polling (1ms loop) to event-driven using HidSharp's `Received` event
@@ -491,33 +528,33 @@ AppLogger.Error("Something failed", exception);
 - MOZA R12 steering wheel base - Working (DirectInput)
 - VelocityOne Multi-Shift gear shifter - Working (RawInput, after event-driven fix)
 
+**Features Tested (2026-01-10):**
+- [x] Profile rename with overwrite confirmation - Working
+- [x] Options tab settings - Working
+- [x] Close behavior (minimize to tray vs exit) - Working
+
 **Still Need Testing:**
 - [ ] Profile save/load cycle - verify bindings persist correctly
 - [ ] Multiple devices in one profile
 - [ ] Actual emulation output - verify Xbox controller works in games
 - [ ] Start/stop profile multiple times
-- [ ] Run profile on app startup (`--start-profile`)
-- [ ] Minimized mode (`--minimized`)
+- [ ] Startup profile setting (Options tab)
+- [ ] Start with Windows setting
 - [ ] HidHide integration (Phase 5)
 
 ### Next Steps
 
-1. **Continue Profile Editor Testing**
-   - Create a complete profile with multiple devices
-   - Test all Xbox outputs (buttons, axes, triggers, d-pad)
-   - Verify bindings save and reload correctly
-
-2. **Emulation Testing**
+1. **Emulation Testing (Priority)**
    - Start a profile and verify virtual Xbox controller appears
    - Test in a game (e.g., Forza Horizon, any Xbox controller game)
    - Verify input values map correctly
 
-3. **HidHide Integration (Phase 5)**
+2. **HidHide Integration (Phase 5)**
    - Implement auto-hide devices on profile start
    - Auto-unhide on profile stop
    - Whitelist XOutputRenew.exe
 
-4. **CLI & IPC (Phase 6)**
+3. **CLI & IPC (Phase 6)**
    - Named pipe server for runtime control
    - `--start`, `--stop`, `--status` commands to control running instance
 

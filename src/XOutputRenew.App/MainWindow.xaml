@@ -113,13 +113,6 @@
 
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                             <Button Content="New Profile" Padding="15,5" Click="NewProfile_Click"/>
-                            <Button Content="Edit" Padding="15,5" Margin="10,0,0,0"
-                                    Click="EditProfile_Click" x:Name="EditButton" IsEnabled="False"
-                                    Background="#2196F3" Foreground="White"/>
-                            <Button Content="Duplicate" Padding="15,5" Margin="10,0,0,0"
-                                    Click="DuplicateProfile_Click" x:Name="DuplicateButton" IsEnabled="False"/>
-                            <Button Content="Delete" Padding="15,5" Margin="10,0,0,0"
-                                    Click="DeleteProfile_Click" x:Name="DeleteButton" IsEnabled="False"/>
                             <Separator Margin="20,0"/>
                             <Button x:Name="StartStopButton" Content="Start" Padding="20,5"
                                     Click="StartStopProfile_Click" IsEnabled="False"
@@ -129,6 +122,15 @@
                         <ListView x:Name="ProfileListView" Grid.Row="1"
                                   SelectionChanged="ProfileListView_SelectionChanged"
                                   MouseDoubleClick="ProfileListView_DoubleClick">
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Edit" Click="EditProfile_Click"/>
+                                    <MenuItem Header="Rename..." Click="RenameProfile_Click"/>
+                                    <MenuItem Header="Duplicate..." Click="DuplicateProfile_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="Delete" Click="DeleteProfile_Click"/>
+                                </ContextMenu>
+                            </ListView.ContextMenu>
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Name" Width="200"
@@ -180,6 +182,61 @@
                         <GroupBox Grid.Row="2" Header="Active Emulation">
                             <StackPanel Margin="10">
                                 <TextBlock x:Name="ActiveProfileText" Text="No profile running"/>
+                            </StackPanel>
+                        </GroupBox>
+                    </Grid>
+                </TabItem>
+
+                <!-- Options Tab -->
+                <TabItem Header="Options">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Behavior -->
+                        <GroupBox Grid.Row="0" Header="Behavior" Margin="0,0,0,10">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="MinimizeToTrayCheckBox" Content="Minimize to tray when closing"
+                                          Checked="MinimizeToTray_Changed" Unchecked="MinimizeToTray_Changed"/>
+                                <TextBlock Text="When unchecked, closing the window will exit the application."
+                                           Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Startup -->
+                        <GroupBox Grid.Row="1" Header="Startup" Margin="0,0,0,10">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="StartWithWindowsCheckBox" Content="Start with Windows"
+                                          Checked="StartWithWindows_Changed" Unchecked="StartWithWindows_Changed"/>
+                                <TextBlock Text="Application will start minimized to tray when Windows starts."
+                                           Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+                                    <TextBlock Text="Startup Profile:" VerticalAlignment="Center"/>
+                                    <ComboBox x:Name="StartupProfileComboBox" Width="200" Margin="10,0,0,0"
+                                              SelectionChanged="StartupProfile_Changed"/>
+                                </StackPanel>
+                                <TextBlock Text="Profile to start automatically when the application launches."
+                                           Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Administrator -->
+                        <GroupBox Grid.Row="2" Header="Administrator" Margin="0,0,0,10">
+                            <StackPanel Margin="10">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Running as Administrator: " VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="AdminStatusText" Text="No" FontWeight="Bold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Some devices may require administrator privileges to access."
+                                           Foreground="Gray" Margin="0,5,0,0" FontSize="11"/>
+                                <Button x:Name="RestartAsAdminButton" Content="Restart as Administrator"
+                                        Padding="15,5" Margin="0,10,0,0" HorizontalAlignment="Left"
+                                        Click="RestartAsAdmin_Click"/>
                             </StackPanel>
                         </GroupBox>
                     </Grid>

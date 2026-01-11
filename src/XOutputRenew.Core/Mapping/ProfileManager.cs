@@ -138,24 +138,49 @@ public class ProfileManager
     /// <summary>
     /// Renames a profile.
     /// </summary>
-    public bool RenameProfile(string oldName, string newName)
+    /// <param name="oldName">Current profile key (filename without extension).</param>
+    /// <param name="newName">New name for the profile.</param>
+    /// <param name="error">Error message if rename fails.</param>
+    /// <param name="overwrite">If true, overwrite existing profile with same name.</param>
+    /// <returns>True if rename succeeded.</returns>
+    public bool RenameProfile(string oldName, string newName, out string? error, bool overwrite = false)
     {
-        if (!_profiles.TryGetValue(oldName, out var profile))
-            return false;
+        error = null;
 
-        if (_profiles.ContainsKey(newName))
+        if (!_profiles.TryGetValue(oldName, out var profile))
+        {
+            error = $"Profile key '{oldName}' not found. Available keys: {string.Join(", ", _profiles.Keys)}";
             return false;
+        }
+
+        if (_profiles.ContainsKey(newName) && !overwrite)
+        {
+            error = "PROFILE_EXISTS";
+            return false;
+        }
 
         string oldPath = Path.Combine(_profilesDirectory, $"{oldName}.json");
         string newPath = Path.Combine(_profilesDirectory, $"{newName}.json");
 
-        if (File.Exists(oldPath))
+        // Update the profile name
+        profile.Name = newName;
+
+        // Save with new name and updated content
+        var data = MappingProfileData.FromProfile(profile);
+        string json = JsonSerializer.Serialize(data, JsonOptions);
+        File.WriteAllText(newPath, json);
+
+        // Delete old file (if different from new)
+        if (oldPath != newPath && File.Exists(oldPath))
         {
-            File.Move(oldPath, newPath);
+            File.Delete(oldPath);
         }
 
-        _profiles.Remove(oldName);
-        profile.Name = newName;
+        // Update dictionary
+        if (oldName != newName)
+        {
+            _profiles.Remove(oldName);
+        }
         _profiles[newName] = profile;
 
         ProfilesChanged?.Invoke(this, EventArgs.Empty);

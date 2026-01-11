@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private readonly ViGEmService _vigemService;
     private readonly HidHideService _hidHideService;
     private readonly DeviceSettings _deviceSettings;
+    private readonly AppSettings _appSettings;
 
     private readonly ObservableCollection<DeviceViewModel> _devices = new();
     private readonly ObservableCollection<ProfileViewModel> _profiles = new();
@@ -44,6 +45,7 @@ public partial class MainWindow : Window
         _hidHideService = new HidHideService();
         _deviceSettings = new DeviceSettings();
         _deviceSettings.Load();
+        _appSettings = AppSettings.Load();
 
         // Timer to clear input highlights after inactivity
         _inputHighlightTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
@@ -65,9 +67,16 @@ public partial class MainWindow : Window
         RefreshDevices();
         RefreshProfiles();
         CheckDriverStatus();
+        InitializeOptions();
 
-        // Check for startup profile
-        if (Application.Current.Properties["StartProfile"] is string startProfile && !string.IsNullOrEmpty(startProfile))
+        // Check for startup profile (command line takes precedence, then saved setting)
+        string? startProfile = Application.Current.Properties["StartProfile"] as string;
+        if (string.IsNullOrEmpty(startProfile))
+        {
+            startProfile = _appSettings.StartupProfile;
+        }
+
+        if (!string.IsNullOrEmpty(startProfile))
         {
             var profile = _profiles.FirstOrDefault(p => p.Name == startProfile || p.FileName == startProfile);
             if (profile != null)
@@ -158,6 +167,12 @@ public partial class MainWindow : Window
         if (selectedFileName != null)
         {
             ProfileListView.SelectedItem = _profiles.FirstOrDefault(p => p.FileName == selectedFileName);
+        }
+
+        // Update startup profile dropdown if it exists
+        if (StartupProfileComboBox != null)
+        {
+            RefreshStartupProfileComboBox();
         }
     }
 
@@ -290,9 +305,6 @@ public partial class MainWindow : Window
     private void ProfileListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         bool hasSelection = ProfileListView.SelectedItem != null;
-        EditButton.IsEnabled = hasSelection;
-        DuplicateButton.IsEnabled = hasSelection;
-        DeleteButton.IsEnabled = hasSelection;
         StartStopButton.IsEnabled = hasSelection;
 
         UpdateStartStopButton();
@@ -394,6 +406,56 @@ public partial class MainWindow : Window
             _profileManager.DeleteProfile(selected.FileName);
             RefreshProfiles();
             StatusText.Text = $"Deleted profile: {selected.Name}";
+        }
+    }
+
+    private void RenameProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (ProfileListView.SelectedItem is not ProfileViewModel selected) return;
+
+        if (selected.IsRunning)
+        {
+            MessageBox.Show("Cannot rename a running profile. Stop it first.", "Rename Profile",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var dialog = new InputDialog("Rename Profile", "Enter new name:", selected.Name);
+        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.InputText))
+        {
+            var newName = dialog.InputText.Trim();
+            if (newName == selected.Name) return;
+
+            bool success = _profileManager.RenameProfile(selected.FileName, newName, out string? error);
+
+            // If profile exists, ask to overwrite
+            if (!success && error == "PROFILE_EXISTS")
+            {
+                var result = MessageBox.Show(
+                    $"A profile named '{newName}' already exists. Overwrite it?",
+                    "Profile Exists",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    success = _profileManager.RenameProfile(selected.FileName, newName, out error, overwrite: true);
+                }
+            }
+
+            if (success)
+            {
+                AppLogger.Info($"Renamed profile '{selected.FileName}' to '{newName}'");
+                RefreshProfiles();
+                ProfileListView.SelectedItem = _profiles.FirstOrDefault(p => p.Name == newName);
+                StatusText.Text = $"Renamed profile to: {newName}";
+            }
+            else if (error != "PROFILE_EXISTS")
+            {
+                AppLogger.Error($"Failed to rename profile '{selected.FileName}' to '{newName}': {error}");
+                MessageBox.Show($"Failed to rename profile.\n\nError: {error}",
+                    "Rename Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 
@@ -545,7 +607,7 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object sender, CancelEventArgs e)
     {
-        if (!_isExiting)
+        if (!_isExiting && _appSettings.MinimizeToTrayOnClose)
         {
             // Minimize to tray instead of closing
             e.Cancel = true;
@@ -554,6 +616,7 @@ public partial class MainWindow : Window
         }
 
         // Actually closing - cleanup
+        _isExiting = true;
         StopProfile();
 
         // Stop input listening if active
@@ -563,9 +626,87 @@ public partial class MainWindow : Window
         }
         _inputHighlightTimer.Stop();
 
+        AppLogger.Shutdown();
         TrayIcon.Dispose();
         _deviceManager.Dispose();
         _vigemService.Dispose();
+    }
+
+    #endregion
+
+    #region Options
+
+    private void InitializeOptions()
+    {
+        // Load settings into UI
+        MinimizeToTrayCheckBox.IsChecked = _appSettings.MinimizeToTrayOnClose;
+        StartWithWindowsCheckBox.IsChecked = AppSettings.GetStartWithWindows();
+
+        // Populate startup profile dropdown
+        RefreshStartupProfileComboBox();
+
+        // Admin status
+        bool isAdmin = AppSettings.IsRunningAsAdmin();
+        AdminStatusText.Text = isAdmin ? "Yes" : "No";
+        AdminStatusText.Foreground = isAdmin
+            ? new SolidColorBrush(Colors.Green)
+            : new SolidColorBrush(Colors.Gray);
+        RestartAsAdminButton.IsEnabled = !isAdmin;
+    }
+
+    private void RefreshStartupProfileComboBox()
+    {
+        var items = new List<string> { "(None)" };
+        items.AddRange(_profiles.Select(p => p.Name));
+        StartupProfileComboBox.ItemsSource = items;
+
+        if (string.IsNullOrEmpty(_appSettings.StartupProfile))
+        {
+            StartupProfileComboBox.SelectedIndex = 0;
+        }
+        else
+        {
+            var index = items.IndexOf(_appSettings.StartupProfile);
+            StartupProfileComboBox.SelectedIndex = index >= 0 ? index : 0;
+        }
+    }
+
+    private void MinimizeToTray_Changed(object sender, RoutedEventArgs e)
+    {
+        _appSettings.MinimizeToTrayOnClose = MinimizeToTrayCheckBox.IsChecked == true;
+        _appSettings.Save();
+    }
+
+    private void StartWithWindows_Changed(object sender, RoutedEventArgs e)
+    {
+        AppSettings.SetStartWithWindows(StartWithWindowsCheckBox.IsChecked == true);
+    }
+
+    private void StartupProfile_Changed(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (StartupProfileComboBox.SelectedIndex <= 0)
+        {
+            _appSettings.StartupProfile = null;
+        }
+        else
+        {
+            _appSettings.StartupProfile = StartupProfileComboBox.SelectedItem as string;
+        }
+        _appSettings.Save();
+    }
+
+    private void RestartAsAdmin_Click(object sender, RoutedEventArgs e)
+    {
+        var result = MessageBox.Show(
+            "The application will restart with administrator privileges. Continue?",
+            "Restart as Administrator",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            AppSettings.RestartAsAdmin();
+        }
     }
 
     #endregion
