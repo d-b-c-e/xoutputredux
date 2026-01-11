@@ -7,17 +7,179 @@
         xmlns:tb="http://www.hardcodet.net/taskbar"
         mc:Ignorable="d"
         Title="XOutputRenew"
-        Height="500" Width="750"
-        MinHeight="400" MinWidth="600"
+        Height="700" Width="800"
+        MinHeight="600" MinWidth="700"
         WindowStartupLocation="CenterScreen"
+        Background="#1E1E1E"
         Closing="Window_Closing"
         StateChanged="Window_StateChanged">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- Dark Theme Colors -->
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="#252526"/>
+        <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#2D2D30"/>
+        <SolidColorBrush x:Key="ControlHoverBrush" Color="#3E3E42"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#3F3F46"/>
+        <SolidColorBrush x:Key="ForegroundBrush" Color="#E0E0E0"/>
+        <SolidColorBrush x:Key="ForegroundDimBrush" Color="#9E9E9E"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#0078D4"/>
+        <SolidColorBrush x:Key="AccentGreenBrush" Color="#4CAF50"/>
+
+        <!-- TabControl Style -->
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+
+        <!-- TabItem Style -->
+        <Style TargetType="TabItem">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Border" Background="{StaticResource ControlBackgroundBrush}"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,1,1,0"
+                                Padding="{TemplateBinding Padding}" Margin="0,0,2,0">
+                            <ContentPresenter ContentSource="Header"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource ControlHoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Button Style -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource ControlHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ListView Style -->
+        <Style TargetType="ListView">
+            <Setter Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+
+        <!-- ListViewItem Style -->
+        <Style TargetType="ListViewItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="Padding" Value="5,3"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource ControlHoverBrush}"/>
+                </Trigger>
+                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter Property="Background" Value="#FF8C00"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- GridViewColumnHeader Style -->
+        <Style TargetType="GridViewColumnHeader">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="8,4"/>
+        </Style>
+
+        <!-- GroupBox Style -->
+        <Style TargetType="GroupBox">
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        </Style>
+
+        <!-- CheckBox Style -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        </Style>
+
+        <!-- ComboBox Style -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+
+        <!-- TextBlock default style -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        </Style>
+
+        <!-- StatusBar Style -->
+        <Style TargetType="StatusBar">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        </Style>
+
+        <!-- ProgressBar Style -->
+        <Style TargetType="ProgressBar">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentGreenBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+
+        <!-- ScrollViewer Style -->
+        <Style TargetType="ScrollViewer">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <!-- ContextMenu Style -->
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+
+        <!-- MenuItem Style -->
+        <Style TargetType="MenuItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid Background="{StaticResource BackgroundBrush}">
         <!-- System Tray Icon -->
         <tb:TaskbarIcon x:Name="TrayIcon"
                         ToolTipText="XOutputRenew"
@@ -239,6 +401,232 @@
                                         Click="RestartAsAdmin_Click"/>
                             </StackPanel>
                         </GroupBox>
+                    </Grid>
+                </TabItem>
+
+                <!-- Test Tab -->
+                <TabItem Header="Test">
+                    <Grid Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Visual Controller -->
+                        <Border Grid.Column="0" Background="#F8F8F8" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="5">
+                            <Grid>
+                                <!-- "No profile running" overlay -->
+                                <Border x:Name="TestOverlay" Background="#F0F0F0" CornerRadius="5" Visibility="Visible">
+                                    <TextBlock Text="Start a profile to see controller output"
+                                               HorizontalAlignment="Center" VerticalAlignment="Top"
+                                               Margin="0,20,0,0" FontSize="16" Foreground="#888888"/>
+                                </Border>
+
+                                <!-- Controller Canvas -->
+                                <Canvas x:Name="ControllerCanvas" Width="420" Height="320" Margin="10"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                                    <!-- Left Trigger -->
+                                    <Border Canvas.Left="50" Canvas.Top="5" Width="45" Height="50"
+                                            BorderBrush="#999999" BorderThickness="1" CornerRadius="3" Background="#E8E8E8">
+                                        <Grid>
+                                            <Rectangle x:Name="LeftTriggerFill" Fill="#2196F3"
+                                                       VerticalAlignment="Bottom" Height="0"/>
+                                            <TextBlock Text="LT" HorizontalAlignment="Center" VerticalAlignment="Top"
+                                                       Margin="0,2,0,0" FontSize="10" Foreground="#666666"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Right Trigger -->
+                                    <Border Canvas.Left="325" Canvas.Top="5" Width="45" Height="50"
+                                            BorderBrush="#999999" BorderThickness="1" CornerRadius="3" Background="#E8E8E8">
+                                        <Grid>
+                                            <Rectangle x:Name="RightTriggerFill" Fill="#2196F3"
+                                                       VerticalAlignment="Bottom" Height="0"/>
+                                            <TextBlock Text="RT" HorizontalAlignment="Center" VerticalAlignment="Top"
+                                                       Margin="0,2,0,0" FontSize="10" Foreground="#666666"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Left Bumper -->
+                                    <Border Canvas.Left="45" Canvas.Top="60" Width="55" Height="22"
+                                            BorderBrush="#999999" BorderThickness="1" CornerRadius="10" Background="#CCCCCC">
+                                        <Ellipse x:Name="ButtonLB" Fill="#CCCCCC"/>
+                                    </Border>
+                                    <TextBlock Canvas.Left="66" Canvas.Top="63" Text="LB" FontSize="10" Foreground="#333333"/>
+
+                                    <!-- Right Bumper -->
+                                    <Border Canvas.Left="320" Canvas.Top="60" Width="55" Height="22"
+                                            BorderBrush="#999999" BorderThickness="1" CornerRadius="10" Background="#CCCCCC">
+                                        <Ellipse x:Name="ButtonRB" Fill="#CCCCCC"/>
+                                    </Border>
+                                    <TextBlock Canvas.Left="341" Canvas.Top="63" Text="RB" FontSize="10" Foreground="#333333"/>
+
+                                    <!-- Back Button -->
+                                    <Ellipse x:Name="ButtonBack" Canvas.Left="135" Canvas.Top="95" Width="35" Height="22"
+                                             Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <TextBlock Canvas.Left="142" Canvas.Top="101" Text="Back" FontSize="9" Foreground="#333333"/>
+
+                                    <!-- Guide Button -->
+                                    <Ellipse x:Name="ButtonGuide" Canvas.Left="190" Canvas.Top="90" Width="35" Height="35"
+                                             Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <TextBlock Canvas.Left="203" Canvas.Top="101" Text="G" FontSize="12" FontWeight="Bold" Foreground="#333333"/>
+
+                                    <!-- Start Button -->
+                                    <Ellipse x:Name="ButtonStart" Canvas.Left="245" Canvas.Top="95" Width="35" Height="22"
+                                             Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <TextBlock Canvas.Left="252" Canvas.Top="100" Text="Start" FontSize="9" Foreground="#333333"/>
+
+                                    <!-- Left Stick Background -->
+                                    <Ellipse Canvas.Left="55" Canvas.Top="130" Width="70" Height="70"
+                                             Fill="#E0E0E0" Stroke="#999999" StrokeThickness="1"/>
+                                    <!-- Left Stick Click -->
+                                    <Ellipse x:Name="ButtonLS" Canvas.Left="72" Canvas.Top="147" Width="36" Height="36"
+                                             Fill="#CCCCCC" Stroke="#888888" StrokeThickness="1"/>
+                                    <!-- Left Stick Dot (moves) -->
+                                    <Ellipse x:Name="LeftStickDot" Canvas.Left="82" Canvas.Top="157" Width="16" Height="16"
+                                             Fill="#333333"/>
+                                    <TextBlock Canvas.Left="82" Canvas.Top="205" Text="LS" FontSize="10" Foreground="#666666"/>
+
+                                    <!-- D-Pad (lower center-left, aligned with right stick center) -->
+                                    <Rectangle x:Name="DPadUp" Canvas.Left="149" Canvas.Top="226" Width="22" Height="22"
+                                               Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <Rectangle x:Name="DPadDown" Canvas.Left="149" Canvas.Top="270" Width="22" Height="22"
+                                               Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <Rectangle x:Name="DPadLeft" Canvas.Left="127" Canvas.Top="248" Width="22" Height="22"
+                                               Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <Rectangle x:Name="DPadRight" Canvas.Left="171" Canvas.Top="248" Width="22" Height="22"
+                                               Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <Rectangle Canvas.Left="149" Canvas.Top="248" Width="22" Height="22"
+                                               Fill="#AAAAAA" Stroke="#999999" StrokeThickness="1"/>
+
+                                    <!-- Face Buttons - diamond layout -->
+                                    <Ellipse x:Name="ButtonY" Canvas.Left="320" Canvas.Top="115" Width="32" Height="32"
+                                             Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <TextBlock Canvas.Left="330" Canvas.Top="122" Text="Y" FontSize="12" FontWeight="Bold" Foreground="#333333"/>
+
+                                    <Ellipse x:Name="ButtonX" Canvas.Left="285" Canvas.Top="145" Width="32" Height="32"
+                                             Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <TextBlock Canvas.Left="296" Canvas.Top="152" Text="X" FontSize="12" FontWeight="Bold" Foreground="#333333"/>
+
+                                    <Ellipse x:Name="ButtonB" Canvas.Left="355" Canvas.Top="145" Width="32" Height="32"
+                                             Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <TextBlock Canvas.Left="366" Canvas.Top="152" Text="B" FontSize="12" FontWeight="Bold" Foreground="#333333"/>
+
+                                    <Ellipse x:Name="ButtonA" Canvas.Left="320" Canvas.Top="175" Width="32" Height="32"
+                                             Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                                    <TextBlock Canvas.Left="330" Canvas.Top="182" Text="A" FontSize="12" FontWeight="Bold" Foreground="#333333"/>
+
+                                    <!-- Right Stick Background -->
+                                    <Ellipse Canvas.Left="225" Canvas.Top="220" Width="70" Height="70"
+                                             Fill="#E0E0E0" Stroke="#999999" StrokeThickness="1"/>
+                                    <!-- Right Stick Click -->
+                                    <Ellipse x:Name="ButtonRS" Canvas.Left="242" Canvas.Top="237" Width="36" Height="36"
+                                             Fill="#CCCCCC" Stroke="#888888" StrokeThickness="1"/>
+                                    <!-- Right Stick Dot (moves) -->
+                                    <Ellipse x:Name="RightStickDot" Canvas.Left="252" Canvas.Top="247" Width="16" Height="16"
+                                             Fill="#333333"/>
+                                    <TextBlock Canvas.Left="252" Canvas.Top="295" Text="RS" FontSize="10" Foreground="#666666"/>
+                                </Canvas>
+                            </Grid>
+                        </Border>
+
+                        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center"
+                                      VerticalAlignment="Stretch" Background="Transparent"/>
+
+                        <!-- Data Panel -->
+                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="10">
+                                <!-- Profile Status -->
+                                <TextBlock x:Name="TestProfileStatus" Text="No Profile Running"
+                                           FontWeight="Bold" FontSize="12" Foreground="#888888"
+                                           Margin="0,0,0,10"/>
+
+                                <!-- Buttons -->
+                                <GroupBox Header="Buttons" Margin="0,0,0,10">
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0" x:Name="TextA" Text="A: -" Margin="2"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TextB" Text="B: -" Margin="2"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" x:Name="TextX" Text="X: -" Margin="2"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TextY" Text="Y: -" Margin="2"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="TextLB" Text="LB: -" Margin="2"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TextRB" Text="RB: -" Margin="2"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0" x:Name="TextBack" Text="Back: -" Margin="2"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TextStart" Text="Start: -" Margin="2"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="0" x:Name="TextGuide" Text="Guide: -" Margin="2"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="1" x:Name="TextLS" Text="LS: -" Margin="2"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="0" x:Name="TextRS" Text="RS: -" Margin="2"/>
+                                        <TextBlock Grid.Row="6" Grid.Column="0" x:Name="TextDPadUp" Text="DPad Up: -" Margin="2"/>
+                                        <TextBlock Grid.Row="6" Grid.Column="1" x:Name="TextDPadDown" Text="DPad Down: -" Margin="2"/>
+                                        <TextBlock Grid.Row="7" Grid.Column="0" x:Name="TextDPadLeft" Text="DPad Left: -" Margin="2"/>
+                                        <TextBlock Grid.Row="7" Grid.Column="1" x:Name="TextDPadRight" Text="DPad Right: -" Margin="2"/>
+                                    </Grid>
+                                </GroupBox>
+
+                                <!-- Triggers -->
+                                <GroupBox Header="Triggers" Margin="0,0,0,10">
+                                    <StackPanel Margin="5">
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <TextBlock Text="LT: " Width="30"/>
+                                            <ProgressBar x:Name="BarLT" Width="100" Height="15" Minimum="0" Maximum="100" Value="0"/>
+                                            <TextBlock x:Name="TextLT" Text="0.00" Margin="5,0,0,0" Width="40"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <TextBlock Text="RT: " Width="30"/>
+                                            <ProgressBar x:Name="BarRT" Width="100" Height="15" Minimum="0" Maximum="100" Value="0"/>
+                                            <TextBlock x:Name="TextRT" Text="0.00" Margin="5,0,0,0" Width="40"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <!-- Axes -->
+                                <GroupBox Header="Left Stick" Margin="0,0,0,10">
+                                    <StackPanel Margin="5">
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <TextBlock Text="X: " Width="20"/>
+                                            <ProgressBar x:Name="BarLSX" Width="100" Height="15" Minimum="0" Maximum="100" Value="50"/>
+                                            <TextBlock x:Name="TextLSX" Text="0.50" Margin="5,0,0,0" Width="40"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <TextBlock Text="Y: " Width="20"/>
+                                            <ProgressBar x:Name="BarLSY" Width="100" Height="15" Minimum="0" Maximum="100" Value="50"/>
+                                            <TextBlock x:Name="TextLSY" Text="0.50" Margin="5,0,0,0" Width="40"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Header="Right Stick" Margin="0,0,0,10">
+                                    <StackPanel Margin="5">
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <TextBlock Text="X: " Width="20"/>
+                                            <ProgressBar x:Name="BarRSX" Width="100" Height="15" Minimum="0" Maximum="100" Value="50"/>
+                                            <TextBlock x:Name="TextRSX" Text="0.50" Margin="5,0,0,0" Width="40"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <TextBlock Text="Y: " Width="20"/>
+                                            <ProgressBar x:Name="BarRSY" Width="100" Height="15" Minimum="0" Maximum="100" Value="50"/>
+                                            <TextBlock x:Name="TextRSY" Text="0.50" Margin="5,0,0,0" Width="40"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </GroupBox>
+                            </StackPanel>
+                        </ScrollViewer>
                     </Grid>
                 </TabItem>
             </TabControl>

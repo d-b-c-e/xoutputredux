@@ -34,6 +34,18 @@ public partial class MainWindow : Window
     private readonly Dictionary<string, DateTime> _deviceLastInput = new();
     private readonly DispatcherTimer _inputHighlightTimer;
 
+    // Test tab brushes
+    private static readonly SolidColorBrush ReleasedBrush = new(Color.FromRgb(0xCC, 0xCC, 0xCC));
+    private static readonly SolidColorBrush PressedBrush = new(Color.FromRgb(0x4C, 0xAF, 0x50));
+
+    // Stick dot base positions (Canvas.Left/Top from XAML)
+    private const double LeftStickDotBaseX = 82;
+    private const double LeftStickDotBaseY = 157;
+    private const double RightStickDotBaseX = 252;
+    private const double RightStickDotBaseY = 247;
+    private const double StickRange = 20; // pixels from center
+    private const double TriggerMaxHeight = 50; // trigger container height
+
     public MainWindow()
     {
         InitializeComponent();
@@ -63,6 +75,9 @@ public partial class MainWindow : Window
     {
         AppLogger.Initialize();
         AppLogger.Info("MainWindow loaded");
+
+        // Enable dark title bar
+        DarkModeHelper.EnableDarkTitleBar(this);
 
         RefreshDevices();
         RefreshProfiles();
@@ -508,6 +523,12 @@ public partial class MainWindow : Window
             ActiveProfileText.Text = $"Running: {profile.Name}";
             StatusText.Text = $"Started profile: {profile.Name}";
             TrayIcon.ToolTipText = $"XOutputRenew - {profile.Name}";
+
+            // Show test tab controller
+            TestOverlay.Visibility = Visibility.Collapsed;
+            TestProfileStatus.Text = $"Profile: {profile.Name}";
+            TestProfileStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)); // Green
+            ResetTestTab();
         }
         catch (Exception ex)
         {
@@ -541,6 +562,12 @@ public partial class MainWindow : Window
         UpdateStartStopButton();
         ActiveProfileText.Text = "No profile running";
         TrayIcon.ToolTipText = "XOutputRenew";
+
+        // Hide test tab controller
+        TestOverlay.Visibility = Visibility.Visible;
+        TestProfileStatus.Text = "No Profile Running";
+        TestProfileStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)); // Gray
+        ResetTestTab();
     }
 
     private void Device_InputChanged(object? sender, InputChangedEventArgs e)
@@ -577,6 +604,9 @@ public partial class MainWindow : Window
                 LeftTrigger = state.LeftTrigger,
                 RightTrigger = state.RightTrigger
             });
+
+            // Update test tab
+            Dispatcher.BeginInvoke(() => UpdateTestTab(state));
         }
     }
 
@@ -707,6 +737,83 @@ public partial class MainWindow : Window
         {
             AppSettings.RestartAsAdmin();
         }
+    }
+
+    #endregion
+
+    #region Test Tab
+
+    private void UpdateTestTab(XboxControllerState state)
+    {
+        // Update button visuals
+        ButtonA.Fill = state.A ? PressedBrush : ReleasedBrush;
+        ButtonB.Fill = state.B ? PressedBrush : ReleasedBrush;
+        ButtonX.Fill = state.X ? PressedBrush : ReleasedBrush;
+        ButtonY.Fill = state.Y ? PressedBrush : ReleasedBrush;
+        ButtonLB.Fill = state.LeftBumper ? PressedBrush : ReleasedBrush;
+        ButtonRB.Fill = state.RightBumper ? PressedBrush : ReleasedBrush;
+        ButtonBack.Fill = state.Back ? PressedBrush : ReleasedBrush;
+        ButtonStart.Fill = state.Start ? PressedBrush : ReleasedBrush;
+        ButtonGuide.Fill = state.Guide ? PressedBrush : ReleasedBrush;
+        ButtonLS.Fill = state.LeftStick ? PressedBrush : ReleasedBrush;
+        ButtonRS.Fill = state.RightStick ? PressedBrush : ReleasedBrush;
+        DPadUp.Fill = state.DPadUp ? PressedBrush : ReleasedBrush;
+        DPadDown.Fill = state.DPadDown ? PressedBrush : ReleasedBrush;
+        DPadLeft.Fill = state.DPadLeft ? PressedBrush : ReleasedBrush;
+        DPadRight.Fill = state.DPadRight ? PressedBrush : ReleasedBrush;
+
+        // Update trigger fills (height based on value)
+        LeftTriggerFill.Height = state.LeftTrigger * TriggerMaxHeight;
+        RightTriggerFill.Height = state.RightTrigger * TriggerMaxHeight;
+
+        // Update stick dot positions
+        System.Windows.Controls.Canvas.SetLeft(LeftStickDot,
+            LeftStickDotBaseX + (state.LeftStickX - 0.5) * 2 * StickRange);
+        System.Windows.Controls.Canvas.SetTop(LeftStickDot,
+            LeftStickDotBaseY + (state.LeftStickY - 0.5) * 2 * StickRange);
+        System.Windows.Controls.Canvas.SetLeft(RightStickDot,
+            RightStickDotBaseX + (state.RightStickX - 0.5) * 2 * StickRange);
+        System.Windows.Controls.Canvas.SetTop(RightStickDot,
+            RightStickDotBaseY + (state.RightStickY - 0.5) * 2 * StickRange);
+
+        // Update data panel - buttons
+        TextA.Text = $"A: {(state.A ? "Pressed" : "-")}";
+        TextB.Text = $"B: {(state.B ? "Pressed" : "-")}";
+        TextX.Text = $"X: {(state.X ? "Pressed" : "-")}";
+        TextY.Text = $"Y: {(state.Y ? "Pressed" : "-")}";
+        TextLB.Text = $"LB: {(state.LeftBumper ? "Pressed" : "-")}";
+        TextRB.Text = $"RB: {(state.RightBumper ? "Pressed" : "-")}";
+        TextBack.Text = $"Back: {(state.Back ? "Pressed" : "-")}";
+        TextStart.Text = $"Start: {(state.Start ? "Pressed" : "-")}";
+        TextGuide.Text = $"Guide: {(state.Guide ? "Pressed" : "-")}";
+        TextLS.Text = $"LS: {(state.LeftStick ? "Pressed" : "-")}";
+        TextRS.Text = $"RS: {(state.RightStick ? "Pressed" : "-")}";
+        TextDPadUp.Text = $"Up: {(state.DPadUp ? "Pressed" : "-")}";
+        TextDPadDown.Text = $"Down: {(state.DPadDown ? "Pressed" : "-")}";
+        TextDPadLeft.Text = $"Left: {(state.DPadLeft ? "Pressed" : "-")}";
+        TextDPadRight.Text = $"Right: {(state.DPadRight ? "Pressed" : "-")}";
+
+        // Update data panel - triggers
+        TextLT.Text = $"{state.LeftTrigger:F2}";
+        TextRT.Text = $"{state.RightTrigger:F2}";
+        BarLT.Value = state.LeftTrigger * 100;
+        BarRT.Value = state.RightTrigger * 100;
+
+        // Update data panel - axes
+        TextLSX.Text = $"{state.LeftStickX:F2}";
+        TextLSY.Text = $"{state.LeftStickY:F2}";
+        TextRSX.Text = $"{state.RightStickX:F2}";
+        TextRSY.Text = $"{state.RightStickY:F2}";
+        BarLSX.Value = state.LeftStickX * 100;
+        BarLSY.Value = state.LeftStickY * 100;
+        BarRSX.Value = state.RightStickX * 100;
+        BarRSY.Value = state.RightStickY * 100;
+    }
+
+    private void ResetTestTab()
+    {
+        var defaultState = new XboxControllerState();
+        UpdateTestTab(defaultState);
     }
 
     #endregion

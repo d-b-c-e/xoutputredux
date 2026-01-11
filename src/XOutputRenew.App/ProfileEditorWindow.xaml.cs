@@ -55,6 +55,7 @@ public partial class ProfileEditorWindow : Window
         LoadOutputs();
 
         Closed += ProfileEditorWindow_Closed;
+        Loaded += (s, e) => DarkModeHelper.EnableDarkTitleBar(this);
     }
 
     private void LoadOutputs()
