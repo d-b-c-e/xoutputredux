@@ -419,3 +419,4 @@ FodyWeavers.xsd
 
 # Claude Code local settings
 .claude/
+.screenshot/
