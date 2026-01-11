@@ -11,6 +11,7 @@
         MinHeight="600" MinWidth="700"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E1E"
+        Icon="pack://application:,,,/console-controller.png"
         Closing="Window_Closing"
         StateChanged="Window_StateChanged">
 

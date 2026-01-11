@@ -30,9 +30,11 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 
 Simply run `XOutputRenew.App.exe` to open the graphical interface.
 
-1. **Devices tab** - View all detected input devices
+1. **Devices tab** - View all detected input devices with "Listen for Input" highlighting
 2. **Profiles tab** - Create and manage mapping profiles
 3. **Status tab** - Check driver status and active emulation
+4. **Options tab** - Configure startup behavior and settings
+5. **Test tab** - Visual Xbox controller showing real-time output state
 
 ### Creating a Profile
 
@@ -116,12 +118,15 @@ XOutputRenew/
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
 - Profile creation and editing with interactive "press to map" capture
-- Real-time input monitoring with device highlighting
+- Real-time input monitoring with output highlighting in profile editor
 - Multi-input OR logic (multiple buttons can trigger same Xbox output)
 - ViGEm integration for Xbox 360 controller emulation
 - System tray with minimize/restore
 - Device renaming and info display
 - Verbose logging for debugging device issues
+- Dark mode UI theme
+- Visual Xbox controller test display
+- Options for startup profile and "Start with Windows"
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)

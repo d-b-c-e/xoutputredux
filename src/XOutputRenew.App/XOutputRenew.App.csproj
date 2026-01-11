@@ -16,6 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="console-controller.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\XOutputRenew.Core\XOutputRenew.Core.csproj" />
     <ProjectReference Include="..\XOutputRenew.Input\XOutputRenew.Input.csproj" />
     <ProjectReference Include="..\XOutputRenew.Emulation\XOutputRenew.Emulation.csproj" />

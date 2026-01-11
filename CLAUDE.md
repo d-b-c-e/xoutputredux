@@ -414,11 +414,12 @@ public bool HideDevice(string deviceInstancePath)
 
 ### Application (`XOutputRenew.App`)
 - `Program.cs` - CLI entry point with System.CommandLine
-- `MainWindow.xaml/.cs` - Main GUI with Devices/Profiles/Status/Options tabs
-- `ProfileEditorWindow.xaml/.cs` - Interactive mapping editor
+- `MainWindow.xaml/.cs` - Main GUI with Devices/Profiles/Status/Options/Test tabs
+- `ProfileEditorWindow.xaml/.cs` - Interactive mapping editor with output highlighting
 - `DeviceSettings.cs` - Persists device friendly names
 - `AppSettings.cs` - Persists app options (minimize to tray, start with Windows, startup profile)
 - `AppLogger.cs` - File-based async logging for debugging
+- `DarkModeHelper.cs` - Windows DWM API for dark title bars
 - `ViewModels/` - DeviceViewModel, ProfileViewModel
 
 ---
@@ -472,7 +473,48 @@ AppLogger.Error("Something failed", exception);
 
 ## Recent Session Notes
 
-### Session 2026-01-10
+### Session 2026-01-10 (Part 2)
+
+**Test Tab - Visual Xbox Controller**
+- Added new "Test" tab showing real-time Xbox controller output state
+- Visual controller layout with buttons, triggers, D-pad, and analog sticks
+- Buttons light up green when pressed
+- Triggers show fill bars (0-100%)
+- Analog sticks show moving dot indicators
+- Data panel on right shows exact numeric values
+- Auto-updates when a profile is running
+- Shows "Start a profile to see controller output" overlay when no profile active
+
+**Dark Mode Implementation**
+- Dark theme is now the default for the "gaming crowd"
+- Dark title bar using Windows DWM API (`DwmSetWindowAttribute`)
+- Colors: Background #1E1E1E, Controls #2D2D30, Foreground #E0E0E0
+- Applied to both MainWindow and ProfileEditorWindow
+- Created `DarkModeHelper.cs` for dark title bar API calls
+
+**Profile Editor - Listen for Input (Output Highlighting)**
+- "Listen for Input" checkbox now highlights **Xbox Controller Outputs** rows on the left
+- When input is detected for a mapped output, that row lights up orange
+- Buttons highlight when pressed above threshold
+- Triggers highlight when pressed > 10%
+- Axes highlight when moved > 15% from center
+- Highlights fade after 300ms of inactivity
+- Much more useful than the previous device-highlighting approach
+
+**Application Icon**
+- Added `console-controller.png` gamepad icon
+- Shows in window title bars and taskbar
+- PNG works directly with WPF (no .ico conversion needed for windows)
+- Note: .exe icon in Explorer still needs .ico format if desired later
+
+**New Files**
+- `DarkModeHelper.cs` - Windows DWM API for dark title bars
+- `console-controller.png` - Gamepad icon for windows
+- `console-controller.svg` - Source vector for icon
+
+---
+
+### Session 2026-01-10 (Part 1)
 
 **Profile Context Menu**
 - Moved Edit, Duplicate, Delete from toolbar buttons to right-click context menu on profile list
@@ -532,6 +574,10 @@ AppLogger.Error("Something failed", exception);
 - [x] Profile rename with overwrite confirmation - Working
 - [x] Options tab settings - Working
 - [x] Close behavior (minimize to tray vs exit) - Working
+- [x] Test tab visual controller - Working
+- [x] Dark mode theme - Working
+- [x] Profile editor output highlighting - Working
+- [x] Application icon in title bar - Working
 
 **Still Need Testing:**
 - [ ] Profile save/load cycle - verify bindings persist correctly

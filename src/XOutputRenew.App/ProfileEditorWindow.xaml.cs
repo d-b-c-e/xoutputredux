@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -21,9 +22,12 @@ public partial class ProfileEditorWindow : Window
 
     private bool _isMonitoring;
     private bool _isCapturing;
+    private bool _isListeningForInput;
     private OutputViewModel? _selectedOutput;
     private BindingViewModel? _selectedBinding;
     private readonly DispatcherTimer _captureTimer;
+    private readonly DispatcherTimer _outputHighlightTimer;
+    private readonly Dictionary<XboxOutput, DateTime> _outputLastActive = new();
     private DateTime _captureStartTime;
     private readonly Dictionary<string, double> _captureBaseline = new(); // device:sourceIndex -> baseline value
     private const int CaptureGracePeriodMs = 300; // Grace period to establish baseline before detecting
@@ -48,6 +52,9 @@ public partial class ProfileEditorWindow : Window
 
         _captureTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _captureTimer.Tick += CaptureTimer_Tick;
+
+        _outputHighlightTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        _outputHighlightTimer.Tick += OutputHighlightTimer_Tick;
 
         // Wire up input logging to app logger
         InputLogger.LogAction = msg => AppLogger.Info(msg);
@@ -78,13 +85,11 @@ public partial class ProfileEditorWindow : Window
 
     #region Input Monitoring
 
-    private void StartMonitor_Click(object sender, RoutedEventArgs e)
+    private void StartMonitoring()
     {
         if (_isMonitoring) return;
 
         _isMonitoring = true;
-        StartMonitorButton.IsEnabled = false;
-        StopMonitorButton.IsEnabled = true;
         _inputMonitorItems.Clear();
 
         foreach (var device in _deviceManager.Devices)
@@ -94,18 +99,11 @@ public partial class ProfileEditorWindow : Window
         }
     }
 
-    private void StopMonitor_Click(object sender, RoutedEventArgs e)
-    {
-        StopMonitoring();
-    }
-
     private void StopMonitoring()
     {
         if (!_isMonitoring) return;
 
         _isMonitoring = false;
-        StartMonitorButton.IsEnabled = true;
-        StopMonitorButton.IsEnabled = false;
 
         foreach (var device in _deviceManager.Devices)
         {
@@ -124,6 +122,105 @@ public partial class ProfileEditorWindow : Window
         else
         {
             AppLogger.Info("Verbose input logging disabled");
+        }
+    }
+
+    private void ListenForInput_Changed(object sender, RoutedEventArgs e)
+    {
+        _isListeningForInput = ListenForInputCheckBox.IsChecked == true;
+
+        if (_isListeningForInput)
+        {
+            // Start listening on all devices
+            foreach (var device in _deviceManager.Devices)
+            {
+                device.InputChanged += Device_InputChanged_Listen;
+                device.InputChanged += Device_InputChanged_Monitor;
+                device.Start();
+            }
+            _outputHighlightTimer.Start();
+            _isMonitoring = true;
+            _inputMonitorItems.Clear();
+        }
+        else
+        {
+            // Stop listening
+            foreach (var device in _deviceManager.Devices)
+            {
+                device.InputChanged -= Device_InputChanged_Listen;
+                device.InputChanged -= Device_InputChanged_Monitor;
+                device.Stop();
+            }
+            _outputHighlightTimer.Stop();
+            _outputLastActive.Clear();
+            _isMonitoring = false;
+
+            // Clear highlights
+            foreach (var vm in _outputs)
+            {
+                vm.IsActive = false;
+            }
+        }
+    }
+
+    private void Device_InputChanged_Listen(object? sender, InputChangedEventArgs e)
+    {
+        if (sender is not IInputDevice device) return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            // Check which outputs this input triggers based on current mappings
+            foreach (var outputVm in _outputs)
+            {
+                // Check if this device/source is mapped to this output
+                var mapping = outputVm.Mapping;
+                var binding = mapping.Bindings.FirstOrDefault(b =>
+                    b.DeviceId == device.UniqueId && b.SourceIndex == e.Source.Index);
+
+                if (binding != null)
+                {
+                    // Determine if the input is "active" based on output type
+                    bool isActive = false;
+                    double value = binding.Invert ? 1.0 - e.NewValue : e.NewValue;
+
+                    if (outputVm.Output.IsButton())
+                    {
+                        isActive = value >= binding.ButtonThreshold;
+                    }
+                    else if (outputVm.Output.IsTrigger())
+                    {
+                        isActive = value > 0.1; // Trigger is active if pressed at all
+                    }
+                    else if (outputVm.Output.IsAxis())
+                    {
+                        // Axis is active if it deviates from center (0.5)
+                        isActive = Math.Abs(value - 0.5) > 0.15;
+                    }
+
+                    if (isActive)
+                    {
+                        outputVm.IsActive = true;
+                        _outputLastActive[outputVm.Output] = DateTime.Now;
+                    }
+                }
+            }
+        });
+    }
+
+    private void OutputHighlightTimer_Tick(object? sender, EventArgs e)
+    {
+        var now = DateTime.Now;
+        var timeout = TimeSpan.FromMilliseconds(300);
+
+        foreach (var vm in _outputs)
+        {
+            if (_outputLastActive.TryGetValue(vm.Output, out var lastActive))
+            {
+                if (now - lastActive > timeout)
+                {
+                    vm.IsActive = false;
+                }
+            }
         }
     }
 
@@ -232,7 +329,7 @@ public partial class ProfileEditorWindow : Window
         // Start monitoring if not already
         if (!_isMonitoring)
         {
-            StartMonitor_Click(null!, null!);
+            StartMonitoring();
         }
     }
 
@@ -497,6 +594,20 @@ public class OutputViewModel : System.ComponentModel.INotifyPropertyChanged
         }
     }
 
+    private bool _isActive;
+    public bool IsActive
+    {
+        get => _isActive;
+        set
+        {
+            if (_isActive != value)
+            {
+                _isActive = value;
+                PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(IsActive)));
+            }
+        }
+    }
+
     public OutputViewModel(XboxOutput output, OutputMapping mapping)
     {
         Output = output;
@@ -539,3 +650,4 @@ public class BindingViewModel
         Output = output;
     }
 }
+
