@@ -52,6 +52,10 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // Initialize logging early so device enumeration is logged
+        AppLogger.Initialize();
+        InputLogger.LogAction = msg => AppLogger.Info(msg);
+
         // Initialize services
         _deviceManager = new InputDeviceManager();
         _profileManager = new ProfileManager(ProfileManager.GetDefaultProfilesDirectory());
@@ -75,7 +79,6 @@ public partial class MainWindow : Window
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        AppLogger.Initialize();
         AppLogger.Info("MainWindow loaded");
 
         // Enable dark title bar
@@ -448,7 +451,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var editor = new ProfileEditorWindow(selected.Profile, _deviceManager, _hidHideService);
+        var editor = new ProfileEditorWindow(selected.Profile, _deviceManager, _hidHideService, _deviceSettings);
         editor.Owner = this;
         editor.ShowDialog();
 

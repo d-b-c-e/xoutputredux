@@ -6,6 +6,8 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 
 - **Multi-input to single output** - Map multiple physical buttons to the same Xbox button using OR logic (e.g., wheel B button + handbrake = Xbox B)
 - **DirectInput & RawInput support** - Works with virtually any gaming controller
+- **Force Feedback** - Route rumble/vibration from games to physical devices (steering wheels, gamepads with FFB)
+- **Device Hiding** - HidHide integration to hide physical controllers from games, preventing double-input issues
 - **Profile management** - Create, duplicate, and switch profiles easily
 - **Interactive mapping** - "Press button to map" configuration interface
 - **System tray integration** - Minimize to tray, run in background
@@ -121,19 +123,22 @@ XOutputRenew/
 - Real-time input monitoring with output highlighting in profile editor
 - Multi-input OR logic (multiple buttons can trigger same Xbox output)
 - ViGEm integration for Xbox 360 controller emulation
+- Force feedback routing from games to physical devices
+- HidHide integration (auto-hide devices, auto-install prompt)
 - System tray with minimize/restore
 - Device renaming and info display
 - Verbose logging for debugging device issues
 - Dark mode UI theme
 - Visual Xbox controller test display
 - Options for startup profile and "Start with Windows"
+- Profile editor with tabbed interface (Mapping, Force Feedback, Device Hiding)
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)
 - Turtle Beach VelocityOne Multi-Shift gear shifter (RawInput)
+- X-Arcade dual joystick (RawInput)
 
 ### Still In Progress
-- HidHide integration (auto-hide devices during emulation)
 - Full CLI/IPC for controlling running instance
 - Extended in-game testing
 

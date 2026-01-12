@@ -43,12 +43,13 @@ public partial class ProfileEditorWindow : Window
 
     // HidHide
     private readonly HidHideService _hidHideService;
+    private readonly DeviceSettings? _deviceSettings;
     private readonly ObservableCollection<HidHideDeviceViewModel> _hidHideDevices = new();
     private bool _isLoadingHidHideSettings;
 
     public bool WasSaved { get; private set; }
 
-    public ProfileEditorWindow(MappingProfile profile, InputDeviceManager deviceManager, HidHideService? hidHideService = null)
+    public ProfileEditorWindow(MappingProfile profile, InputDeviceManager deviceManager, HidHideService? hidHideService = null, DeviceSettings? deviceSettings = null)
     {
         InitializeComponent();
 
@@ -56,6 +57,7 @@ public partial class ProfileEditorWindow : Window
         _profile = profile.Clone();
         _profile.Name = profile.Name; // Keep original name
         _deviceManager = deviceManager;
+        _deviceSettings = deviceSettings;
 
         // Use passed service or create new one
         _hidHideService = hidHideService ?? new HidHideService();
@@ -737,7 +739,7 @@ public partial class ProfileEditorWindow : Window
             : "HidHide detected";
         HidHideEnabledCheckBox.IsEnabled = true;
 
-        // Populate device list from HidHide gaming devices
+        // Populate device list from HidHide gaming devices (de-duplicated by VID/PID)
         _hidHideDevices.Clear();
         var gamingDevices = _hidHideService.GetGamingDevices().ToList();
 
@@ -747,11 +749,26 @@ public partial class ProfileEditorWindow : Window
         }
         else
         {
+            var seenVidPids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var device in gamingDevices.Where(d => d.Present))
             {
-                var displayName = !string.IsNullOrEmpty(device.Product)
-                    ? $"{device.Product} ({device.Vendor})"
-                    : device.DeviceInstancePath ?? "Unknown Device";
+                // De-duplicate by VID/PID (same as HardwareId deduplication in main device list)
+                var vidPid = ExtractVidPid(device.DeviceInstancePath ?? "");
+                if (!string.IsNullOrEmpty(vidPid))
+                {
+                    if (seenVidPids.Contains(vidPid))
+                        continue;
+                    seenVidPids.Add(vidPid);
+                }
+
+                // Try to find a friendly name from DeviceSettings
+                string? friendlyName = TryGetFriendlyNameForHidHideDevice(device);
+
+                var displayName = friendlyName
+                    ?? (!string.IsNullOrEmpty(device.Product)
+                        ? $"{device.Product} ({device.Vendor})"
+                        : device.DeviceInstancePath ?? "Unknown Device");
 
                 _hidHideDevices.Add(new HidHideDeviceViewModel
                 {
@@ -804,6 +821,23 @@ public partial class ProfileEditorWindow : Window
         UpdateHidHideSettings();
     }
 
+    private void OpenGameControllers_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "joy.cpl",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to open Game Controllers: {ex.Message}",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void HidHideHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         MessageBox.Show(
@@ -841,6 +875,49 @@ public partial class ProfileEditorWindow : Window
         {
             settings.DevicesToHide.Add(deviceVm.DeviceInstancePath);
         }
+    }
+
+    /// <summary>
+    /// Tries to find a friendly name for a HidHide device by matching VID/PID to input devices.
+    /// </summary>
+    private string? TryGetFriendlyNameForHidHideDevice(HidHideDevice hidHideDevice)
+    {
+        if (_deviceSettings == null || string.IsNullOrEmpty(hidHideDevice.DeviceInstancePath))
+            return null;
+
+        // Extract VID/PID from HidHide device instance path
+        // Format: "HID\VID_346E&PID_0006\..." or "USB\VID_046D&PID_C294\..."
+        var vidPid = ExtractVidPid(hidHideDevice.DeviceInstancePath);
+        if (string.IsNullOrEmpty(vidPid))
+            return null;
+
+        // Find matching input device by HardwareId
+        foreach (var device in _deviceManager.Devices)
+        {
+            if (!string.IsNullOrEmpty(device.HardwareId) &&
+                device.HardwareId.Contains(vidPid, StringComparison.OrdinalIgnoreCase))
+            {
+                var friendlyName = _deviceSettings.GetFriendlyName(device.UniqueId);
+                if (!string.IsNullOrEmpty(friendlyName))
+                    return friendlyName;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Extracts VID_XXXX&PID_XXXX from a device path.
+    /// </summary>
+    private static string? ExtractVidPid(string devicePath)
+    {
+        // Look for VID_XXXX&PID_XXXX pattern
+        var match = System.Text.RegularExpressions.Regex.Match(
+            devicePath,
+            @"VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4}",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        return match.Success ? match.Value.ToUpperInvariant() : null;
     }
 
     #endregion

@@ -15,7 +15,7 @@ public class InputDeviceManager : IDisposable
     private bool _disposed;
 
     /// <summary>
-    /// All currently known devices (de-duplicated, preferring DirectInput).
+    /// All currently known devices (de-duplicated by HardwareId, preferring DirectInput).
     /// </summary>
     public IReadOnlyList<IInputDevice> Devices
     {
@@ -36,7 +36,7 @@ public class InputDeviceManager : IDisposable
                     }
                 }
 
-                // Add RawInput devices only if not already seen via DirectInput
+                // Add RawInput devices only if not already seen
                 foreach (var device in _rawInputProvider.GetDevices())
                 {
                     if (string.IsNullOrEmpty(device.HardwareId) || !seenHardwareIds.Contains(device.HardwareId))

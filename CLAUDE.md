@@ -127,11 +127,21 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
   - Run as Administrator status and restart button
 - [x] AppSettings persisted to `%AppData%\XOutputRenew\app-settings.json`
 
-### Phase 5: HidHide Integration
-- [ ] HidHide client library
-- [ ] Auto-hide devices on profile start
-- [ ] Auto-unhide on profile stop
-- [ ] Whitelist XOutputRenew.exe
+### Phase 4.7: Force Feedback ✓ COMPLETE
+- [x] ForceFeedbackSettings model (Enabled, TargetDeviceId, Mode, Gain)
+- [x] IForceFeedbackDevice interface and DirectInput implementation
+- [x] ForceFeedbackService to route ViGEm rumble to physical devices
+- [x] Profile editor UI for FFB settings (device, mode, gain)
+- [x] Motor modes: Large, Small, Combined, Swap
+
+### Phase 5: HidHide Integration ✓ COMPLETE
+- [x] HidHide CLI wrapper service
+- [x] Auto-hide devices on profile start
+- [x] Auto-unhide on profile stop
+- [x] Whitelist XOutputRenew.exe automatically
+- [x] Profile editor tab for device hiding settings
+- [x] Auto-install prompt with download from GitHub
+- [x] "Open Windows Game Controllers" button for testing
 
 ### Phase 6: CLI & IPC
 - [ ] Full CLI with System.CommandLine
@@ -473,7 +483,35 @@ AppLogger.Error("Something failed", exception);
 
 ## Recent Session Notes
 
-### Session 2026-01-11
+### Session 2026-01-11 (Part 2)
+
+**HidHide Integration Complete**
+- Profile editor now has three tabs: Mapping, Force Feedback, Device Hiding
+- HidHide auto-install: prompts user on startup if not installed, downloads from GitHub
+- Device hiding settings saved per-profile
+- Auto-hide devices when profile starts, auto-unhide when stopped
+- XOutputRenew automatically whitelisted in HidHide
+- "Open Windows Game Controllers" button to verify hiding is working
+- Friendly names from DeviceSettings shown in HidHide device list
+
+**New Files:**
+- `Core/HidHide/HidHideSettings.cs` - Profile HidHide config (Enabled, DevicesToHide list)
+
+**Modified Files:**
+- `HidHide/HidHideService.cs` - Added DownloadAndInstallAsync(), improved detection logic, fixed JSON parsing for nested device structure
+- `App/MainWindow.xaml.cs` - HidHide install prompt, hide/unhide on profile start/stop
+- `App/ProfileEditorWindow.xaml` - Restructured into tabs, added Device Hiding tab
+- `App/ProfileEditorWindow.xaml.cs` - HidHide settings UI, friendly name lookup
+- `App/AppSettings.cs` - Added HidHidePromptDeclined property
+
+**Bug Fixes:**
+- Fixed device deduplication in InputDeviceManager (was incorrectly deduping RawInput devices with same HardwareId)
+- Fixed HidHide detection to verify CLI works instead of relying on registry
+- Fixed HidHide JSON parsing for nested device container structure
+
+---
+
+### Session 2026-01-11 (Part 1)
 
 **Force Feedback (FFB) Implementation**
 - Added complete FFB support to route rumble from games to physical devices (steering wheels)

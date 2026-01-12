@@ -155,27 +155,42 @@ public class HidHideService : IDisposable
     /// </summary>
     public IEnumerable<HidHideDevice> GetGamingDevices()
     {
-        // Try --dev-gaming first, fall back to --dev-all
         var (success, output) = ExecuteCommandWithOutput("--dev-gaming");
-
-        if (!success || string.IsNullOrWhiteSpace(output))
-        {
-            // Try alternative command
-            (success, output) = ExecuteCommandWithOutput("--dev-all");
-        }
 
         if (!success || string.IsNullOrWhiteSpace(output))
             return [];
 
         try
         {
-            var devices = JsonSerializer.Deserialize<List<HidHideDevice>>(output,
+            // The JSON structure is: [{ "friendlyName": "...", "devices": [...] }, ...]
+            var containers = JsonSerializer.Deserialize<List<HidHideDeviceContainer>>(output,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            return devices ?? [];
+
+            if (containers == null)
+                return [];
+
+            // Flatten all devices from all containers
+            var allDevices = new List<HidHideDevice>();
+            foreach (var container in containers)
+            {
+                if (container.Devices != null)
+                {
+                    foreach (var device in container.Devices)
+                    {
+                        // Use container's friendlyName if device product is empty
+                        if (string.IsNullOrEmpty(device.Product) && !string.IsNullOrEmpty(container.FriendlyName))
+                        {
+                            device.Product = container.FriendlyName;
+                        }
+                        allDevices.Add(device);
+                    }
+                }
+            }
+
+            return allDevices;
         }
         catch
         {
-            // JSON parsing failed - try to parse as simple list
             return [];
         }
     }
@@ -481,6 +496,15 @@ public class HidHideService : IDisposable
         _disposed = true;
         GC.SuppressFinalize(this);
     }
+}
+
+/// <summary>
+/// Container for grouped devices as returned by HidHide CLI.
+/// </summary>
+public class HidHideDeviceContainer
+{
+    public string? FriendlyName { get; set; }
+    public List<HidHideDevice>? Devices { get; set; }
 }
 
 /// <summary>

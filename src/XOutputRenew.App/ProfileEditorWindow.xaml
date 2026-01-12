@@ -555,6 +555,10 @@
 
                         <TextBlock Text="Devices will be automatically unhidden when the profile stops."
                                    TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,15,0,0" FontStyle="Italic"/>
+
+                        <Button Content="Open Windows Game Controllers" Margin="0,15,0,0"
+                                Click="OpenGameControllers_Click"
+                                ToolTip="Test if hiding is working by checking which devices Windows sees"/>
                     </StackPanel>
                 </Grid>
             </TabItem>

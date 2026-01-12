@@ -137,21 +137,22 @@ public class DirectInputDeviceProvider : IDisposable
                 return null;
             }
 
-            // Get unique ID based on interface path or GUID
-            string uniqueIdBase;
+            // Get unique ID based on interface path AND instance GUID
+            // We always include InstanceGuid because composite devices (like X-Arcade with 2 joysticks)
+            // may share the same interface path but have different instance GUIDs
             string? interfacePath = null;
             string? hardwareId = null;
 
             if (instance.IsHumanInterfaceDevice)
             {
                 interfacePath = joystick.Properties.InterfacePath;
-                uniqueIdBase = interfacePath;
                 hardwareId = IdHelper.GetHardwareId(interfacePath);
             }
-            else
-            {
-                uniqueIdBase = $"{instance.ProductGuid}:{instance.InstanceGuid}";
-            }
+
+            // Always include InstanceGuid to ensure uniqueness for composite devices
+            string uniqueIdBase = instance.IsHumanInterfaceDevice && interfacePath != null
+                ? $"{interfacePath}:{instance.InstanceGuid}"
+                : $"{instance.ProductGuid}:{instance.InstanceGuid}";
 
             string uniqueId = IdHelper.GetUniqueId(uniqueIdBase);
 
