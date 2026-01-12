@@ -137,7 +137,7 @@ public class DirectInputDeviceProvider : IDisposable
                 return null;
             }
 
-            // Get unique ID based on interface path or GUID
+            // Get unique ID based on VID/PID (hardware ID) for port-independent identification
             string uniqueIdBase;
             string? interfacePath = null;
             string? hardwareId = null;
@@ -145,12 +145,14 @@ public class DirectInputDeviceProvider : IDisposable
             if (instance.IsHumanInterfaceDevice)
             {
                 interfacePath = joystick.Properties.InterfacePath;
-                uniqueIdBase = interfacePath;
                 hardwareId = IdHelper.GetHardwareId(interfacePath);
+                // Use hardware ID (VID/PID) for stable identification across USB ports
+                uniqueIdBase = hardwareId ?? interfacePath;
             }
             else
             {
-                uniqueIdBase = $"{instance.ProductGuid}:{instance.InstanceGuid}";
+                // For non-HID devices, use ProductGuid only (InstanceGuid can change)
+                uniqueIdBase = instance.ProductGuid.ToString();
             }
 
             string uniqueId = IdHelper.GetUniqueId(uniqueIdBase);

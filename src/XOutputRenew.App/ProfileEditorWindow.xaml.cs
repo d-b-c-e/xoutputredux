@@ -463,6 +463,18 @@ public partial class ProfileEditorWindow : Window
         }
     }
 
+    private void OutputListView_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // Don't capture in read-only mode
+        if (_isReadOnly) return;
+
+        // Double-click triggers capture if an output is selected
+        if (_selectedOutput != null && !_isCapturing)
+        {
+            StartCapturing();
+        }
+    }
+
     private void ClearBindings_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedOutput == null) return;

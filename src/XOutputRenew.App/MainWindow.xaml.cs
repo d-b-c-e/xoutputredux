@@ -288,10 +288,16 @@ public partial class MainWindow : Window
             _profiles.Add(vm);
         }
 
-        // Restore selection
+        // Restore selection, or auto-select first profile if none selected
         if (selectedFileName != null)
         {
             ProfileListView.SelectedItem = _profiles.FirstOrDefault(p => p.FileName == selectedFileName);
+        }
+
+        // Auto-select first profile if nothing selected (makes Start button immediately usable)
+        if (ProfileListView.SelectedItem == null && _profiles.Count > 0)
+        {
+            ProfileListView.SelectedItem = _profiles[0];
         }
 
         // Update startup profile dropdown if it exists

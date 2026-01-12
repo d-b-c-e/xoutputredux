@@ -129,10 +129,11 @@ public class RawInputDeviceProvider : IDisposable
 
     private RawInputDevice? CreateOrGetDevice(HidDevice hidDevice)
     {
-        // Get unique ID based on device path
-        string uniqueIdBase = hidDevice.DevicePath;
-        string uniqueId = IdHelper.GetUniqueId(uniqueIdBase);
+        // Get unique ID based on VID/PID (hardware ID) for port-independent identification
         string? hardwareId = IdHelper.GetHardwareId(hidDevice.DevicePath);
+        // Use hardware ID (VID/PID) for stable identification across USB ports
+        string uniqueIdBase = hardwareId ?? hidDevice.DevicePath;
+        string uniqueId = IdHelper.GetUniqueId(uniqueIdBase);
 
         // Check if we already have this device
         if (_devices.TryGetValue(uniqueId, out var existingDevice))

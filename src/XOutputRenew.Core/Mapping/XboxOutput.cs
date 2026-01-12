@@ -15,8 +15,8 @@ public enum XboxOutput
     Back,
     Start,
     Guide,
-    LeftStick,
-    RightStick,
+    LeftStickPress,
+    RightStickPress,
     DPadUp,
     DPadDown,
     DPadLeft,
@@ -48,7 +48,7 @@ public static class XboxOutputExtensions
             XboxOutput.A or XboxOutput.B or XboxOutput.X or XboxOutput.Y or
             XboxOutput.LeftBumper or XboxOutput.RightBumper or
             XboxOutput.Back or XboxOutput.Start or XboxOutput.Guide or
-            XboxOutput.LeftStick or XboxOutput.RightStick or
+            XboxOutput.LeftStickPress or XboxOutput.RightStickPress or
             XboxOutput.DPadUp or XboxOutput.DPadDown or XboxOutput.DPadLeft or XboxOutput.DPadRight
                 => true,
             _ => false

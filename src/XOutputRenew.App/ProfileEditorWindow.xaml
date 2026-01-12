@@ -315,7 +315,8 @@
                            Foreground="Gray" Margin="5,5,5,10" TextWrapping="Wrap"/>
 
                 <ListView x:Name="OutputListView" Grid.Row="1"
-                          SelectionChanged="OutputListView_SelectionChanged">
+                          SelectionChanged="OutputListView_SelectionChanged"
+                          MouseDoubleClick="OutputListView_DoubleClick">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
                             <Style.Triggers>

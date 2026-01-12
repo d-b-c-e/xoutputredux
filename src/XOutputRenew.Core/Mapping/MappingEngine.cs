@@ -108,8 +108,8 @@ public class MappingEngine
             case XboxOutput.Back: state.Back = value >= 0.5; break;
             case XboxOutput.Start: state.Start = value >= 0.5; break;
             case XboxOutput.Guide: state.Guide = value >= 0.5; break;
-            case XboxOutput.LeftStick: state.LeftStick = value >= 0.5; break;
-            case XboxOutput.RightStick: state.RightStick = value >= 0.5; break;
+            case XboxOutput.LeftStickPress: state.LeftStick = value >= 0.5; break;
+            case XboxOutput.RightStickPress: state.RightStick = value >= 0.5; break;
             case XboxOutput.DPadUp: state.DPadUp = value >= 0.5; break;
             case XboxOutput.DPadDown: state.DPadDown = value >= 0.5; break;
             case XboxOutput.DPadLeft: state.DPadLeft = value >= 0.5; break;
