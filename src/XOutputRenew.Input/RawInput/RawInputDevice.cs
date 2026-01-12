@@ -82,7 +82,12 @@ public class RawInputDevice : IInputDevice
 
         // Use event-based approach for immediate response
         _inputReceiver.Received += InputReceiver_Received;
-        _inputReceiver.Start(_hidStream);
+
+        // Only start if not already running (receiver persists across Start/Stop cycles)
+        if (!_inputReceiver.IsRunning)
+        {
+            _inputReceiver.Start(_hidStream);
+        }
 
         InputLogger.Log($"Started: {Name} (Sources: {_sources.Length}, ReceiverRunning: {_inputReceiver.IsRunning})");
     }

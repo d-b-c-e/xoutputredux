@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Edit Profile"
-        Height="800" Width="1000"
-        MinHeight="700" MinWidth="800"
+        Height="850" Width="1000"
+        MinHeight="750" MinWidth="800"
         WindowStartupLocation="CenterOwner"
         Background="#1E1E1E"
         Icon="pack://application:,,,/console-controller.png">
@@ -279,8 +279,8 @@
 
     <Grid Margin="10" Background="{StaticResource BackgroundBrush}">
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="480"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -290,6 +290,12 @@
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,10">
+            <!-- Read-only banner (hidden by default) -->
+            <Border x:Name="ReadOnlyBanner" Background="#FF6B00" Visibility="Collapsed"
+                    Padding="10,5" Margin="0,0,0,10" CornerRadius="3">
+                <TextBlock Text="View Only - Profile is currently running. Stop the profile to make changes."
+                           Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            </Border>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Profile: " FontSize="18"/>
                 <TextBlock x:Name="ProfileNameText" Text="ProfileName" FontSize="18" FontWeight="Bold"/>
@@ -539,7 +545,7 @@
 
                         <TextBlock Text="Select devices to hide:" Margin="0,0,0,5"/>
 
-                        <ListBox x:Name="HidHideDeviceListBox" Height="200"
+                        <ListBox x:Name="HidHideDeviceListBox" Height="100"
                                  SelectionMode="Multiple"
                                  IsEnabled="False">
                             <ListBox.ItemTemplate>
@@ -559,6 +565,29 @@
                         <Button Content="Open Windows Game Controllers" Margin="0,15,0,0"
                                 Click="OpenGameControllers_Click"
                                 ToolTip="Test if hiding is working by checking which devices Windows sees"/>
+
+                        <!-- Application Whitelist Section -->
+                        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Margin="0,20,0,0" Padding="0,15,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Application Whitelist (Global)" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                <TextBlock Text="Whitelisted apps can still see hidden devices. Add apps like Moza Pit House or Fanatec drivers here. Hover to see full path."
+                                           TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,0,0,10" FontSize="11"/>
+
+                                <ListBox x:Name="WhitelistListBox" Height="120" Margin="0,0,0,10">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}" ToolTip="{Binding FullPath}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Browse..." Click="AddWhitelistApp_Click" Padding="8,4" ToolTip="Browse for an executable file"/>
+                                    <Button Content="Add Process..." Click="AddWhitelistProcess_Click" Padding="8,4" Margin="10,0,0,0" ToolTip="Select from running processes"/>
+                                    <Button Content="Remove" Click="RemoveWhitelistApp_Click" Padding="8,4" Margin="10,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Grid>
             </TabItem>
@@ -567,7 +596,7 @@
         <!-- Footer Buttons -->
         <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
                     HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="Save" Padding="20,8" Click="Save_Click"
+            <Button x:Name="SaveButton" Content="Save" Padding="20,8" Click="Save_Click"
                     Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
             <Button Content="Cancel" Padding="20,8" Margin="10,0,0,0" Click="Cancel_Click"/>
         </StackPanel>

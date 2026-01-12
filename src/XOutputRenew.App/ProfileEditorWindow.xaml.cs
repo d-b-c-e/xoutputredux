@@ -45,11 +45,13 @@ public partial class ProfileEditorWindow : Window
     private readonly HidHideService _hidHideService;
     private readonly DeviceSettings? _deviceSettings;
     private readonly ObservableCollection<HidHideDeviceViewModel> _hidHideDevices = new();
+    private readonly ObservableCollection<WhitelistItem> _whitelistItems = new();
     private bool _isLoadingHidHideSettings;
 
     public bool WasSaved { get; private set; }
+    private readonly bool _isReadOnly;
 
-    public ProfileEditorWindow(MappingProfile profile, InputDeviceManager deviceManager, HidHideService? hidHideService = null, DeviceSettings? deviceSettings = null)
+    public ProfileEditorWindow(MappingProfile profile, InputDeviceManager deviceManager, HidHideService? hidHideService = null, DeviceSettings? deviceSettings = null, bool readOnly = false)
     {
         InitializeComponent();
 
@@ -58,6 +60,7 @@ public partial class ProfileEditorWindow : Window
         _profile.Name = profile.Name; // Keep original name
         _deviceManager = deviceManager;
         _deviceSettings = deviceSettings;
+        _isReadOnly = readOnly;
 
         // Use passed service or create new one
         _hidHideService = hidHideService ?? new HidHideService();
@@ -73,6 +76,7 @@ public partial class ProfileEditorWindow : Window
         InputMonitorList.ItemsSource = _inputMonitorItems;
         BindingListView.ItemsSource = _bindings;
         HidHideDeviceListBox.ItemsSource = _hidHideDevices;
+        WhitelistListBox.ItemsSource = _whitelistItems;
 
         _captureTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _captureTimer.Tick += CaptureTimer_Tick;
@@ -86,6 +90,16 @@ public partial class ProfileEditorWindow : Window
         LoadOutputs();
         LoadForceFeedbackSettings();
         LoadHidHideSettings();
+
+        // Apply read-only mode
+        if (_isReadOnly)
+        {
+            Title = "View Profile (Read Only)";
+            SaveButton.IsEnabled = false;
+            SaveButton.Content = "View Only";
+            ReadOnlyBanner.Visibility = Visibility.Visible;
+            CaptureButton.IsEnabled = false;
+        }
 
         Closed += ProfileEditorWindow_Closed;
         Loaded += (s, e) => DarkModeHelper.EnableDarkTitleBar(this);
@@ -798,7 +812,223 @@ public partial class ProfileEditorWindow : Window
             UpdateHidHideControlsEnabled(false);
         }
 
+        // Load the global application whitelist
+        LoadWhitelist();
+
         _isLoadingHidHideSettings = false;
+    }
+
+    private void LoadWhitelist()
+    {
+        _whitelistItems.Clear();
+
+        if (!_hidHideService.IsAvailable) return;
+
+        try
+        {
+            var apps = _hidHideService.GetWhitelistedApplications()
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            foreach (var appPath in apps)
+            {
+                _whitelistItems.Add(new WhitelistItem(appPath));
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error($"Failed to load whitelist: {ex.Message}");
+        }
+    }
+
+    private void AddWhitelistApp_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_hidHideService.IsAvailable)
+        {
+            MessageBox.Show("HidHide is not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Select Application to Whitelist",
+            Filter = "Executable files (*.exe)|*.exe|All files (*.*)|*.*",
+            CheckFileExists = true
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            var path = dialog.FileName;
+
+            // Check if already whitelisted
+            if (_whitelistItems.Any(w => w.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show("This application is already whitelisted.", "Already Whitelisted",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (_hidHideService.WhitelistApplication(path))
+            {
+                _whitelistItems.Add(new WhitelistItem(path));
+                AppLogger.Info($"Added to HidHide whitelist: {path}");
+            }
+            else
+            {
+                MessageBox.Show("Failed to add application to whitelist.", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private void RemoveWhitelistApp_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_hidHideService.IsAvailable)
+        {
+            MessageBox.Show("HidHide is not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        var selected = WhitelistListBox.SelectedItem as WhitelistItem;
+        if (selected == null)
+        {
+            MessageBox.Show("Please select an application to remove.", "No Selection",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        // Warn if removing XOutputRenew itself
+        var currentExe = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+        if (currentExe != null && selected.FullPath.Equals(currentExe, StringComparison.OrdinalIgnoreCase))
+        {
+            var result = MessageBox.Show(
+                "You are about to remove XOutputRenew from the whitelist. This will prevent XOutputRenew from seeing hidden devices.\n\nAre you sure?",
+                "Warning",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes) return;
+        }
+
+        // Remove ALL occurrences (HidHide may have duplicates with different casing/formatting)
+        int removeCount = 0;
+        const int maxAttempts = 5;
+        for (int i = 0; i < maxAttempts; i++)
+        {
+            if (_hidHideService.UnwhitelistApplication(selected.FullPath))
+            {
+                removeCount++;
+            }
+            else
+            {
+                break; // No more to remove
+            }
+        }
+
+        if (removeCount > 0)
+        {
+            _whitelistItems.Remove(selected);
+            AppLogger.Info($"Removed from HidHide whitelist ({removeCount} occurrence(s)): {selected.FullPath}");
+        }
+        else
+        {
+            MessageBox.Show("Failed to remove application from whitelist.", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void AddWhitelistProcess_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_hidHideService.IsAvailable)
+        {
+            MessageBox.Show("HidHide is not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        // System paths to exclude
+        var systemPaths = new[]
+        {
+            @"C:\Windows\",
+            @"C:\Program Files\WindowsApps\",
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows)
+        };
+
+        // Common system process names to exclude
+        var systemProcessNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "svchost", "csrss", "wininit", "winlogon", "services", "lsass", "smss",
+            "dwm", "sihost", "taskhostw", "explorer", "RuntimeBroker", "SearchHost",
+            "StartMenuExperienceHost", "ShellExperienceHost", "ctfmon", "conhost",
+            "dllhost", "fontdrvhost", "WmiPrvSE", "spoolsv", "SearchIndexer",
+            "SecurityHealthService", "SgrmBroker", "NisSrv", "MsMpEng", "Registry",
+            "Memory Compression", "System", "Idle", "audiodg", "TextInputHost",
+            "SystemSettings", "ApplicationFrameHost", "backgroundTaskHost", "LockApp",
+            "WidgetService", "Widgets", "CompPkgSrv", "UserOOBEBroker"
+        };
+
+        // Get running processes with main modules (excludes system processes we can't access)
+        var processes = new List<ProcessInfo>();
+        foreach (var proc in System.Diagnostics.Process.GetProcesses())
+        {
+            try
+            {
+                if (proc.MainModule?.FileName != null)
+                {
+                    var path = proc.MainModule.FileName;
+                    var name = proc.ProcessName;
+
+                    // Skip system processes
+                    if (systemProcessNames.Contains(name))
+                        continue;
+
+                    // Skip processes in system paths
+                    if (systemPaths.Any(sp => path.StartsWith(sp, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+
+                    processes.Add(new ProcessInfo
+                    {
+                        Name = name,
+                        Path = path
+                    });
+                }
+            }
+            catch
+            {
+                // Skip processes we can't access
+            }
+        }
+
+        // Remove duplicates and sort
+        var uniqueProcesses = processes
+            .GroupBy(p => p.Path.ToLowerInvariant())
+            .Select(g => g.First())
+            .OrderBy(p => p.Name)
+            .ToList();
+
+        // Show process picker dialog
+        var dialog = new ProcessPickerDialog(uniqueProcesses) { Owner = this };
+        if (dialog.ShowDialog() == true && dialog.SelectedProcess != null)
+        {
+            var path = dialog.SelectedProcess.Path;
+
+            // Check if already whitelisted
+            if (_whitelistItems.Any(w => w.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show("This application is already whitelisted.", "Already Whitelisted",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (_hidHideService.WhitelistApplication(path))
+            {
+                _whitelistItems.Add(new WhitelistItem(path));
+                AppLogger.Info($"Added to HidHide whitelist: {path}");
+            }
+            else
+            {
+                MessageBox.Show("Failed to add application to whitelist.", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 
     private void UpdateHidHideControlsEnabled(bool enabled)
@@ -1097,5 +1327,30 @@ public class HidHideDeviceViewModel : INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+}
+
+/// <summary>
+/// Represents a whitelisted application in HidHide.
+/// </summary>
+public class WhitelistItem
+{
+    public string FullPath { get; }
+    public string DisplayName { get; }
+
+    public WhitelistItem(string fullPath)
+    {
+        FullPath = fullPath;
+        DisplayName = System.IO.Path.GetFileName(fullPath);
+    }
+}
+
+/// <summary>
+/// Represents a running process for the picker dialog.
+/// </summary>
+public class ProcessInfo
+{
+    public string Name { get; set; } = "";
+    public string Path { get; set; } = "";
+    public string DisplayName => $"{Name} ({System.IO.Path.GetFileName(Path)})";
 }
 

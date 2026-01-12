@@ -693,3 +693,55 @@ Additional source repositories in workspace for reference:
 - `E:\Source\XOutputRenew\XOutput` - Original XOutput (archived)
 - `E:\Source\XOutputRenew\ViGEmBus` - ViGEmBus driver source
 - `E:\Source\XOutputRenew\HidHide` - HidHide driver source
+
+
+---
+
+### Session 2026-01-11 (Part 3) - INCOMPLETE
+
+**Bug Fix Completed: RawInputDevice Start/Stop**
+- **Problem**: Stopping and restarting a profile threw "The receiver is already running"
+- **Cause**: HidSharp's `HidDeviceInputReceiver` can only have `Start()` called once. The `Stop()` method was unsubscribing from events but not stopping the receiver (it has no public Stop method).
+- **Fix Applied**: In `RawInputDevice.Start()`, check `_inputReceiver.IsRunning` before calling `Start()`:
+  ```csharp
+  // Only start if not already running (receiver persists across Start/Stop cycles)
+  if (!_inputReceiver.IsRunning)
+  {
+      _inputReceiver.Start(_hidStream);
+  }
+  ```
+- **File**: `src/XOutputRenew.Input/RawInput/RawInputDevice.cs` (lines 77-91)
+- **Status**: Fix applied and builds successfully
+
+**Feature In Progress: HidHide Whitelist Management**
+- **User Request**: Allow adding apps like Moza Pit House to HidHide whitelist so they can still see hidden devices
+- **Current State**: HidHideService already has the methods (`WhitelistApplication`, `GetWhitelistedApplications`, `UnwhitelistApplication`)
+- **UI Location**: Should go in Device Hiding tab of ProfileEditorWindow (user preference)
+- **What Needs To Be Done**:
+  1. Add XAML to `ProfileEditorWindow.xaml` - Device Hiding tab, after "Open Windows Game Controllers" button:
+     - A `<Border>` with "Application Whitelist (Global)" header
+     - A `<ListBox>` named `WhitelistListBox` showing whitelisted apps
+     - "Add Application..." and "Remove Selected" buttons
+  2. Add code-behind to `ProfileEditorWindow.xaml.cs`:
+     - `LoadWhitelist()` method - called from `LoadHidHideSettings()` at end
+     - `AddWhitelistApp_Click()` - opens file dialog, calls `_hidHideService.WhitelistApplication()`
+     - `RemoveWhitelistApp_Click()` - calls `_hidHideService.UnwhitelistApplication()`
+     - `WhitelistItem` class with `FullPath` and `DisplayName` properties
+  
+- **Session Issue**: File edits kept getting corrupted with escape characters (backslashes appearing in code). Both Edit tool and Python string replacements were affected. May be VS Code/IDE interference. Recommend closing VS Code before editing in next session.
+
+**Emulation Testing Status**
+- User reported emulation wasn't showing input in Test tab
+- Moza wheel may have needed Pit House reset
+- Start/stop profile fix was applied but not fully tested yet
+- User was concerned hiding/unhiding the Moza wheel via HidHide may have interfered with Pit House
+
+**Git Status at End of Session**
+- `src/XOutputRenew.Input/RawInput/RawInputDevice.cs` - modified (receiver fix applied)
+- All other files clean (whitelist UI changes were reverted due to corruption)
+
+**Resume Instructions**
+1. Build and run to test the RawInputDevice start/stop fix
+2. Test that profile can be started, stopped, and restarted without error
+3. Add HidHide whitelist UI to ProfileEditorWindow (Device Hiding tab)
+4. Test whitelist functionality with Moza Pit House

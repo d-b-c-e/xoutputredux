@@ -444,18 +444,14 @@ public partial class MainWindow : Window
     {
         if (ProfileListView.SelectedItem is not ProfileViewModel selected) return;
 
-        if (selected.IsRunning)
-        {
-            MessageBox.Show("Cannot edit a running profile. Stop it first.", "Edit Profile",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
+        // Open in read-only mode if profile is running
+        bool readOnly = selected.IsRunning;
 
-        var editor = new ProfileEditorWindow(selected.Profile, _deviceManager, _hidHideService, _deviceSettings);
+        var editor = new ProfileEditorWindow(selected.Profile, _deviceManager, _hidHideService, _deviceSettings, readOnly);
         editor.Owner = this;
         editor.ShowDialog();
 
-        if (editor.WasSaved)
+        if (editor.WasSaved && !readOnly)
         {
             // Save the profile to disk
             _profileManager.SaveProfile(selected.FileName, selected.Profile);
@@ -595,6 +591,23 @@ public partial class MainWindow : Window
         else
         {
             StartProfile(selected);
+        }
+    }
+
+    private void OpenGameControllers_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "joy.cpl",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to open Game Controllers: {ex.Message}",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

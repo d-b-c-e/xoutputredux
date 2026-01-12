@@ -233,8 +233,17 @@ public class HidHideService : IDisposable
         if (!success || string.IsNullOrWhiteSpace(output))
             return [];
 
+        // Output format: --app-reg "C:\path\to\app.exe"
         return output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(s => s.Trim())
+            .Select(s =>
+            {
+                var line = s.Trim();
+                // Strip --app-reg prefix if present
+                if (line.StartsWith("--app-reg ", StringComparison.OrdinalIgnoreCase))
+                    line = line.Substring(10).Trim();
+                // Strip surrounding quotes
+                return line.Trim('"');
+            })
             .Where(s => !string.IsNullOrEmpty(s));
     }
 

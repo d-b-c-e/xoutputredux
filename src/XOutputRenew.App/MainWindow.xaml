@@ -302,7 +302,7 @@
             </StackPanel>
 
             <!-- Main Content - Tab Control -->
-            <TabControl Grid.Row="1">
+            <TabControl Grid.Row="1" SelectedIndex="1">
                 <!-- Devices Tab -->
                 <TabItem Header="Devices">
                     <Grid Margin="10">
@@ -373,6 +373,9 @@
                             <Button x:Name="StartStopButton" Content="Start" Padding="20,5"
                                     Click="StartStopProfile_Click" IsEnabled="False"
                                     Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
+                            <Separator Margin="20,0"/>
+                            <Button Content="Game Controllers" Padding="15,5" Click="OpenGameControllers_Click"
+                                    ToolTip="Open Windows Game Controllers to test your devices"/>
                         </StackPanel>
 
                         <ListView x:Name="ProfileListView" Grid.Row="1"
