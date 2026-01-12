@@ -418,5 +418,11 @@ FodyWeavers.xsd
 *.msp
 
 # Claude Code local settings
-.claude/
+.claude/*
+!.claude/.screenshots/
+.claude/.screenshots/*.png
 .screenshot/
+
+# Claude Code temp files
+tmpclaude-*-cwd
+nul
