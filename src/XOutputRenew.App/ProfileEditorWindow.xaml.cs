@@ -5,7 +5,9 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using XOutputRenew.Core.ForceFeedback;
+using XOutputRenew.Core.HidHide;
 using XOutputRenew.Core.Mapping;
+using XOutputRenew.HidHide;
 using XOutputRenew.Input;
 using XOutputRenew.Input.ForceFeedback;
 
@@ -39,9 +41,14 @@ public partial class ProfileEditorWindow : Window
     private readonly List<FfbDeviceItem> _ffbDevices = new();
     private bool _isLoadingFfbSettings;
 
+    // HidHide
+    private readonly HidHideService _hidHideService;
+    private readonly ObservableCollection<HidHideDeviceViewModel> _hidHideDevices = new();
+    private bool _isLoadingHidHideSettings;
+
     public bool WasSaved { get; private set; }
 
-    public ProfileEditorWindow(MappingProfile profile, InputDeviceManager deviceManager)
+    public ProfileEditorWindow(MappingProfile profile, InputDeviceManager deviceManager, HidHideService? hidHideService = null)
     {
         InitializeComponent();
 
@@ -50,12 +57,20 @@ public partial class ProfileEditorWindow : Window
         _profile.Name = profile.Name; // Keep original name
         _deviceManager = deviceManager;
 
+        // Use passed service or create new one
+        _hidHideService = hidHideService ?? new HidHideService();
+        if (hidHideService == null)
+        {
+            _hidHideService.Initialize();
+        }
+
         ProfileNameText.Text = _profile.Name;
         ProfileDescText.Text = _profile.Description ?? "";
 
         OutputListView.ItemsSource = _outputs;
         InputMonitorList.ItemsSource = _inputMonitorItems;
         BindingListView.ItemsSource = _bindings;
+        HidHideDeviceListBox.ItemsSource = _hidHideDevices;
 
         _captureTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _captureTimer.Tick += CaptureTimer_Tick;
@@ -68,6 +83,7 @@ public partial class ProfileEditorWindow : Window
 
         LoadOutputs();
         LoadForceFeedbackSettings();
+        LoadHidHideSettings();
 
         Closed += ProfileEditorWindow_Closed;
         Loaded += (s, e) => DarkModeHelper.EnableDarkTitleBar(this);
@@ -699,6 +715,136 @@ public partial class ProfileEditorWindow : Window
 
     #endregion
 
+    #region HidHide Settings
+
+    private void LoadHidHideSettings()
+    {
+        _isLoadingHidHideSettings = true;
+
+        // Check if HidHide is available
+        if (!_hidHideService.IsAvailable)
+        {
+            HidHideStatusText.Text = "HidHide is not installed. Install from nefarius.at/HidHide";
+            HidHideEnabledCheckBox.IsEnabled = false;
+            HidHideDeviceListBox.IsEnabled = false;
+            _isLoadingHidHideSettings = false;
+            return;
+        }
+
+        var version = _hidHideService.Version;
+        HidHideStatusText.Text = version != null && version != "Installed"
+            ? $"HidHide v{version} detected"
+            : "HidHide detected";
+        HidHideEnabledCheckBox.IsEnabled = true;
+
+        // Populate device list from HidHide gaming devices
+        _hidHideDevices.Clear();
+        var gamingDevices = _hidHideService.GetGamingDevices().ToList();
+
+        if (gamingDevices.Count == 0)
+        {
+            HidHideStatusText.Text += " - No devices found. If you just installed HidHide, a reboot may be required.";
+        }
+        else
+        {
+            foreach (var device in gamingDevices.Where(d => d.Present))
+            {
+                var displayName = !string.IsNullOrEmpty(device.Product)
+                    ? $"{device.Product} ({device.Vendor})"
+                    : device.DeviceInstancePath ?? "Unknown Device";
+
+                _hidHideDevices.Add(new HidHideDeviceViewModel
+                {
+                    DeviceInstancePath = device.DeviceInstancePath ?? "",
+                    DisplayName = displayName,
+                    IsSelected = false
+                });
+            }
+        }
+
+        // Load current settings
+        var settings = _profile.HidHideSettings;
+        if (settings != null)
+        {
+            HidHideEnabledCheckBox.IsChecked = settings.Enabled;
+            UpdateHidHideControlsEnabled(settings.Enabled);
+
+            // Mark devices that are in the profile's hide list
+            foreach (var deviceVm in _hidHideDevices)
+            {
+                deviceVm.IsSelected = settings.DevicesToHide.Contains(deviceVm.DeviceInstancePath);
+            }
+        }
+        else
+        {
+            HidHideEnabledCheckBox.IsChecked = false;
+            UpdateHidHideControlsEnabled(false);
+        }
+
+        _isLoadingHidHideSettings = false;
+    }
+
+    private void UpdateHidHideControlsEnabled(bool enabled)
+    {
+        HidHideDeviceListBox.IsEnabled = enabled;
+    }
+
+    private void HidHideEnabled_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_isLoadingHidHideSettings) return;
+
+        bool enabled = HidHideEnabledCheckBox.IsChecked == true;
+        UpdateHidHideControlsEnabled(enabled);
+        UpdateHidHideSettings();
+    }
+
+    private void HidHideDevice_CheckChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isLoadingHidHideSettings) return;
+        UpdateHidHideSettings();
+    }
+
+    private void HidHideHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        MessageBox.Show(
+            "HidHide prevents games from seeing your physical controllers, so they only see " +
+            "the virtual Xbox controller created by XOutputRenew.\n\n" +
+            "WHY USE IT?\n" +
+            "Without HidHide, games may see both your physical device AND the virtual controller, " +
+            "causing double input or conflicts.\n\n" +
+            "HOW IT WORKS:\n" +
+            "1. Select devices to hide from this list\n" +
+            "2. When you start the profile, those devices become invisible to games\n" +
+            "3. When you stop the profile, devices become visible again\n" +
+            "4. XOutputRenew is automatically whitelisted so it can still read your devices\n\n" +
+            "REQUIREMENTS:\n" +
+            "• HidHide driver must be installed (nefarius.at/HidHide)\n" +
+            "• No admin rights required after installation",
+            "Device Hiding Help",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void UpdateHidHideSettings()
+    {
+        if (_profile.HidHideSettings == null)
+        {
+            _profile.HidHideSettings = new HidHideSettings();
+        }
+
+        var settings = _profile.HidHideSettings;
+        settings.Enabled = HidHideEnabledCheckBox.IsChecked == true;
+
+        // Get selected devices
+        settings.DevicesToHide.Clear();
+        foreach (var deviceVm in _hidHideDevices.Where(d => d.IsSelected))
+        {
+            settings.DevicesToHide.Add(deviceVm.DeviceInstancePath);
+        }
+    }
+
+    #endregion
+
     #region Save/Cancel
 
     private void Save_Click(object sender, RoutedEventArgs e)
@@ -730,6 +876,16 @@ public partial class ProfileEditorWindow : Window
         else
         {
             _originalProfile.ForceFeedbackSettings = null;
+        }
+
+        // Copy HidHide settings
+        if (_profile.HidHideSettings != null)
+        {
+            _originalProfile.HidHideSettings = _profile.HidHideSettings.Clone();
+        }
+        else
+        {
+            _originalProfile.HidHideSettings = null;
         }
 
         WasSaved = true;
@@ -839,5 +995,30 @@ public class FfbDeviceItem
 {
     public string? DeviceId { get; set; }
     public string DisplayName { get; set; } = "";
+}
+
+/// <summary>
+/// View model for HidHide device selection.
+/// </summary>
+public class HidHideDeviceViewModel : INotifyPropertyChanged
+{
+    public string DeviceInstancePath { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected != value)
+            {
+                _isSelected = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+            }
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }
 

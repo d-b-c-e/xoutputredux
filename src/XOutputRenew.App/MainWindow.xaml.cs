@@ -30,6 +30,7 @@ public partial class MainWindow : Window
     private MappingEngine? _activeMappingEngine;
     private ForceFeedbackService? _ffbService;
     private ProfileViewModel? _runningProfile;
+    private List<string> _hiddenDevices = new();
     private bool _isExiting;
     private bool _isListeningForInput;
     private readonly Dictionary<string, DateTime> _deviceLastInput = new();
@@ -142,12 +143,110 @@ public partial class MainWindow : Window
             HidHideStatusText.Text = "Installed";
             HidHideStatusText.Foreground = new SolidColorBrush(Colors.Green);
             HidHideInfoText.Text = "Device hiding available.";
+
+            // Whitelist our application so we can still see hidden devices
+            if (_hidHideService.WhitelistSelf())
+            {
+                AppLogger.Info("Whitelisted XOutputRenew in HidHide");
+            }
         }
         else
         {
             HidHideStatusText.Text = "Not Installed";
             HidHideStatusText.Foreground = new SolidColorBrush(Colors.Orange);
             HidHideInfoText.Text = "Optional: Install HidHide for device hiding.";
+            InstallHidHideButton.Visibility = Visibility.Visible;
+
+            // Prompt to install if user hasn't declined before
+            if (!_appSettings.HidHidePromptDeclined)
+            {
+                PromptHidHideInstall();
+            }
+        }
+    }
+
+    private async void PromptHidHideInstall()
+    {
+        var result = MessageBox.Show(
+            "HidHide is not installed. This optional driver allows XOutputRenew to hide your physical controllers " +
+            "from games, preventing 'double input' issues.\n\n" +
+            "Would you like to download and install HidHide now?\n\n" +
+            "(You can always install it later from the Status tab)",
+            "Install HidHide?",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            await InstallHidHide();
+        }
+        else
+        {
+            // Remember that user declined
+            _appSettings.HidHidePromptDeclined = true;
+            _appSettings.Save();
+        }
+    }
+
+    private async Task InstallHidHide()
+    {
+        StatusText.Text = "Downloading HidHide...";
+        HidHideInfoText.Text = "Downloading and installing...";
+
+        var (success, message) = await _hidHideService.DownloadAndInstallAsync(progress =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                StatusText.Text = $"Installing HidHide... {progress}%";
+            });
+        });
+
+        if (success)
+        {
+            HidHideStatusText.Text = "Installed";
+            HidHideStatusText.Foreground = new SolidColorBrush(Colors.Green);
+            HidHideInfoText.Text = "Device hiding available.";
+            StatusText.Text = "HidHide installed successfully";
+
+            // Whitelist ourselves
+            _hidHideService.WhitelistSelf();
+
+            MessageBox.Show(
+                message + "\n\nA system restart is required for HidHide to function properly.",
+                "Installation Complete",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        else
+        {
+            HidHideInfoText.Text = "Installation failed. Click to try again.";
+            StatusText.Text = $"HidHide installation failed: {message}";
+
+            MessageBox.Show(
+                $"Failed to install HidHide:\n\n{message}\n\n" +
+                "You can try installing manually from:\nhttps://github.com/nefarius/HidHide/releases",
+                "Installation Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private async void InstallHidHide_Click(object sender, RoutedEventArgs e)
+    {
+        InstallHidHideButton.IsEnabled = false;
+        InstallHidHideButton.Content = "Installing...";
+
+        await InstallHidHide();
+
+        // Update button state based on result
+        if (_hidHideService.IsAvailable)
+        {
+            InstallHidHideButton.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            InstallHidHideButton.IsEnabled = true;
+            InstallHidHideButton.Content = "Retry Install";
         }
     }
 
@@ -349,7 +448,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var editor = new ProfileEditorWindow(selected.Profile, _deviceManager);
+        var editor = new ProfileEditorWindow(selected.Profile, _deviceManager, _hidHideService);
         editor.Owner = this;
         editor.ShowDialog();
 
@@ -540,6 +639,9 @@ public partial class MainWindow : Window
             TestProfileStatus.Text = $"Profile: {profile.Name}";
             TestProfileStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)); // Green
             ResetTestTab();
+
+            // Hide devices if HidHide is enabled for this profile
+            HideProfileDevices(profile.Profile);
         }
         catch (Exception ex)
         {
@@ -549,8 +651,70 @@ public partial class MainWindow : Window
         }
     }
 
+    private void HideProfileDevices(MappingProfile profile)
+    {
+        _hiddenDevices.Clear();
+
+        var hidHideSettings = profile.HidHideSettings;
+        if (hidHideSettings == null || !hidHideSettings.Enabled)
+            return;
+
+        if (!_hidHideService.IsAvailable)
+        {
+            AppLogger.Warning("HidHide is not available - cannot hide devices");
+            return;
+        }
+
+        // Enable cloaking if not already enabled
+        _hidHideService.EnableCloaking();
+
+        foreach (var devicePath in hidHideSettings.DevicesToHide)
+        {
+            if (_hidHideService.HideDevice(devicePath))
+            {
+                _hiddenDevices.Add(devicePath);
+                AppLogger.Info($"Hidden device: {devicePath}");
+            }
+            else
+            {
+                AppLogger.Warning($"Failed to hide device: {devicePath}");
+            }
+        }
+
+        if (_hiddenDevices.Count > 0)
+        {
+            StatusText.Text = $"Started profile: {profile.Name} ({_hiddenDevices.Count} device(s) hidden)";
+        }
+    }
+
+    private void UnhideProfileDevices()
+    {
+        if (_hiddenDevices.Count == 0)
+            return;
+
+        if (!_hidHideService.IsAvailable)
+            return;
+
+        foreach (var devicePath in _hiddenDevices)
+        {
+            if (_hidHideService.UnhideDevice(devicePath))
+            {
+                AppLogger.Info($"Unhidden device: {devicePath}");
+            }
+            else
+            {
+                AppLogger.Warning($"Failed to unhide device: {devicePath}");
+            }
+        }
+
+        _hiddenDevices.Clear();
+    }
+
     private void StopProfile()
     {
+        // Unhide any devices we hid when starting the profile
+        UnhideProfileDevices();
+
         // Detach force feedback service first
         _ffbService?.Detach();
 

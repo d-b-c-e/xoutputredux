@@ -28,6 +28,11 @@ public class AppSettings
     public string? StartupProfile { get; set; }
 
     /// <summary>
+    /// Whether the user has declined the HidHide installation prompt.
+    /// </summary>
+    public bool HidHidePromptDeclined { get; set; }
+
+    /// <summary>
     /// Loads settings from disk.
     /// </summary>
     public static AppSettings Load()

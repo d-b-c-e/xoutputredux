@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Http;
 using System.Text.Json;
 using Microsoft.Win32;
 
@@ -27,26 +28,65 @@ public class HidHideService : IDisposable
     /// </summary>
     public bool Initialize()
     {
+        IsAvailable = false;
+        Version = null;
+        _cliPath = null;
+
+        // First, try to find the CLI executable
+        _cliPath = FindCliPath();
+        if (_cliPath == null)
+        {
+            return false;
+        }
+
+        // Verify the CLI actually works by running a simple command
         try
         {
-            // Check registry for installation
-            using var key = Registry.ClassesRoot.OpenSubKey(
-                @"Installer\Dependencies\NSS.Drivers.HidHide.x64");
-
-            if (key?.GetValue("Version") is string version)
+            using var process = new Process
             {
-                Version = version;
-                _cliPath = FindCliPath();
-                IsAvailable = _cliPath != null;
-                return IsAvailable;
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = _cliPath,
+                    Arguments = "--cloak-state",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            process.WaitForExit(5000);
+
+            // If the CLI runs without error, HidHide is installed
+            if (process.ExitCode == 0)
+            {
+                IsAvailable = true;
+
+                // Try to get version from registry
+                try
+                {
+                    using var key = Registry.ClassesRoot.OpenSubKey(
+                        @"Installer\Dependencies\NSS.Drivers.HidHide.x64");
+                    Version = key?.GetValue("Version") as string;
+                }
+                catch { }
+
+                // Fallback version detection
+                if (string.IsNullOrEmpty(Version))
+                {
+                    Version = "Installed";
+                }
+
+                return true;
             }
         }
         catch
         {
-            // Registry access failed
+            // CLI execution failed
         }
 
-        IsAvailable = false;
+        _cliPath = null;
         return false;
     }
 
@@ -115,7 +155,15 @@ public class HidHideService : IDisposable
     /// </summary>
     public IEnumerable<HidHideDevice> GetGamingDevices()
     {
+        // Try --dev-gaming first, fall back to --dev-all
         var (success, output) = ExecuteCommandWithOutput("--dev-gaming");
+
+        if (!success || string.IsNullOrWhiteSpace(output))
+        {
+            // Try alternative command
+            (success, output) = ExecuteCommandWithOutput("--dev-all");
+        }
+
         if (!success || string.IsNullOrWhiteSpace(output))
             return [];
 
@@ -127,8 +175,18 @@ public class HidHideService : IDisposable
         }
         catch
         {
+            // JSON parsing failed - try to parse as simple list
             return [];
         }
+    }
+
+    /// <summary>
+    /// Gets the raw output from a HidHide CLI command (for debugging).
+    /// </summary>
+    public string? GetCommandOutput(string command)
+    {
+        var (success, output) = ExecuteCommandWithOutput(command);
+        return output;
     }
 
     /// <summary>
@@ -183,6 +241,7 @@ public class HidHideService : IDisposable
             @"C:\Program Files\Nefarius Software Solutions e.U.\HidHideCLI\HidHideCLI.exe",
             @"C:\Program Files\Nefarius Software Solutions\HidHide\x64\HidHideCLI.exe",
             @"C:\Program Files\Nefarius Software Solutions e.U.\HidHide\x64\HidHideCLI.exe",
+            @"C:\Program Files\Nefarius Software Solutions e.U.\HidHide\HidHideCLI.exe",
         ];
 
         foreach (var path in searchPaths)
@@ -191,15 +250,20 @@ public class HidHideService : IDisposable
                 return path;
         }
 
-        // Try to find via registry
+        // Try to find via registry (HKLM\SOFTWARE)
         try
         {
-            using var key = Registry.ClassesRoot.OpenSubKey(
-                @"SOFTWARE\Nefarius Software Solutions e.U.\Nefarius Software Solutions e.U. HidHide");
+            using var key = Registry.LocalMachine.OpenSubKey(
+                @"SOFTWARE\Nefarius Software Solutions e.U.\HidHide");
 
             if (key?.GetValue("Path") is string installPath)
             {
+                // Try both with and without x64 subfolder
                 var cliPath = Path.Combine(installPath, "x64", "HidHideCLI.exe");
+                if (File.Exists(cliPath))
+                    return cliPath;
+
+                cliPath = Path.Combine(installPath, "HidHideCLI.exe");
                 if (File.Exists(cliPath))
                     return cliPath;
             }
@@ -209,8 +273,8 @@ public class HidHideService : IDisposable
             // Registry access failed
         }
 
-        // Fallback: assume it's in PATH
-        return "HidHideCLI.exe";
+        // Not found
+        return null;
     }
 
     private bool ExecuteCommand(string command, string args = "")
@@ -271,6 +335,143 @@ public class HidHideService : IDisposable
         catch
         {
             return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Downloads and installs HidHide from GitHub releases.
+    /// </summary>
+    /// <param name="progress">Optional progress callback (0-100)</param>
+    /// <returns>True if installation was successful</returns>
+    public async Task<(bool Success, string Message)> DownloadAndInstallAsync(Action<int>? progress = null)
+    {
+        const string releasesApiUrl = "https://api.github.com/repos/nefarius/HidHide/releases/latest";
+        const string fallbackDownloadUrl = "https://github.com/nefarius/HidHide/releases/download/v1.5.230.0/HidHide_1.5.230_x64.exe";
+
+        string downloadUrl = fallbackDownloadUrl;
+        string installerPath = Path.Combine(Path.GetTempPath(), "HidHide_Installer.exe");
+
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "XOutputRenew");
+
+            // Try to get latest release info from GitHub API
+            progress?.Invoke(5);
+            try
+            {
+                var releaseJson = await httpClient.GetStringAsync(releasesApiUrl);
+                var release = JsonSerializer.Deserialize<JsonElement>(releaseJson);
+
+                if (release.TryGetProperty("assets", out var assets))
+                {
+                    foreach (var asset in assets.EnumerateArray())
+                    {
+                        if (asset.TryGetProperty("name", out var name) &&
+                            asset.TryGetProperty("browser_download_url", out var url))
+                        {
+                            var fileName = name.GetString() ?? "";
+                            if (fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                                fileName.Contains("x64", StringComparison.OrdinalIgnoreCase))
+                            {
+                                downloadUrl = url.GetString() ?? fallbackDownloadUrl;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Use fallback URL if API fails
+            }
+
+            // Download the installer
+            progress?.Invoke(10);
+            using (var response = await httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
+            {
+                response.EnsureSuccessStatusCode();
+
+                var totalBytes = response.Content.Headers.ContentLength ?? 0;
+                var downloadedBytes = 0L;
+
+                using (var contentStream = await response.Content.ReadAsStreamAsync())
+                using (var fileStream = new FileStream(installerPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    var buffer = new byte[8192];
+                    int bytesRead;
+                    while ((bytesRead = await contentStream.ReadAsync(buffer)) > 0)
+                    {
+                        await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
+                        downloadedBytes += bytesRead;
+
+                        if (totalBytes > 0)
+                        {
+                            var percent = (int)(10 + (downloadedBytes * 80 / totalBytes));
+                            progress?.Invoke(Math.Min(percent, 90));
+                        }
+                    }
+                }
+            }
+
+            progress?.Invoke(90);
+
+            // Run the installer (no silent mode - let user see the installer UI)
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = installerPath,
+                UseShellExecute = true,
+                Verb = "runas" // Request admin elevation
+            };
+
+            var process = Process.Start(processInfo);
+            if (process == null)
+            {
+                return (false, "Failed to start installer");
+            }
+
+            await process.WaitForExitAsync();
+            progress?.Invoke(100);
+
+            // Re-initialize to pick up the new installation (regardless of exit code, user may have installed)
+            Initialize();
+
+            if (IsAvailable)
+            {
+                return (true, "HidHide installed successfully. A system restart may be required.");
+            }
+            else if (process.ExitCode == 0)
+            {
+                return (true, "Installer completed. A system restart may be required for HidHide to be detected.");
+            }
+            else
+            {
+                return (false, $"Installer exited with code {process.ExitCode}. HidHide may not be installed.");
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            return (false, $"Download failed: {ex.Message}");
+        }
+        catch (Exception ex) when (ex.Message.Contains("canceled") || ex.Message.Contains("elevation"))
+        {
+            return (false, "Installation was cancelled or elevation was denied.");
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Installation failed: {ex.Message}");
+        }
+        finally
+        {
+            // Clean up installer file
+            try
+            {
+                if (File.Exists(installerPath))
+                {
+                    File.Delete(installerPath);
+                }
+            }
+            catch { }
         }
     }
 

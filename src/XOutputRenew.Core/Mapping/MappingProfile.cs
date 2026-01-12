@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using XOutputRenew.Core.ForceFeedback;
+using XOutputRenew.Core.HidHide;
 
 namespace XOutputRenew.Core.Mapping;
 
@@ -33,6 +34,11 @@ public class MappingProfile
     /// Force feedback settings for this profile.
     /// </summary>
     public ForceFeedbackSettings? ForceFeedbackSettings { get; set; }
+
+    /// <summary>
+    /// HidHide settings for this profile.
+    /// </summary>
+    public HidHideSettings? HidHideSettings { get; set; }
 
     /// <summary>
     /// All output mappings indexed by Xbox output.
@@ -113,7 +119,8 @@ public class MappingProfile
             Description = Description,
             CreatedAt = DateTime.Now,
             ModifiedAt = DateTime.Now,
-            ForceFeedbackSettings = ForceFeedbackSettings?.Clone()
+            ForceFeedbackSettings = ForceFeedbackSettings?.Clone(),
+            HidHideSettings = HidHideSettings?.Clone()
         };
 
         foreach (var kvp in _mappings)
@@ -164,6 +171,7 @@ public class MappingProfileData
     public DateTime ModifiedAt { get; set; }
     public List<OutputMappingData> Mappings { get; set; } = new();
     public ForceFeedbackSettingsData? ForceFeedback { get; set; }
+    public HidHideSettingsData? HidHide { get; set; }
 
     /// <summary>
     /// Creates data from a profile.
@@ -178,7 +186,8 @@ public class MappingProfileData
             ModifiedAt = profile.ModifiedAt,
             ForceFeedback = profile.ForceFeedbackSettings != null
                 ? ForceFeedbackSettingsData.FromSettings(profile.ForceFeedbackSettings)
-                : null
+                : null,
+            HidHide = HidHideSettingsData.FromSettings(profile.HidHideSettings)
         };
 
         foreach (var kvp in profile.Mappings)
@@ -203,7 +212,8 @@ public class MappingProfileData
             Description = Description,
             CreatedAt = CreatedAt,
             ModifiedAt = ModifiedAt,
-            ForceFeedbackSettings = ForceFeedback?.ToSettings()
+            ForceFeedbackSettings = ForceFeedback?.ToSettings(),
+            HidHideSettings = HidHide?.ToSettings()
         };
 
         foreach (var mappingData in Mappings)

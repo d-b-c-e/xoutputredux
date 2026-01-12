@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Edit Profile"
-        Height="800" Width="900"
-        MinHeight="700" MinWidth="700"
+        Height="800" Width="1000"
+        MinHeight="700" MinWidth="800"
         WindowStartupLocation="CenterOwner"
         Background="#1E1E1E"
         Icon="pack://application:,,,/console-controller.png">
@@ -226,6 +226,55 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- TabControl Style -->
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+
+        <!-- TabItem Style -->
+        <Style TargetType="TabItem">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Border"
+                                Background="{StaticResource ControlBackgroundBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1,1,1,0"
+                                CornerRadius="3,3,0,0"
+                                Padding="{TemplateBinding Padding}"
+                                Margin="0,0,2,0">
+                            <ContentPresenter x:Name="ContentSite"
+                                              ContentSource="Header"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+                                <Setter TargetName="Border" Property="BorderThickness" Value="1,1,1,0"/>
+                                <Setter TargetName="Border" Property="Margin" Value="0,0,2,-1"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource ControlHoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ListBox Style -->
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="10" Background="{StaticResource BackgroundBrush}">
@@ -287,173 +336,229 @@
             </Grid>
         </GroupBox>
 
-        <!-- Right Panel - Input Monitor & Binding Editor -->
-        <Grid Grid.Row="1" Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <!-- Right Panel - Tabbed Settings -->
+        <TabControl Grid.Row="1" Grid.Column="1"
+                    Background="{StaticResource BackgroundSecondaryBrush}"
+                    BorderBrush="{StaticResource BorderBrush}">
 
-            <!-- Input Monitor -->
-            <GroupBox Grid.Row="0" Header="Input Monitor">
-                <Grid>
+            <!-- Mapping Tab -->
+            <TabItem Header="Mapping">
+                <Grid Background="{StaticResource BackgroundSecondaryBrush}">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Margin="5">
-                        <CheckBox x:Name="ListenForInputCheckBox" Content="Listen for Input"
-                                  Checked="ListenForInput_Changed" Unchecked="ListenForInput_Changed"
-                                  ToolTip="Highlight Xbox outputs when mapped inputs are triggered"/>
-                        <CheckBox x:Name="VerboseLoggingCheckBox" Content="Verbose Logging"
-                                  Margin="0,5,0,0" Checked="VerboseLogging_Changed" Unchecked="VerboseLogging_Changed"
-                                  ToolTip="Enable detailed logging to diagnose devices that don't register input"/>
-                    </StackPanel>
+                    <!-- Input Monitor -->
+                    <GroupBox Grid.Row="0" Header="Input Monitor" Margin="5">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
 
-                    <ListBox x:Name="InputMonitorList" Grid.Row="1"
-                             FontFamily="Consolas" FontSize="11" Margin="5,5,5,5">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}"/>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                            <StackPanel Grid.Row="0" Margin="5">
+                                <CheckBox x:Name="ListenForInputCheckBox" Content="Listen for Input"
+                                          Checked="ListenForInput_Changed" Unchecked="ListenForInput_Changed"
+                                          ToolTip="Highlight Xbox outputs when mapped inputs are triggered"/>
+                                <CheckBox x:Name="VerboseLoggingCheckBox" Content="Verbose Logging"
+                                          Margin="0,5,0,0" Checked="VerboseLogging_Changed" Unchecked="VerboseLogging_Changed"
+                                          ToolTip="Enable detailed logging to diagnose devices that don't register input"/>
+                            </StackPanel>
+
+                            <ListBox x:Name="InputMonitorList" Grid.Row="1"
+                                     FontFamily="Consolas" FontSize="11" Margin="5,5,5,5">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </GroupBox>
+
+                    <!-- Capture Panel -->
+                    <GroupBox Grid.Row="1" Header="Capture Binding" Margin="5,0,5,5">
+                        <StackPanel Margin="5">
+                            <TextBlock x:Name="CaptureStatusText" Text="Select an output from the list"
+                                       TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                            <Button x:Name="CaptureButton" Content="Capture Input"
+                                    Padding="10,8" Click="CaptureInput_Click"
+                                    IsEnabled="False" FontWeight="Bold"
+                                    Background="#2196F3" Foreground="White"/>
+
+                            <TextBlock x:Name="CaptureHintText" Text="" Foreground="Gray"
+                                       Margin="0,10,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Selected Binding Details -->
+                    <GroupBox Grid.Row="2" Header="Binding Settings" Margin="5,0,5,5">
+                        <StackPanel Margin="5">
+                            <ListView x:Name="BindingListView" Height="100"
+                                      SelectionChanged="BindingListView_SelectionChanged">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Source" Width="180" DisplayMemberBinding="{Binding DisplayName}"/>
+                                        <GridViewColumn Header="" Width="40">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="X" Padding="5,2"
+                                                            Click="RemoveBinding_Click"
+                                                            Tag="{Binding}"
+                                                            ToolTip="Remove binding"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <CheckBox x:Name="InvertCheckBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                                          Content="Invert" Margin="0,0,0,5"
+                                          IsEnabled="False" Checked="InvertCheckBox_Changed" Unchecked="InvertCheckBox_Changed"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="Blue"
+                                           Cursor="Hand" Margin="5,0,0,5" VerticalAlignment="Center"
+                                           MouseLeftButtonUp="InvertHelp_Click"
+                                           ToolTip="Click for help"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Threshold:"
+                                           VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <Slider x:Name="ThresholdSlider" Grid.Row="1" Grid.Column="1"
+                                        Minimum="0" Maximum="1" Value="0.5"
+                                        IsEnabled="False" ValueChanged="ThresholdSlider_Changed"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="Blue"
+                                           Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
+                                           MouseLeftButtonUp="ThresholdHelp_Click"
+                                           ToolTip="Click for help"/>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
                 </Grid>
-            </GroupBox>
+            </TabItem>
 
-            <!-- Capture Panel -->
-            <GroupBox Grid.Row="1" Header="Capture Binding" Margin="0,10,0,0">
-                <StackPanel Margin="5">
-                    <TextBlock x:Name="CaptureStatusText" Text="Select an output from the list"
-                               TextWrapping="Wrap" Margin="0,0,0,10"/>
+            <!-- Force Feedback Tab -->
+            <TabItem Header="Force Feedback">
+                <Grid Background="{StaticResource BackgroundSecondaryBrush}">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Force Feedback Settings" FontSize="14" FontWeight="Bold" Margin="0,0,0,15"/>
 
-                    <Button x:Name="CaptureButton" Content="Capture Input"
-                            Padding="10,8" Click="CaptureInput_Click"
-                            IsEnabled="False" FontWeight="Bold"
-                            Background="#2196F3" Foreground="White"/>
+                        <TextBlock Text="Route rumble/vibration signals from games to your physical device (steering wheel, gamepad with FFB)."
+                                   TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,0,0,15"/>
 
-                    <TextBlock x:Name="CaptureHintText" Text="" Foreground="Gray"
-                               Margin="0,10,0,0" TextWrapping="Wrap"/>
-                </StackPanel>
-            </GroupBox>
+                        <CheckBox x:Name="FfbEnabledCheckBox" Content="Enable Force Feedback"
+                                  Checked="FfbEnabled_Changed" Unchecked="FfbEnabled_Changed"
+                                  ToolTip="Route rumble from games to a physical device"
+                                  Margin="0,0,0,15"/>
 
-            <!-- Selected Binding Details -->
-            <GroupBox Grid.Row="2" Header="Binding Settings" Margin="0,10,0,0">
-                <StackPanel Margin="5">
-                    <ListView x:Name="BindingListView" Height="100"
-                              SelectionChanged="BindingListView_SelectionChanged">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="Source" Width="180" DisplayMemberBinding="{Binding DisplayName}"/>
-                                <GridViewColumn Header="" Width="40">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button Content="X" Padding="5,2"
-                                                    Click="RemoveBinding_Click"
-                                                    Tag="{Binding}"
-                                                    ToolTip="Remove binding"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                    <Grid Margin="0,10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Target Device:"
+                                       VerticalAlignment="Center" Margin="0,0,10,10"/>
+                            <ComboBox x:Name="FfbDeviceComboBox" Grid.Row="0" Grid.Column="1"
+                                      Margin="0,0,0,10" IsEnabled="False"
+                                      SelectionChanged="FfbDevice_Changed"/>
 
-                        <CheckBox x:Name="InvertCheckBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
-                                  Content="Invert" Margin="0,0,0,5"
-                                  IsEnabled="False" Checked="InvertCheckBox_Changed" Unchecked="InvertCheckBox_Changed"/>
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="Blue"
-                                   Cursor="Hand" Margin="5,0,0,5" VerticalAlignment="Center"
-                                   MouseLeftButtonUp="InvertHelp_Click"
-                                   ToolTip="Click for help"/>
+                            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,10,10">
+                                <TextBlock Text="Motor Mode:" VerticalAlignment="Center"/>
+                                <TextBlock Text="?" FontWeight="Bold" Foreground="#0078D4"
+                                           Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
+                                           MouseLeftButtonUp="MotorModeHelp_Click"
+                                           ToolTip="Click for help"/>
+                            </StackPanel>
+                            <ComboBox x:Name="FfbModeComboBox" Grid.Row="1" Grid.Column="1"
+                                      Margin="0,0,0,10" IsEnabled="False"
+                                      SelectionChanged="FfbMode_Changed">
+                                <ComboBoxItem Content="Large Motor" Tag="Large"/>
+                                <ComboBoxItem Content="Small Motor" Tag="Small"/>
+                                <ComboBoxItem Content="Combined (Max)" Tag="Combined"/>
+                                <ComboBoxItem Content="Swap (Small as Primary)" Tag="Swap"/>
+                            </ComboBox>
 
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Threshold:"
-                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Slider x:Name="ThresholdSlider" Grid.Row="1" Grid.Column="1"
-                                Minimum="0" Maximum="1" Value="0.5"
-                                IsEnabled="False" ValueChanged="ThresholdSlider_Changed"/>
-                        <TextBlock Grid.Row="1" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="Blue"
-                                   Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
-                                   MouseLeftButtonUp="ThresholdHelp_Click"
-                                   ToolTip="Click for help"/>
-                    </Grid>
-                </StackPanel>
-            </GroupBox>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Gain:"
+                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                                <Slider x:Name="FfbGainSlider" Width="150"
+                                        Minimum="0" Maximum="2" Value="1"
+                                        IsEnabled="False" ValueChanged="FfbGain_Changed"
+                                        ToolTip="Intensity multiplier (0-200%)"/>
+                                <TextBlock x:Name="FfbGainText" Text="100%" VerticalAlignment="Center"
+                                           Margin="10,0,0,0" Width="40"/>
+                            </StackPanel>
+                        </Grid>
 
-            <!-- Force Feedback Settings -->
-            <GroupBox Grid.Row="3" Header="Force Feedback" Margin="0,10,0,0">
-                <StackPanel Margin="5">
-                    <CheckBox x:Name="FfbEnabledCheckBox" Content="Enable Force Feedback"
-                              Checked="FfbEnabled_Changed" Unchecked="FfbEnabled_Changed"
-                              ToolTip="Route rumble from games to a physical device"/>
+                        <TextBlock Text="Note: Your device must support force feedback. Not all devices are compatible."
+                                   TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,20,0,0" FontStyle="Italic"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
 
-                    <Grid Margin="0,10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+            <!-- Device Hiding Tab -->
+            <TabItem Header="Device Hiding">
+                <Grid Background="{StaticResource BackgroundSecondaryBrush}">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="HidHide Device Hiding" FontSize="14" FontWeight="Bold" Margin="0,0,0,15"/>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Target Device:"
-                                   VerticalAlignment="Center" Margin="0,0,10,5"/>
-                        <ComboBox x:Name="FfbDeviceComboBox" Grid.Row="0" Grid.Column="1"
-                                  Margin="0,0,0,5" IsEnabled="False"
-                                  SelectionChanged="FfbDevice_Changed"
-                                  Background="{StaticResource ControlBackgroundBrush}"
-                                  Foreground="{StaticResource ForegroundBrush}"
-                                  BorderBrush="{StaticResource BorderBrush}"/>
+                        <TextBlock Text="Hide your physical controllers from games so they only see the emulated Xbox controller. This prevents 'double input' issues."
+                                   TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,0,0,15"/>
 
-                        <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,10,5">
-                            <TextBlock Text="Motor Mode:" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="HidHideStatusText" Text="" Foreground="#9E9E9E"
+                                   Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <CheckBox x:Name="HidHideEnabledCheckBox" Content="Hide devices when profile starts"
+                                      Checked="HidHideEnabled_Changed" Unchecked="HidHideEnabled_Changed"
+                                      ToolTip="Automatically hide selected devices to prevent double input"/>
                             <TextBlock Text="?" FontWeight="Bold" Foreground="#0078D4"
                                        Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
-                                       MouseLeftButtonUp="MotorModeHelp_Click"
+                                       MouseLeftButtonUp="HidHideHelp_Click"
                                        ToolTip="Click for help"/>
                         </StackPanel>
-                        <ComboBox x:Name="FfbModeComboBox" Grid.Row="1" Grid.Column="1"
-                                  Margin="0,0,0,5" IsEnabled="False"
-                                  SelectionChanged="FfbMode_Changed"
-                                  Background="{StaticResource ControlBackgroundBrush}"
-                                  Foreground="{StaticResource ForegroundBrush}"
-                                  BorderBrush="{StaticResource BorderBrush}">
-                            <ComboBoxItem Content="Large Motor" Tag="Large"/>
-                            <ComboBoxItem Content="Small Motor" Tag="Small"/>
-                            <ComboBoxItem Content="Combined (Max)" Tag="Combined"/>
-                            <ComboBoxItem Content="Swap (Small as Primary)" Tag="Swap"/>
-                        </ComboBox>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Gain:"
-                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
-                            <Slider x:Name="FfbGainSlider" Width="150"
-                                    Minimum="0" Maximum="2" Value="1"
-                                    IsEnabled="False" ValueChanged="FfbGain_Changed"
-                                    ToolTip="Intensity multiplier (0-200%)"/>
-                            <TextBlock x:Name="FfbGainText" Text="100%" VerticalAlignment="Center"
-                                       Margin="10,0,0,0" Width="40"/>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </GroupBox>
-        </Grid>
+                        <TextBlock Text="Select devices to hide:" Margin="0,0,0,5"/>
+
+                        <ListBox x:Name="HidHideDeviceListBox" Height="200"
+                                 SelectionMode="Multiple"
+                                 IsEnabled="False">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding DisplayName}"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              Foreground="{StaticResource ForegroundBrush}"
+                                              Checked="HidHideDevice_CheckChanged"
+                                              Unchecked="HidHideDevice_CheckChanged"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <TextBlock Text="Devices will be automatically unhidden when the profile stops."
+                                   TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,15,0,0" FontStyle="Italic"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
 
         <!-- Footer Buttons -->
         <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
