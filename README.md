@@ -41,13 +41,16 @@ Simply run `XOutputRenew.App.exe` to open the graphical interface.
 ### Creating a Profile
 
 1. Click "New Profile" and enter a name
-2. Double-click the profile or select it and click "Edit"
+2. Double-click the profile to edit (or right-click → Edit)
 3. In the profile editor:
-   - Select an Xbox output (button/axis/trigger) from the list
-   - Click "Start Monitoring" to see real-time input activity
-   - Click "Capture Input" then press the button/move the axis you want to map
+   - Double-click an Xbox output to start capturing, or select and click "Capture Input"
+   - Press the button or move the axis you want to map
    - Add multiple inputs to the same output for OR logic
+   - Configure Force Feedback routing in the "Force Feedback" tab
+   - Set up device hiding in the "Device Hiding" tab
 4. Click "Save" to save your mappings
+
+**Tip**: If a profile is running, you can still view its mappings (read-only mode).
 
 ### Running a Profile
 
@@ -119,12 +122,15 @@ XOutputRenew/
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
+- **Stable device IDs** - Devices maintain same ID across USB port changes (VID/PID-based)
 - Profile creation and editing with interactive "press to map" capture
+- **Double-click to capture** - Double-click any output to start input capture
 - Real-time input monitoring with output highlighting in profile editor
 - Multi-input OR logic (multiple buttons can trigger same Xbox output)
 - ViGEm integration for Xbox 360 controller emulation
 - Force feedback routing from games to physical devices
 - HidHide integration (auto-hide devices, auto-install prompt)
+- **Application whitelist management** - Add apps like Moza Pit House to see hidden devices
 - System tray with minimize/restore
 - Device renaming and info display
 - Verbose logging for debugging device issues
@@ -132,15 +138,17 @@ XOutputRenew/
 - Visual Xbox controller test display
 - Options for startup profile and "Start with Windows"
 - Profile editor with tabbed interface (Mapping, Force Feedback, Device Hiding)
+- **Read-only profile view** when profile is running
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)
 - Turtle Beach VelocityOne Multi-Shift gear shifter (RawInput)
 - X-Arcade dual joystick (RawInput)
 
-### Still In Progress
-- Full CLI/IPC for controlling running instance
-- Extended in-game testing
+### Coming Soon
+- **Toast notifications** - Windows notification when profiles start/stop
+- **CLI/IPC** - Control running instance from command line or scripts
+- **Game auto-launch** - Automatically start profiles when specific games launch
 
 ## Background
 

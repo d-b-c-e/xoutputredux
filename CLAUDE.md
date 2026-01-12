@@ -142,12 +142,30 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Profile editor tab for device hiding settings
 - [x] Auto-install prompt with download from GitHub
 - [x] "Open Windows Game Controllers" button for testing
+- [x] Application whitelist UI (Browse for exe, select from running processes)
+- [x] Process picker dialog with system process filtering
 
-### Phase 6: CLI & IPC
-- [ ] Full CLI with System.CommandLine
+### Phase 5.5: UX Improvements ✓ COMPLETE
+- [x] VID/PID-based device identification (stable across USB ports)
+- [x] Read-only profile view when profile is running
+- [x] Auto-select first profile on load (Start button immediately usable)
+- [x] Profiles tab as default tab
+- [x] Game Controllers button on Profiles tab
+- [x] Renamed LeftStick/RightStick to LeftStickPress/RightStickPress for clarity
+- [x] Double-click output to trigger Capture Input
+
+### Phase 6: CLI & IPC (NEXT)
 - [ ] Named pipe server for runtime control
 - [ ] Commands: `--start=Profile`, `--stop=Profile`, `--status`
 - [ ] Exit codes for scripting
+- [ ] Toast notifications when profiles start/stop
+
+### Phase 7: Game Auto-Launch (PLANNED)
+- [ ] "Games" tab in main window
+- [ ] Process monitor to detect game launches
+- [ ] Associate games with profiles (auto-start when game launches)
+- [ ] Browse for game exe or select from running processes
+- [ ] Grid view with checkbox for auto-start, dropdown for profile selection
 
 ---
 
@@ -254,7 +272,7 @@ Examples:
 ## Xbox Controller Outputs
 
 ### Buttons
-`A`, `B`, `X`, `Y`, `LeftBumper`, `RightBumper`, `Back`, `Start`, `Guide`, `LeftStick`, `RightStick`, `DPadUp`, `DPadDown`, `DPadLeft`, `DPadRight`
+`A`, `B`, `X`, `Y`, `LeftBumper`, `RightBumper`, `Back`, `Start`, `Guide`, `LeftStickPress`, `RightStickPress`, `DPadUp`, `DPadDown`, `DPadLeft`, `DPadRight`
 
 ### Axes (0.0 - 1.0, center at 0.5 for sticks)
 `LeftStickX`, `LeftStickY`, `RightStickX`, `RightStickY`
@@ -697,51 +715,86 @@ Additional source repositories in workspace for reference:
 
 ---
 
-### Session 2026-01-11 (Part 3) - INCOMPLETE
+### Session 2026-01-12
 
-**Bug Fix Completed: RawInputDevice Start/Stop**
-- **Problem**: Stopping and restarting a profile threw "The receiver is already running"
-- **Cause**: HidSharp's `HidDeviceInputReceiver` can only have `Start()` called once. The `Stop()` method was unsubscribing from events but not stopping the receiver (it has no public Stop method).
-- **Fix Applied**: In `RawInputDevice.Start()`, check `_inputReceiver.IsRunning` before calling `Start()`:
-  ```csharp
-  // Only start if not already running (receiver persists across Start/Stop cycles)
-  if (!_inputReceiver.IsRunning)
-  {
-      _inputReceiver.Start(_hidStream);
-  }
-  ```
-- **File**: `src/XOutputRenew.Input/RawInput/RawInputDevice.cs` (lines 77-91)
-- **Status**: Fix applied and builds successfully
+**HidHide Whitelist Management UI - Complete**
+- Added Application Whitelist section to Device Hiding tab in Profile Editor
+- "Browse..." button to select executable files
+- "Add Process..." button with ProcessPickerDialog to select from running processes
+- ProcessPickerDialog filters out system processes (C:\Windows, common system process names)
+- Whitelist shows filename only, full path on hover tooltip
+- Fixed GetWhitelistedApplications() to strip `--app-reg` prefix and quotes from HidHide CLI output
+- Deduplication of whitelist entries (Debug vs Release paths were showing as duplicates)
 
-**Feature In Progress: HidHide Whitelist Management**
-- **User Request**: Allow adding apps like Moza Pit House to HidHide whitelist so they can still see hidden devices
-- **Current State**: HidHideService already has the methods (`WhitelistApplication`, `GetWhitelistedApplications`, `UnwhitelistApplication`)
-- **UI Location**: Should go in Device Hiding tab of ProfileEditorWindow (user preference)
-- **What Needs To Be Done**:
-  1. Add XAML to `ProfileEditorWindow.xaml` - Device Hiding tab, after "Open Windows Game Controllers" button:
-     - A `<Border>` with "Application Whitelist (Global)" header
-     - A `<ListBox>` named `WhitelistListBox` showing whitelisted apps
-     - "Add Application..." and "Remove Selected" buttons
-  2. Add code-behind to `ProfileEditorWindow.xaml.cs`:
-     - `LoadWhitelist()` method - called from `LoadHidHideSettings()` at end
-     - `AddWhitelistApp_Click()` - opens file dialog, calls `_hidHideService.WhitelistApplication()`
-     - `RemoveWhitelistApp_Click()` - calls `_hidHideService.UnwhitelistApplication()`
-     - `WhitelistItem` class with `FullPath` and `DisplayName` properties
-  
-- **Session Issue**: File edits kept getting corrupted with escape characters (backslashes appearing in code). Both Edit tool and Python string replacements were affected. May be VS Code/IDE interference. Recommend closing VS Code before editing in next session.
+**New Files:**
+- `ProcessPickerDialog.xaml/.cs` - Dialog for selecting running processes to whitelist
 
-**Emulation Testing Status**
-- User reported emulation wasn't showing input in Test tab
-- Moza wheel may have needed Pit House reset
-- Start/stop profile fix was applied but not fully tested yet
-- User was concerned hiding/unhiding the Moza wheel via HidHide may have interfered with Pit House
+**VID/PID Device Identification - Breaking Change**
+- Changed device ID generation to use VID/PID (hardware ID) instead of full interface path
+- Devices now maintain the same ID regardless of which USB port they're connected to
+- DirectInput: HID devices use `HID\VID_XXXX&PID_XXXX`, non-HID use ProductGuid only
+- RawInput: Uses hardware ID extracted from device path
+- **Breaking**: Existing profiles need devices re-mapped once (IDs changed)
 
-**Git Status at End of Session**
-- `src/XOutputRenew.Input/RawInput/RawInputDevice.cs` - modified (receiver fix applied)
-- All other files clean (whitelist UI changes were reverted due to corruption)
+**Read-Only Profile View**
+- When a profile is running, double-clicking it opens in read-only mode
+- Orange banner at top: "View Only - Profile is currently running. Stop the profile to make changes."
+- Save button disabled and shows "View Only"
+- Capture Input button disabled
 
-**Resume Instructions**
-1. Build and run to test the RawInputDevice start/stop fix
-2. Test that profile can be started, stopped, and restarted without error
-3. Add HidHide whitelist UI to ProfileEditorWindow (Device Hiding tab)
-4. Test whitelist functionality with Moza Pit House
+**UI Improvements**
+- Profiles tab is now the default tab (SelectedIndex="1")
+- First profile auto-selected on load (Start button immediately usable)
+- "Game Controllers" button added next to Start on Profiles tab
+- Renamed `LeftStick`/`RightStick` to `LeftStickPress`/`RightStickPress` for clarity
+- Double-click an output in profile editor to trigger Capture Input
+- Profile editor height increased to 850px
+- Column width adjustments (480px fixed outputs, flexible right panel)
+- HidHide device list reduced to 100px height
+
+**Bug Fixes**
+- Fixed DirectInput device ID generation that was breaking profile mappings (reverted InstanceGuid inclusion)
+- Fixed RawInputDevice "receiver already running" error when restarting profiles
+- Fixed HidHide whitelist parsing for `--app-reg "path"` format
+
+**Commits This Session:**
+1. `Add HidHide whitelist UI, read-only profile view, and UI improvements`
+2. `Fix DirectInput device ID generation breaking profile mappings`
+3. `Use VID/PID for device identification and UI improvements`
+
+---
+
+## Next Steps (Phase 6 & 7)
+
+### Phase 6: CLI & IPC + Toast Notifications
+1. **Toast Notifications**
+   - Windows notification center popup when profile starts/stops
+   - Use `Microsoft.Toolkit.Uwp.Notifications` or similar
+
+2. **Named Pipe Server**
+   - Single instance detection via named pipe
+   - Commands: `--start=<profile>`, `--stop`, `--status`
+   - JSON responses for scripting
+
+3. **CLI Enhancements**
+   - Exit codes for success/failure
+   - Headless mode for running without GUI
+
+### Phase 7: Game Auto-Launch
+1. **Games Tab**
+   - New tab in main window
+   - Grid showing: Game Name, Executable Path, Auto-Start (checkbox), Profile (dropdown)
+
+2. **Process Monitoring**
+   - Background service monitoring running processes
+   - WMI or polling approach (need to evaluate performance)
+   - Detect when monitored game starts → auto-start associated profile
+   - Detect when game exits → auto-stop profile (optional)
+
+3. **Game Configuration**
+   - "Add Game" button (browse for exe or select running process)
+   - Checkbox to enable/disable auto-start per game
+   - Dropdown to select which profile to start
+
+4. **Data Storage**
+   - `%AppData%\XOutputRenew\games.json` for game-profile associations
