@@ -8,10 +8,12 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 - **DirectInput & RawInput support** - Works with virtually any gaming controller
 - **Force Feedback** - Route rumble/vibration from games to physical devices (steering wheels, gamepads with FFB)
 - **Device Hiding** - HidHide integration to hide physical controllers from games, preventing double-input issues
+- **Game Auto-Profile** - Automatically start profiles when specific games launch, stop when they exit
 - **Profile management** - Create, duplicate, and switch profiles easily
 - **Interactive mapping** - "Press button to map" configuration interface
 - **System tray integration** - Minimize to tray, run in background
 - **CLI support** - Command-line interface for scripting and automation
+- **Toast notifications** - Windows notifications when profiles start/stop or games are detected
 
 ## Requirements
 
@@ -22,9 +24,14 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 
 ## Installation
 
-1. Install the [ViGEmBus driver](https://github.com/nefarius/ViGEmBus/releases)
-2. Optionally install [HidHide](https://github.com/nefarius/HidHide/releases) if you want to hide your physical controllers from games
-3. Download and run XOutputRenew
+### Download
+Download the latest release from the [Releases page](https://github.com/d-b-c-e/xoutputrenew/releases):
+- **Setup installer** (`XOutputRenew-x.x.x-Setup.exe`) - Recommended, includes options for PATH and startup
+- **Portable ZIP** (`XOutputRenew-x.x.x-Portable.zip`) - Extract and run, no installation needed
+
+### Prerequisites
+1. Install the [ViGEmBus driver](https://github.com/nefarius/ViGEmBus/releases) (required)
+2. Optionally install [HidHide](https://github.com/nefarius/HidHide/releases) for device hiding (XOutputRenew will prompt to install if missing)
 
 ## Usage
 
@@ -34,9 +41,10 @@ Simply run `XOutputRenew.exe` to open the graphical interface.
 
 1. **Devices tab** - View all detected input devices with "Listen for Input" highlighting
 2. **Profiles tab** - Create and manage mapping profiles
-3. **Status tab** - Check driver status and active emulation
-4. **Options tab** - Configure startup behavior and settings
-5. **Test tab** - Visual Xbox controller showing real-time output state
+3. **Games tab** - Configure game-to-profile associations for auto-start
+4. **Status tab** - Check driver status and active emulation
+5. **Options tab** - Configure startup behavior and settings
+6. **Test tab** - Visual Xbox controller showing real-time output state
 
 ### Creating a Profile
 
@@ -101,7 +109,7 @@ XOutputRenew --start-profile "MyProfile" --minimized
 
 ```powershell
 # Clone the repository
-git clone https://github.com/your-username/xoutputrenew.git
+git clone https://github.com/d-b-c-e/xoutputrenew.git
 cd xoutputrenew
 
 # Build
@@ -112,6 +120,9 @@ dotnet run --project src/XOutputRenew.App
 
 # Run tests
 dotnet test
+
+# Create release (requires Inno Setup 6)
+.\release.ps1
 ```
 
 ## Project Structure
@@ -130,7 +141,7 @@ XOutputRenew/
 
 ## Current Status
 
-**In Development** - Core functionality is working, active testing in progress.
+**v0.7.0-alpha** - Core functionality complete, in active testing.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
@@ -155,6 +166,8 @@ XOutputRenew/
 - **CLI/IPC** - Control running instance from command line (`start`, `stop`, `status`)
 - **Default profile** - Set a profile as default for quick CLI start
 - **Add to System PATH** - Option to add XOutputRenew to PATH for CLI access from anywhere
+- **Game auto-profile** - Automatically start/stop profiles when games launch/exit
+- **Steam game browser** - Browse installed Steam games with smart executable detection
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)
@@ -162,8 +175,9 @@ XOutputRenew/
 - X-Arcade dual joystick (RawInput)
 
 ### Coming Soon
-- **Game auto-launch** - Automatically start profiles when specific games launch
 - **Headless mode** - Run without GUI for scripting/service scenarios
+- **Portable mode** - Store all settings in app directory for USB drive use
+- **Update checker** - Check for new releases on startup
 
 ## Background
 

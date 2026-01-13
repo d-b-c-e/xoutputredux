@@ -548,30 +548,32 @@ AppLogger.Error("Something failed", exception);
 
 ## Recent Session Notes
 
-### Session 2026-01-12 (Part 2) - ACTIVE DEBUGGING
+### Session 2026-01-12 (Part 2)
 
-**Phase 7: Game Auto-Profile - COMPLETE BUT BUGGY**
+**Phase 7: Game Auto-Profile - COMPLETE**
 
-Implementation complete, tested with "SP Grand Prix" game. Two issues found:
+Tested with "SP Grand Prix" game - working correctly after bug fix.
 
-**Issue 1: Toast notifications not visible in fullscreen**
-- Game started, profile auto-started correctly
-- Toast notification wasn't visible (game was in fullscreen exclusive mode)
-- This is likely a Windows limitation - toasts don't overlay fullscreen exclusive apps
-- Possible workarounds to investigate:
-  - Check if there's a "priority" or "alarm" toast type
-  - Consider playing a sound instead/additionally
-  - May just be an accepted limitation
+**Bug Fixed: Profile didn't stop when game exited**
+- **Root cause**: The `finally` block was disposing ALL processes, including the one stored for tracking. On the next poll, `HasExited` was called on a disposed object.
+- **Fix**: Store `processId` (int) instead of `Process` object. Uses `Process.GetProcessById()` which properly throws when process no longer exists.
 
-**Issue 2: Profile didn't stop when game exited - FIXED**
-- Game "SP Grand Prix" was detected and profile started ✓
-- When game was closed (Alt+F4), profile did NOT stop automatically ✗
-- **Root cause**: The `finally` block at line 197 was disposing ALL processes, including the one stored in `_activeGameProcess`. On the next poll, `HasExited` was called on a disposed object.
-- **Fix**: Changed from storing `Process` object to storing just `processId` (int). Now uses `Process.GetProcessById()` which properly throws `ArgumentException` when process no longer exists.
-- Changes made to `GameMonitorService.cs`:
-  - `_activeGameProcess` → `_activeGameProcessId` (Process → int)
-  - `OnGameDetected(game, process)` → `OnGameDetected(game, process.Id)`
-  - Exit check uses `Process.GetProcessById()` with proper exception handling
+**Known Limitation: Toast notifications in fullscreen**
+- Toast notifications don't appear over fullscreen exclusive games (Windows limitation)
+- Toasts still work and appear after exiting fullscreen or in windowed mode
+
+**Persist Game Monitoring State**
+- Added `GameMonitoringEnabled` to AppSettings
+- Monitoring state remembered across app restarts
+
+**Release Infrastructure Added**
+- `build.ps1` - PowerShell build script
+- `release.ps1` - Creates portable ZIP + Inno Setup installer
+- `installer/XOutputRenew.iss` - Inno Setup script with PATH and startup options
+- `.github/workflows/ci.yml` - CI on push/PR
+- `.github/workflows/release.yml` - Auto-release on `v*` tags
+- `LICENSE` - MIT license
+- Version set to 0.7.0-alpha
 
 **New Files (Phase 7):**
 - `Core/Games/GameAssociation.cs` - Model for game-profile associations
@@ -580,7 +582,6 @@ Implementation complete, tested with "SP Grand Prix" game. Two issues found:
 - `App/GameEditorDialog.xaml/.cs` - Add/edit game dialog
 - `App/SteamGamePickerDialog.xaml/.cs` - Steam game browser
 - `App/ExecutablePickerDialog.xaml/.cs` - Executable picker for multi-exe games
-- `App/ToastNotificationService.cs` - Extended with game launch/exit methods
 
 ---
 
@@ -898,39 +899,3 @@ Additional source repositories in workspace for reference:
 2. `Fix DirectInput device ID generation breaking profile mappings`
 3. `Use VID/PID for device identification and UI improvements`
 
----
-
-## Next Steps (Phase 6 & 7)
-
-### Phase 6: CLI & IPC + Toast Notifications
-1. **Toast Notifications**
-   - Windows notification center popup when profile starts/stops
-   - Use `Microsoft.Toolkit.Uwp.Notifications` or similar
-
-2. **Named Pipe Server**
-   - Single instance detection via named pipe
-   - Commands: `--start=<profile>`, `--stop`, `--status`
-   - JSON responses for scripting
-
-3. **CLI Enhancements**
-   - Exit codes for success/failure
-   - Headless mode for running without GUI
-
-### Phase 7: Game Auto-Launch
-1. **Games Tab**
-   - New tab in main window
-   - Grid showing: Game Name, Executable Path, Auto-Start (checkbox), Profile (dropdown)
-
-2. **Process Monitoring**
-   - Background service monitoring running processes
-   - WMI or polling approach (need to evaluate performance)
-   - Detect when monitored game starts → auto-start associated profile
-   - Detect when game exits → auto-stop profile (optional)
-
-3. **Game Configuration**
-   - "Add Game" button (browse for exe or select running process)
-   - Checkbox to enable/disable auto-start per game
-   - Dropdown to select which profile to start
-
-4. **Data Storage**
-   - `%AppData%\XOutputRenew\games.json` for game-profile associations
