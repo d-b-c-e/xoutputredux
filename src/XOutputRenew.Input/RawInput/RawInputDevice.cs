@@ -23,7 +23,9 @@ public class RawInputDevice : IInputDevice
     public IReadOnlyList<IInputSource> Sources => _sources;
 
     public event EventHandler<InputChangedEventArgs>? InputChanged;
+#pragma warning disable CS0067 // Event is required by IInputDevice interface but HidSharp doesn't provide disconnect notifications
     public event EventHandler? Disconnected;
+#pragma warning restore CS0067
 
     private readonly HidDevice _device;
     private readonly HidStream _hidStream;

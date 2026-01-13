@@ -254,7 +254,7 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
     {
         try
         {
-            while (_running && !_cts.Token.IsCancellationRequested)
+            while (_running && _cts != null && !_cts.Token.IsCancellationRequested)
             {
                 try
                 {
