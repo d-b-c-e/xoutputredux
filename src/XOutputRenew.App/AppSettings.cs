@@ -33,6 +33,11 @@ public class AppSettings
     public bool HidHidePromptDeclined { get; set; }
 
     /// <summary>
+    /// Whether game monitoring should be enabled on startup.
+    /// </summary>
+    public bool GameMonitoringEnabled { get; set; }
+
+    /// <summary>
     /// Loads settings from disk.
     /// </summary>
     public static AppSettings Load()

@@ -138,6 +138,12 @@ public partial class MainWindow : Window
             WindowState = WindowState.Minimized;
             Hide();
         }
+
+        // Restore game monitoring if it was enabled
+        if (_appSettings.GameMonitoringEnabled && _gameManager.Games.Count > 0)
+        {
+            StartGameMonitoring(saveToSettings: false);
+        }
     }
 
     private void CheckDriverStatus()
@@ -1045,7 +1051,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void StartGameMonitoring()
+    private void StartGameMonitoring(bool saveToSettings = true)
     {
         if (_gameManager.Games.Count == 0)
         {
@@ -1058,14 +1064,26 @@ public partial class MainWindow : Window
         UpdateMonitoringUI();
         StatusText.Text = "Game monitoring enabled - watching for configured games";
         AppLogger.Info("Game monitoring started");
+
+        if (saveToSettings)
+        {
+            _appSettings.GameMonitoringEnabled = true;
+            _appSettings.Save();
+        }
     }
 
-    private void StopGameMonitoring()
+    private void StopGameMonitoring(bool saveToSettings = true)
     {
         _gameMonitorService.StopMonitoring();
         UpdateMonitoringUI();
         StatusText.Text = "Game monitoring disabled";
         AppLogger.Info("Game monitoring stopped");
+
+        if (saveToSettings)
+        {
+            _appSettings.GameMonitoringEnabled = false;
+            _appSettings.Save();
+        }
     }
 
     private void UpdateMonitoringUI()
