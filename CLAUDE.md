@@ -205,6 +205,15 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [ ] No registry modifications in portable mode
 - [ ] Document portable usage in README
 
+### Phase 12: ViGEmBus Driver Check (PLANNED)
+- [ ] Check for ViGEmBus driver on startup (similar to HidHide check)
+- [ ] Show warning dialog if not installed with explanation of why it's required
+- [ ] "Download" button to open GitHub releases page (https://github.com/nefarius/ViGEmBus/releases)
+- [ ] Optional: Auto-download and launch installer (like HidHide)
+- [ ] "Don't show again" checkbox to suppress future warnings
+- [ ] Add `ViGEmBusPromptDeclined` to AppSettings
+- [ ] Status tab should show clear error state when ViGEmBus missing
+
 ---
 
 ## CLI Interface
