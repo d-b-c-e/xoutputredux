@@ -455,6 +455,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
@@ -498,6 +499,22 @@
                                 <Button x:Name="RestartAsAdminButton" Content="Restart as Administrator"
                                         Padding="15,5" Margin="0,10,0,0" HorizontalAlignment="Left"
                                         Click="RestartAsAdmin_Click"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Command Line -->
+                        <GroupBox Grid.Row="3" Header="Command Line">
+                            <StackPanel Margin="10">
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox x:Name="AddToPathCheckBox" Content="Add to System PATH"
+                                              Checked="AddToPath_Changed" Unchecked="AddToPath_Changed"/>
+                                    <TextBlock Text="?" FontWeight="Bold" Foreground="#64B5F6" Margin="10,0,0,0"
+                                               VerticalAlignment="Center" Cursor="Hand"
+                                               MouseLeftButtonUp="PathHelp_Click"
+                                               ToolTip="Click for help"/>
+                                </StackPanel>
+                                <TextBlock Text="Enable to run 'XOutputRenew.App start MyProfile' from any terminal."
+                                           Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
                             </StackPanel>
                         </GroupBox>
                     </Grid>

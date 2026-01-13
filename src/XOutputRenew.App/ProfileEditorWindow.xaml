@@ -301,6 +301,9 @@
                 <TextBlock x:Name="ProfileNameText" Text="ProfileName" FontSize="18" FontWeight="Bold"/>
             </StackPanel>
             <TextBlock x:Name="ProfileDescText" Text="" Foreground="Gray" Margin="0,5,0,0"/>
+            <CheckBox x:Name="DefaultProfileCheckBox" Content="Default Profile" Margin="0,8,0,0"
+                      Checked="DefaultProfile_Changed" Unchecked="DefaultProfile_Changed"
+                      ToolTip="When set, 'XOutputRenew.App start' will use this profile without needing to specify a name"/>
         </StackPanel>
 
         <!-- Xbox Outputs List -->
@@ -437,7 +440,7 @@
                                 <CheckBox x:Name="InvertCheckBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
                                           Content="Invert" Margin="0,0,0,5"
                                           IsEnabled="False" Checked="InvertCheckBox_Changed" Unchecked="InvertCheckBox_Changed"/>
-                                <TextBlock Grid.Row="0" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="Blue"
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="#64B5F6"
                                            Cursor="Hand" Margin="5,0,0,5" VerticalAlignment="Center"
                                            MouseLeftButtonUp="InvertHelp_Click"
                                            ToolTip="Click for help"/>
@@ -447,7 +450,7 @@
                                 <Slider x:Name="ThresholdSlider" Grid.Row="1" Grid.Column="1"
                                         Minimum="0" Maximum="1" Value="0.5"
                                         IsEnabled="False" ValueChanged="ThresholdSlider_Changed"/>
-                                <TextBlock Grid.Row="1" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="Blue"
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="#64B5F6"
                                            Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
                                            MouseLeftButtonUp="ThresholdHelp_Click"
                                            ToolTip="Click for help"/>

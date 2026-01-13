@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using XOutputRenew.Core.Mapping;
 using XOutputRenew.Input;
@@ -15,6 +16,21 @@ public class Program
         WriteIndented = true
     };
 
+    // Exit codes
+    public const int ExitSuccess = 0;
+    public const int ExitError = 1;
+    public const int ExitProfileNotFound = 2;
+    public const int ExitNoRunningInstance = 3;
+
+    // Console attachment for CLI mode (WinExe apps don't have a console by default)
+    [DllImport("kernel32.dll")]
+    private static extern bool AttachConsole(int dwProcessId);
+
+    [DllImport("kernel32.dll")]
+    private static extern bool FreeConsole();
+
+    private const int ATTACH_PARENT_PROCESS = -1;
+
     [STAThread]
     public static int Main(string[] args)
     {
@@ -24,9 +40,17 @@ public class Program
             return LaunchGui(null, false);
         }
 
+        // Attach to parent console for CLI output (WinExe doesn't have one by default)
+        AttachConsole(ATTACH_PARENT_PROCESS);
+
         // Build CLI
         var rootCommand = BuildRootCommand();
-        return rootCommand.Invoke(args);
+        var result = rootCommand.Invoke(args);
+
+        // Free console before exiting
+        FreeConsole();
+
+        return result;
     }
 
     private static RootCommand BuildRootCommand()
@@ -71,17 +95,38 @@ public class Program
         }, jsonOption);
         rootCommand.AddCommand(listProfilesCommand);
 
-        // Duplicate profile command
-        var duplicateCommand = new Command("duplicate-profile", "Duplicate an existing profile");
-        var sourceArg = new Argument<string>("source", "Name of the profile to duplicate");
-        var newNameArg = new Argument<string>("new-name", "Name for the new profile");
-        duplicateCommand.AddArgument(sourceArg);
-        duplicateCommand.AddArgument(newNameArg);
-        duplicateCommand.SetHandler((source, newName) =>
+        // Remote control commands (sent to running instance)
+        var startCommand = new Command("start", "Start a profile (uses default if no name specified)");
+        var profileArg = new Argument<string?>("profile", () => null, "Name of the profile to start (optional, uses default)");
+        startCommand.AddArgument(profileArg);
+        startCommand.SetHandler((profile) =>
         {
-            DuplicateProfile(source, newName);
-        }, sourceArg, newNameArg);
-        rootCommand.AddCommand(duplicateCommand);
+            Environment.ExitCode = SendStartCommand(profile);
+        }, profileArg);
+        rootCommand.AddCommand(startCommand);
+
+        var stopCommand = new Command("stop", "Stop the running profile");
+        stopCommand.SetHandler(() =>
+        {
+            Environment.ExitCode = SendStopCommand();
+        });
+        rootCommand.AddCommand(stopCommand);
+
+        var statusCommand = new Command("status", "Get status from the running instance");
+        statusCommand.AddOption(jsonOption);
+        statusCommand.SetHandler((json) =>
+        {
+            Environment.ExitCode = GetStatus(json);
+        }, jsonOption);
+        rootCommand.AddCommand(statusCommand);
+
+        // Help command with examples
+        var helpCommand = new Command("help", "Show detailed help and examples");
+        helpCommand.SetHandler(() =>
+        {
+            ShowDetailedHelp();
+        });
+        rootCommand.AddCommand(helpCommand);
 
         // Add global options to root for running without 'run' subcommand
         rootCommand.AddOption(startProfileOption);
@@ -219,21 +264,178 @@ public class Program
         }
     }
 
-    private static void DuplicateProfile(string source, string newName)
+    private static int SendStartCommand(string? profileName)
     {
-        var profilesDir = ProfileManager.GetDefaultProfilesDirectory();
-        var manager = new ProfileManager(profilesDir);
-        manager.LoadProfiles();
-
-        var duplicate = manager.DuplicateProfile(source, newName);
-        if (duplicate != null)
+        // If no profile specified, look for default
+        if (string.IsNullOrEmpty(profileName))
         {
-            Console.WriteLine($"Created profile '{newName}' from '{source}'");
+            var profilesDir = ProfileManager.GetDefaultProfilesDirectory();
+            var manager = new ProfileManager(profilesDir);
+            manager.LoadProfiles();
+
+            var defaultProfile = manager.GetDefaultProfile();
+            if (defaultProfile == null)
+            {
+                Console.Error.WriteLine("Error: No profile specified and no default profile is set.");
+                Console.Error.WriteLine("Either specify a profile name: XOutputRenew start \"ProfileName\"");
+                Console.Error.WriteLine("Or set a default profile in the Profile Editor.");
+                return ExitError;
+            }
+
+            profileName = defaultProfile.Name;
+            Console.WriteLine($"Using default profile: {profileName}");
+        }
+
+        if (!IpcService.IsAnotherInstanceRunning())
+        {
+            // No running instance - launch GUI with this profile
+            Console.WriteLine($"Launching XOutputRenew with profile: {profileName}");
+            FreeConsole(); // Detach from console before launching GUI
+            return LaunchGui(profileName, false);
+        }
+
+        var result = IpcService.SendStartCommand(profileName);
+        if (result.Success)
+        {
+            Console.WriteLine(result.Message);
+            return ExitSuccess;
         }
         else
         {
-            Console.Error.WriteLine($"Error: Profile '{source}' not found");
-            Environment.ExitCode = 1;
+            Console.Error.WriteLine($"Error: {result.Message}");
+            return ExitError;
         }
+    }
+
+    private static int SendStopCommand()
+    {
+        if (!IpcService.IsAnotherInstanceRunning())
+        {
+            Console.Error.WriteLine("Error: No running instance of XOutputRenew found.");
+            return ExitNoRunningInstance;
+        }
+
+        var result = IpcService.SendStopCommand();
+        if (result.Success)
+        {
+            Console.WriteLine(result.Message);
+            return ExitSuccess;
+        }
+        else
+        {
+            Console.Error.WriteLine($"Error: {result.Message}");
+            return ExitError;
+        }
+    }
+
+    private static int GetStatus(bool asJson)
+    {
+        if (!IpcService.IsAnotherInstanceRunning())
+        {
+            if (asJson)
+            {
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    running = false,
+                    message = "No running instance"
+                }, JsonOptions));
+            }
+            else
+            {
+                Console.WriteLine("XOutputRenew is not running.");
+            }
+            return ExitNoRunningInstance;
+        }
+
+        var result = IpcService.SendStatusCommand();
+        if (!result.Success)
+        {
+            Console.Error.WriteLine($"Error: {result.Message}");
+            return ExitError;
+        }
+
+        if (asJson)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new
+            {
+                running = true,
+                profileActive = result.Status?.IsRunning ?? false,
+                profileName = result.Status?.ProfileName,
+                vigem = result.Status?.ViGEmStatus,
+                hidhide = result.Status?.HidHideStatus
+            }, JsonOptions));
+        }
+        else
+        {
+            Console.WriteLine("XOutputRenew Status:");
+            Console.WriteLine($"  Running: Yes");
+            if (result.Status?.IsRunning == true)
+            {
+                Console.WriteLine($"  Active Profile: {result.Status.ProfileName}");
+            }
+            else
+            {
+                Console.WriteLine($"  Active Profile: None");
+            }
+            Console.WriteLine($"  ViGEm: {result.Status?.ViGEmStatus}");
+            Console.WriteLine($"  HidHide: {result.Status?.HidHideStatus}");
+        }
+
+        return ExitSuccess;
+    }
+
+    private static void ShowDetailedHelp()
+    {
+        Console.WriteLine(@"XOutputRenew - Xbox Controller Emulator
+========================================
+
+Maps inputs from gaming devices (wheels, joysticks, gamepads) to an emulated
+Xbox 360 controller using ViGEm.
+
+USAGE:
+  XOutputRenew [command] [options]
+
+COMMANDS:
+  (no command)              Launch the GUI application
+  run                       Launch the GUI (same as no command)
+  list-devices [--json]     List detected input devices
+  list-profiles [--json]    List available profiles
+  start [profile]           Start a profile (uses default if not specified)
+  stop                      Stop the running profile
+  status [--json]           Get status from the running instance
+  help                      Show this help
+
+STARTUP OPTIONS:
+  --start-profile <name>    Start with a profile already running
+  --minimized               Start minimized to system tray
+
+EXAMPLES:
+  # Start the default profile
+  XOutputRenew start
+
+  # Start a specific profile
+  XOutputRenew start ""My Wheel""
+
+  # Launch minimized with a profile
+  XOutputRenew --start-profile ""My Wheel"" --minimized
+
+  # Control a running instance
+  XOutputRenew stop
+  XOutputRenew status
+
+  # List profiles as JSON (for scripting)
+  XOutputRenew list-profiles --json
+
+  # Check status for scripting
+  XOutputRenew status --json
+
+EXIT CODES:
+  0  Success
+  1  Error
+  2  Profile not found
+  3  No running instance (for remote commands)
+
+For more information, visit: https://github.com/your-repo/xoutputrenew
+");
     }
 }

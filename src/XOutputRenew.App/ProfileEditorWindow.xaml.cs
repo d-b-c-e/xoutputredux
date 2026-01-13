@@ -71,6 +71,7 @@ public partial class ProfileEditorWindow : Window
 
         ProfileNameText.Text = _profile.Name;
         ProfileDescText.Text = _profile.Description ?? "";
+        DefaultProfileCheckBox.IsChecked = _profile.IsDefault;
 
         OutputListView.ItemsSource = _outputs;
         InputMonitorList.ItemsSource = _inputMonitorItems;
@@ -150,6 +151,11 @@ public partial class ProfileEditorWindow : Window
             device.InputChanged -= Device_InputChanged_Monitor;
             device.Stop();
         }
+    }
+
+    private void DefaultProfile_Changed(object sender, RoutedEventArgs e)
+    {
+        _profile.IsDefault = DefaultProfileCheckBox.IsChecked == true;
     }
 
     private void VerboseLogging_Changed(object sender, RoutedEventArgs e)
@@ -543,19 +549,18 @@ public partial class ProfileEditorWindow : Window
 
     private void InvertHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        MessageBox.Show(
+        HelpDialog.Show(
             "Invert flips the input value:\n\n" +
             "- For axes: Left becomes right, up becomes down\n" +
             "- For triggers/buttons: Pressed becomes released\n\n" +
             "Select a binding from the list above to enable this option.",
             "Invert Help",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+            this);
     }
 
     private void ThresholdHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        MessageBox.Show(
+        HelpDialog.Show(
             "Threshold sets the activation point when mapping an analog input to a button.\n\n" +
             "For example, if you map a trigger (0-100%) to the A button:\n" +
             "- Threshold 0.5 = Button pressed when trigger is >50%\n" +
@@ -563,8 +568,7 @@ public partial class ProfileEditorWindow : Window
             "This setting only applies when mapping to button outputs.\n" +
             "Select a binding from the list above to enable this option.",
             "Threshold Help",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+            this);
     }
 
     private void RemoveBinding_Click(object sender, RoutedEventArgs e)
@@ -690,28 +694,27 @@ public partial class ProfileEditorWindow : Window
 
     private void MotorModeHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        MessageBox.Show(
+        HelpDialog.Show(
             "Xbox controllers have two rumble motors that games use differently:\n\n" +
             "LARGE MOTOR (Low Frequency)\n" +
-            "• Heavy, deep rumble for impacts and collisions\n" +
-            "• Used for: crashes, explosions, engine rumble\n" +
-            "• Best for: steering wheels, bass shakers\n\n" +
+            "- Heavy, deep rumble for impacts and collisions\n" +
+            "- Used for: crashes, explosions, engine rumble\n" +
+            "- Best for: steering wheels, bass shakers\n\n" +
             "SMALL MOTOR (High Frequency)\n" +
-            "• Light, buzzy vibration for feedback\n" +
-            "• Used for: road texture, gunfire, alerts\n" +
-            "• Best for: subtle tactile feedback\n\n" +
+            "- Light, buzzy vibration for feedback\n" +
+            "- Used for: road texture, gunfire, alerts\n" +
+            "- Best for: subtle tactile feedback\n\n" +
             "MODE OPTIONS:\n\n" +
-            "• Large Motor - Only use the large motor signal\n" +
+            "- Large Motor: Only use the large motor signal\n" +
             "  Best for wheels where you want strong, clear effects\n\n" +
-            "• Small Motor - Only use the small motor signal\n" +
+            "- Small Motor: Only use the small motor signal\n" +
             "  Best for feeling subtle details like road texture\n\n" +
-            "• Combined (Recommended) - Use whichever motor is stronger\n" +
+            "- Combined (Recommended): Use whichever motor is stronger\n" +
             "  Best overall experience, captures all game feedback\n\n" +
-            "• Swap - Use small motor signal as primary\n" +
+            "- Swap: Use small motor signal as primary\n" +
             "  For games that incorrectly use the small motor for main effects",
             "Motor Mode Help",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+            this);
     }
 
     private void UpdateFfbSettings()
@@ -875,7 +878,7 @@ public partial class ProfileEditorWindow : Window
             if (_whitelistItems.Any(w => w.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase)))
             {
                 MessageBox.Show("This application is already whitelisted.", "Already Whitelisted",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBoxButton.OK, MessageBoxImage.None);
                 return;
             }
 
@@ -904,7 +907,7 @@ public partial class ProfileEditorWindow : Window
         if (selected == null)
         {
             MessageBox.Show("Please select an application to remove.", "No Selection",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBoxButton.OK, MessageBoxImage.None);
             return;
         }
 
@@ -1026,7 +1029,7 @@ public partial class ProfileEditorWindow : Window
             if (_whitelistItems.Any(w => w.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase)))
             {
                 MessageBox.Show("This application is already whitelisted.", "Already Whitelisted",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBoxButton.OK, MessageBoxImage.None);
                 return;
             }
 
@@ -1082,7 +1085,7 @@ public partial class ProfileEditorWindow : Window
 
     private void HidHideHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        MessageBox.Show(
+        HelpDialog.Show(
             "HidHide prevents games from seeing your physical controllers, so they only see " +
             "the virtual Xbox controller created by XOutputRenew.\n\n" +
             "WHY USE IT?\n" +
@@ -1094,11 +1097,10 @@ public partial class ProfileEditorWindow : Window
             "3. When you stop the profile, devices become visible again\n" +
             "4. XOutputRenew is automatically whitelisted so it can still read your devices\n\n" +
             "REQUIREMENTS:\n" +
-            "• HidHide driver must be installed (nefarius.at/HidHide)\n" +
-            "• No admin rights required after installation",
+            "- HidHide driver must be installed (nefarius.at/HidHide)\n" +
+            "- No admin rights required after installation",
             "Device Hiding Help",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+            this);
     }
 
     private void UpdateHidHideSettings()

@@ -213,4 +213,29 @@ public class ProfileManager
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         return Path.Combine(appData, "XOutputRenew", "Profiles");
     }
+
+    /// <summary>
+    /// Gets the default profile, or null if none is set.
+    /// </summary>
+    public MappingProfile? GetDefaultProfile()
+    {
+        return _profiles.Values.FirstOrDefault(p => p.IsDefault);
+    }
+
+    /// <summary>
+    /// Sets a profile as the default, clearing the flag from all others.
+    /// </summary>
+    /// <param name="profileName">The profile to set as default, or null to clear all defaults.</param>
+    public void SetDefaultProfile(string? profileName)
+    {
+        foreach (var kvp in _profiles)
+        {
+            bool shouldBeDefault = kvp.Key == profileName;
+            if (kvp.Value.IsDefault != shouldBeDefault)
+            {
+                kvp.Value.IsDefault = shouldBeDefault;
+                SaveProfile(kvp.Key, kvp.Value);
+            }
+        }
+    }
 }

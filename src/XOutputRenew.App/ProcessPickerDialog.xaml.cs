@@ -61,7 +61,7 @@ public partial class ProcessPickerDialog : Window
         else
         {
             MessageBox.Show("Please select a process.", "No Selection",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBoxButton.OK, MessageBoxImage.None);
         }
     }
 

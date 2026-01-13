@@ -31,6 +31,11 @@ public class MappingProfile
     public DateTime ModifiedAt { get; set; } = DateTime.Now;
 
     /// <summary>
+    /// Whether this is the default profile for CLI commands.
+    /// </summary>
+    public bool IsDefault { get; set; }
+
+    /// <summary>
     /// Force feedback settings for this profile.
     /// </summary>
     public ForceFeedbackSettings? ForceFeedbackSettings { get; set; }
@@ -169,6 +174,7 @@ public class MappingProfileData
     public string? Description { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime ModifiedAt { get; set; }
+    public bool IsDefault { get; set; }
     public List<OutputMappingData> Mappings { get; set; } = new();
     public ForceFeedbackSettingsData? ForceFeedback { get; set; }
     public HidHideSettingsData? HidHide { get; set; }
@@ -184,6 +190,7 @@ public class MappingProfileData
             Description = profile.Description,
             CreatedAt = profile.CreatedAt,
             ModifiedAt = profile.ModifiedAt,
+            IsDefault = profile.IsDefault,
             ForceFeedback = profile.ForceFeedbackSettings != null
                 ? ForceFeedbackSettingsData.FromSettings(profile.ForceFeedbackSettings)
                 : null,
@@ -212,6 +219,7 @@ public class MappingProfileData
             Description = Description,
             CreatedAt = CreatedAt,
             ModifiedAt = ModifiedAt,
+            IsDefault = IsDefault,
             ForceFeedbackSettings = ForceFeedback?.ToSettings(),
             HidHideSettings = HidHide?.ToSettings()
         };

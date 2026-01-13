@@ -30,7 +30,7 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 
 ### GUI Mode
 
-Simply run `XOutputRenew.App.exe` to open the graphical interface.
+Simply run `XOutputRenew.exe` to open the graphical interface.
 
 1. **Devices tab** - View all detected input devices with "Listen for Input" highlighting
 2. **Profiles tab** - Create and manage mapping profiles
@@ -62,27 +62,39 @@ Simply run `XOutputRenew.App.exe` to open the graphical interface.
 ### CLI Commands
 
 ```bash
+# Start the default profile (launches GUI if not running)
+XOutputRenew start
+
+# Start a specific profile
+XOutputRenew start "My Profile"
+
+# Stop the running profile (requires running instance)
+XOutputRenew stop
+
+# Check status of running instance
+XOutputRenew status [--json]
+
 # List detected input devices
-XOutputRenew.App list-devices [--json]
+XOutputRenew list-devices [--json]
 
 # List available profiles
-XOutputRenew.App list-profiles [--json]
+XOutputRenew list-profiles [--json]
 
-# Duplicate a profile
-XOutputRenew.App duplicate-profile <source-name> <new-name>
+# Show help
+XOutputRenew help
 ```
 
 ### Startup Options
 
 ```bash
 # Start with a specific profile
-XOutputRenew.App --start-profile=MyProfile
+XOutputRenew --start-profile "MyProfile"
 
 # Start minimized to system tray
-XOutputRenew.App --minimized
+XOutputRenew --minimized
 
 # Combine options
-XOutputRenew.App --start-profile=MyProfile --minimized
+XOutputRenew --start-profile "MyProfile" --minimized
 ```
 
 ## Building from Source
@@ -134,11 +146,15 @@ XOutputRenew/
 - System tray with minimize/restore
 - Device renaming and info display
 - Verbose logging for debugging device issues
-- Dark mode UI theme
+- Dark mode UI theme with dark tooltips and dialogs
 - Visual Xbox controller test display
 - Options for startup profile and "Start with Windows"
 - Profile editor with tabbed interface (Mapping, Force Feedback, Device Hiding)
 - **Read-only profile view** when profile is running
+- **Toast notifications** - Windows notifications when profiles start/stop
+- **CLI/IPC** - Control running instance from command line (`start`, `stop`, `status`)
+- **Default profile** - Set a profile as default for quick CLI start
+- **Add to System PATH** - Option to add XOutputRenew to PATH for CLI access from anywhere
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)
@@ -146,9 +162,8 @@ XOutputRenew/
 - X-Arcade dual joystick (RawInput)
 
 ### Coming Soon
-- **Toast notifications** - Windows notification when profiles start/stop
-- **CLI/IPC** - Control running instance from command line or scripts
 - **Game auto-launch** - Automatically start profiles when specific games launch
+- **Headless mode** - Run without GUI for scripting/service scenarios
 
 ## Background
 

@@ -35,6 +35,7 @@ public partial class MainWindow : Window
     private bool _isListeningForInput;
     private readonly Dictionary<string, DateTime> _deviceLastInput = new();
     private readonly DispatcherTimer _inputHighlightTimer;
+    private readonly IpcService _ipcService;
 
     // Test tab brushes
     private static readonly SolidColorBrush ReleasedBrush = new(Color.FromRgb(0xCC, 0xCC, 0xCC));
@@ -68,6 +69,13 @@ public partial class MainWindow : Window
         // Timer to clear input highlights after inactivity
         _inputHighlightTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         _inputHighlightTimer.Tick += InputHighlightTimer_Tick;
+
+        // Initialize IPC service for remote control
+        _ipcService = new IpcService();
+        _ipcService.StartProfileRequested += IpcService_StartProfileRequested;
+        _ipcService.StopRequested += IpcService_StopRequested;
+        _ipcService.GetStatus = GetIpcStatus;
+        _ipcService.StartServer();
 
         // Bind collections
         DeviceListView.ItemsSource = _devices;
@@ -218,7 +226,7 @@ public partial class MainWindow : Window
                 message + "\n\nA system restart is required for HidHide to function properly.",
                 "Installation Complete",
                 MessageBoxButton.OK,
-                MessageBoxImage.Information);
+                MessageBoxImage.None);
         }
         else
         {
@@ -459,8 +467,16 @@ public partial class MainWindow : Window
 
         if (editor.WasSaved && !readOnly)
         {
-            // Save the profile to disk
-            _profileManager.SaveProfile(selected.FileName, selected.Profile);
+            // If this profile is now the default, clear default from others
+            if (selected.Profile.IsDefault)
+            {
+                _profileManager.SetDefaultProfile(selected.FileName);
+            }
+            else
+            {
+                // Just save this profile
+                _profileManager.SaveProfile(selected.FileName, selected.Profile);
+            }
             RefreshProfiles();
             StatusText.Text = $"Saved profile: {selected.Name}";
         }
@@ -865,10 +881,58 @@ public partial class MainWindow : Window
         _inputHighlightTimer.Stop();
 
         _ffbService?.Dispose();
+        _ipcService.Dispose();
         AppLogger.Shutdown();
         TrayIcon.Dispose();
         _deviceManager.Dispose();
         _vigemService.Dispose();
+    }
+
+    #endregion
+
+    #region IPC Handlers
+
+    private void IpcService_StartProfileRequested(string profileName)
+    {
+        // Must run on UI thread
+        Dispatcher.Invoke(() =>
+        {
+            var profile = _profiles.FirstOrDefault(p =>
+                p.Name.Equals(profileName, StringComparison.OrdinalIgnoreCase) ||
+                p.FileName.Equals(profileName, StringComparison.OrdinalIgnoreCase) ||
+                p.FileName.Equals(profileName + ".json", StringComparison.OrdinalIgnoreCase));
+
+            if (profile != null)
+            {
+                AppLogger.Info($"IPC: Starting profile '{profile.Name}'");
+                StartProfile(profile);
+            }
+            else
+            {
+                AppLogger.Warning($"IPC: Profile not found: {profileName}");
+            }
+        });
+    }
+
+    private void IpcService_StopRequested()
+    {
+        // Must run on UI thread
+        Dispatcher.Invoke(() =>
+        {
+            AppLogger.Info("IPC: Stopping profile");
+            StopProfile();
+        });
+    }
+
+    private IpcStatus GetIpcStatus()
+    {
+        return new IpcStatus
+        {
+            IsRunning = _runningProfile != null,
+            ProfileName = _runningProfile?.Name,
+            ViGEmStatus = _vigemService.IsAvailable ? "Available" : "Not installed",
+            HidHideStatus = _hidHideService.IsAvailable ? "Available" : "Not installed"
+        };
     }
 
     #endregion
@@ -891,6 +955,9 @@ public partial class MainWindow : Window
             ? new SolidColorBrush(Colors.Green)
             : new SolidColorBrush(Colors.Gray);
         RestartAsAdminButton.IsEnabled = !isAdmin;
+
+        // PATH checkbox - show current state
+        AddToPathCheckBox.IsChecked = IsInSystemPath();
     }
 
     private void RefreshStartupProfileComboBox()
@@ -946,6 +1013,115 @@ public partial class MainWindow : Window
         {
             AppSettings.RestartAsAdmin();
         }
+    }
+
+    private void PathHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        HelpDialog.Show(
+            "When enabled, adds XOutputRenew to the system PATH environment variable.\n\n" +
+            "This allows you to run CLI commands from any directory:\n" +
+            "  XOutputRenew.App status\n" +
+            "  XOutputRenew.App start \"My Profile\"\n" +
+            "  XOutputRenew.App stop\n\n" +
+            "Requires administrator privileges to modify the system PATH.",
+            "Add to System PATH",
+            this);
+    }
+
+    private void AddToPath_Changed(object sender, RoutedEventArgs e)
+    {
+        bool shouldAdd = AddToPathCheckBox.IsChecked == true;
+        bool isCurrentlyInPath = IsInSystemPath();
+
+        if (shouldAdd == isCurrentlyInPath)
+            return; // No change needed
+
+        if (!AppSettings.IsRunningAsAdmin())
+        {
+            MessageBox.Show(
+                "Administrator privileges are required to modify the system PATH.\n\nPlease restart as administrator first.",
+                "Administrator Required",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            // Revert checkbox
+            AddToPathCheckBox.IsChecked = isCurrentlyInPath;
+            return;
+        }
+
+        try
+        {
+            if (shouldAdd)
+            {
+                AddToSystemPath();
+                MessageBox.Show(
+                    "XOutputRenew has been added to the system PATH.\n\nYou may need to restart your terminal for the change to take effect.",
+                    "PATH Updated",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.None);
+            }
+            else
+            {
+                RemoveFromSystemPath();
+                MessageBox.Show(
+                    "XOutputRenew has been removed from the system PATH.",
+                    "PATH Updated",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.None);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to modify system PATH: {ex.Message}",
+                "Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+
+            // Revert checkbox
+            AddToPathCheckBox.IsChecked = isCurrentlyInPath;
+        }
+    }
+
+    private bool IsInSystemPath()
+    {
+        try
+        {
+            var appDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
+            var systemPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine) ?? "";
+            var paths = systemPath.Split(';', StringSplitOptions.RemoveEmptyEntries);
+            return paths.Any(p => p.TrimEnd('\\').Equals(appDir, StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void AddToSystemPath()
+    {
+        var appDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
+        var systemPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine) ?? "";
+
+        if (!systemPath.Split(';').Any(p => p.TrimEnd('\\').Equals(appDir, StringComparison.OrdinalIgnoreCase)))
+        {
+            var newPath = string.IsNullOrEmpty(systemPath) ? appDir : $"{systemPath};{appDir}";
+            Environment.SetEnvironmentVariable("PATH", newPath, EnvironmentVariableTarget.Machine);
+            AppLogger.Info($"Added to system PATH: {appDir}");
+        }
+    }
+
+    private void RemoveFromSystemPath()
+    {
+        var appDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
+        var systemPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine) ?? "";
+        var paths = systemPath.Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .Where(p => !p.TrimEnd('\\').Equals(appDir, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        var newPath = string.Join(";", paths);
+        Environment.SetEnvironmentVariable("PATH", newPath, EnvironmentVariableTarget.Machine);
+        AppLogger.Info($"Removed from system PATH: {appDir}");
     }
 
     #endregion

@@ -154,11 +154,15 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Renamed LeftStick/RightStick to LeftStickPress/RightStickPress for clarity
 - [x] Double-click output to trigger Capture Input
 
-### Phase 6: CLI & IPC (NEXT)
-- [ ] Named pipe server for runtime control
-- [ ] Commands: `--start=Profile`, `--stop=Profile`, `--status`
-- [ ] Exit codes for scripting
-- [ ] Toast notifications when profiles start/stop
+### Phase 6: CLI & IPC ✓ COMPLETE
+- [x] Named pipe server for runtime control (IpcService)
+- [x] Commands: `start [profile]`, `stop`, `status`
+- [x] Smart start: launches GUI if not running, sends IPC if running
+- [x] Exit codes for scripting (0=success, 1=error, 2=not found, 3=no instance)
+- [x] Toast notifications when profiles start/stop
+- [x] Default profile feature for quick CLI start
+- [x] Add to System PATH option
+- [x] Console attachment for WinExe CLI output
 
 ### Phase 7: Game Auto-Launch (PLANNED)
 - [ ] "Games" tab in main window
@@ -177,29 +181,32 @@ XOutputRenew - Xbox Controller Emulator
 Usage: XOutputRenew [command] [options]
 
 Commands:
-  run                     Start the application (default, opens GUI)
-  list-devices            List detected input devices
-  list-profiles           List available profiles
-  duplicate-profile       Duplicate an existing profile
+  (no command)            Launch the GUI application
+  run                     Launch the GUI (same as no command)
+  list-devices [--json]   List detected input devices
+  list-profiles [--json]  List available profiles
+  start [profile]         Start a profile (uses default if not specified)
+  stop                    Stop the running profile
+  status [--json]         Get status from running instance
+  help                    Show detailed help
 
-Options:
-  --start-profile=<name>  Start emulation with profile on launch
+Startup Options:
+  --start-profile <name>  Start with a profile already running
   --minimized             Start minimized to system tray
-  --headless              Run without GUI (CLI mode only)
 
-Runtime Commands (sent to running instance):
-  --start=<name>          Start a profile
-  --stop=<name>           Stop a profile
-  --stop-all              Stop all profiles
-  --status                Get current status (JSON output)
-  --quit                  Quit the application
+Exit Codes:
+  0  Success
+  1  Error
+  2  Profile not found
+  3  No running instance (for remote commands)
 
 Examples:
   XOutputRenew                                    # Open GUI
-  XOutputRenew --start-profile=MozaWheel1         # Start with profile
-  XOutputRenew --start-profile=MozaWheel1 --minimized
-  XOutputRenew --start=MozaWheel1                 # Control running instance
-  XOutputRenew --status                           # Check what's running
+  XOutputRenew start                              # Start default profile
+  XOutputRenew start "My Wheel"                   # Start specific profile
+  XOutputRenew --start-profile "My Wheel" --minimized
+  XOutputRenew stop                               # Stop running profile
+  XOutputRenew status --json                      # Get status as JSON
 ```
 
 ---
@@ -497,9 +504,68 @@ AppLogger.Error("Something failed", exception);
 - **Workaround**: Info is shown in a dialog instead when copy fails
 - **Solution**: Close clipboard managers or check Remote Desktop clipboard settings
 
+### Tab Background Flicker (Dark Mode)
+- **Symptom**: Tab headers flicker between shades of gray when hovering
+- **Cause**: WPF's built-in TabItem ControlTemplate has light-theme hover/focus states that show through dark backgrounds
+- **Fix**: Requires custom ControlTemplate for TabItem with dark-themed VisualStates (~50-80 lines XAML)
+- **Priority**: Low (cosmetic only)
+
 ---
 
 ## Recent Session Notes
+
+### Session 2026-01-12
+
+**CLI/IPC Implementation Complete**
+- Full command-line interface with named pipe IPC for controlling running instance
+- Commands: `start [profile]`, `stop`, `status`, `list-devices`, `list-profiles`, `help`
+- Smart `start` command: launches GUI if not running, sends IPC if running
+- Exit codes for scripting: 0=success, 1=error, 2=profile not found, 3=no running instance
+- Console attachment for WinExe apps (AttachConsole/FreeConsole for CLI output)
+
+**Toast Notifications**
+- Windows notification center toasts when profiles start/stop
+- Uses Microsoft.Toolkit.Uwp.Notifications package
+- Required TFM update to `net8.0-windows10.0.17763.0`
+
+**Default Profile Feature**
+- Checkbox in profile editor to mark a profile as default
+- Only one profile can be default at a time
+- `XOutputRenew start` (no args) uses the default profile
+- Appropriate error message if no default is set
+
+**Dark Mode Improvements**
+- Dark-themed ToolTip style in App.xaml
+- Custom HelpDialog window (replaces MessageBox for help popups)
+- Silent dialogs (removed MessageBoxImage.Information sound)
+- Lighter blue (#64B5F6) for "?" help icons
+
+**Executable Rename**
+- Changed AssemblyName from `XOutputRenew.App` to `XOutputRenew`
+- Executable is now `XOutputRenew.exe` instead of `XOutputRenew.App.exe`
+- Updated all help text and documentation
+
+**Add to System PATH**
+- New checkbox in Options tab to add XOutputRenew to system PATH
+- Requires admin privileges
+- Enables running CLI commands from any directory
+
+**New Files:**
+- `App/ToastNotificationService.cs` - Windows toast notifications
+- `App/IpcService.cs` - Named pipe server/client for IPC
+- `App/HelpDialog.xaml/.cs` - Dark-themed help dialog
+
+**Modified Files:**
+- `App/Program.cs` - CLI commands, console attachment, smart start, default profile
+- `App/MainWindow.xaml.cs` - IPC handlers, PATH checkbox, toast integration
+- `App/MainWindow.xaml` - PATH checkbox UI
+- `App/ProfileEditorWindow.xaml/.cs` - Default profile checkbox
+- `App/App.xaml` - Dark ToolTip style
+- `Core/Mapping/MappingProfile.cs` - IsDefault property
+- `Core/Mapping/ProfileManager.cs` - GetDefaultProfile(), SetDefaultProfile()
+- `XOutputRenew.App.csproj` - AssemblyName, TFM update, toast package
+
+---
 
 ### Session 2026-01-11 (Part 2)
 
