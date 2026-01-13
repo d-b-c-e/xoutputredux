@@ -195,6 +195,9 @@ DocProject/Help/html
 # Click-Once directory
 publish/
 
+# Release artifacts
+dist/
+
 # Publish Web Output
 *.[Pp]ublish.xml
 *.azurePubxml
@@ -416,3 +419,13 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Claude Code local settings
+.claude/*
+!.claude/.screenshots/
+.claude/.screenshots/*.png
+.screenshot/
+
+# Claude Code temp files
+tmpclaude-*-cwd
+nul
