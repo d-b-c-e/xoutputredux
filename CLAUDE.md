@@ -162,7 +162,7 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Toast notifications when profiles start/stop
 - [x] Default profile feature for quick CLI start
 - [x] Add to System PATH option
-- [x] Console attachment for WinExe CLI output
+- [x] Console app with hidden window for GUI mode (proper CLI support)
 
 ### Phase 7: Game Auto-Launch (PLANNED)
 - [ ] "Games" tab in main window
@@ -170,6 +170,12 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [ ] Associate games with profiles (auto-start when game launches)
 - [ ] Browse for game exe or select from running processes
 - [ ] Grid view with checkbox for auto-start, dropdown for profile selection
+
+### Phase 8: Headless Mode (PLANNED)
+- [ ] Run without GUI for scripting/service scenarios
+- [ ] `--headless` flag to start without window
+- [ ] All control via CLI commands (start, stop, status)
+- [ ] Useful for Stream Deck, gaming frontend integration, or running as a service
 
 ---
 

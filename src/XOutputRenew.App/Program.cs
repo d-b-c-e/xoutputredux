@@ -22,35 +22,37 @@ public class Program
     public const int ExitProfileNotFound = 2;
     public const int ExitNoRunningInstance = 3;
 
-    // Console attachment for CLI mode (WinExe apps don't have a console by default)
+    // Console window hiding for GUI mode (Exe apps have a console by default)
     [DllImport("kernel32.dll")]
-    private static extern bool AttachConsole(int dwProcessId);
+    private static extern IntPtr GetConsoleWindow();
 
-    [DllImport("kernel32.dll")]
-    private static extern bool FreeConsole();
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
-    private const int ATTACH_PARENT_PROCESS = -1;
+    private const int SW_HIDE = 0;
 
     [STAThread]
     public static int Main(string[] args)
     {
-        // If no args, launch GUI directly
+        // If no args, launch GUI directly (hide console window first)
         if (args.Length == 0)
         {
+            HideConsoleWindow();
             return LaunchGui(null, false);
         }
 
-        // Attach to parent console for CLI output (WinExe doesn't have one by default)
-        AttachConsole(ATTACH_PARENT_PROCESS);
-
-        // Build CLI
+        // Build and run CLI
         var rootCommand = BuildRootCommand();
-        var result = rootCommand.Invoke(args);
+        return rootCommand.Invoke(args);
+    }
 
-        // Free console before exiting
-        FreeConsole();
-
-        return result;
+    private static void HideConsoleWindow()
+    {
+        var handle = GetConsoleWindow();
+        if (handle != IntPtr.Zero)
+        {
+            ShowWindow(handle, SW_HIDE);
+        }
     }
 
     private static RootCommand BuildRootCommand()
@@ -94,6 +96,16 @@ public class Program
             ListProfiles(json);
         }, jsonOption);
         rootCommand.AddCommand(listProfilesCommand);
+
+        // Set default profile command
+        var setDefaultCommand = new Command("set-default", "Set a profile as the default for 'start' command");
+        var defaultProfileArg = new Argument<string>("profile", "Name of the profile to set as default");
+        setDefaultCommand.AddArgument(defaultProfileArg);
+        setDefaultCommand.SetHandler((profile) =>
+        {
+            Environment.ExitCode = SetDefaultProfile(profile);
+        }, defaultProfileArg);
+        rootCommand.AddCommand(setDefaultCommand);
 
         // Remote control commands (sent to running instance)
         var startCommand = new Command("start", "Start a profile (uses default if no name specified)");
@@ -264,6 +276,38 @@ public class Program
         }
     }
 
+    private static int SetDefaultProfile(string profileName)
+    {
+        var profilesDir = ProfileManager.GetDefaultProfilesDirectory();
+        var manager = new ProfileManager(profilesDir);
+        manager.LoadProfiles();
+
+        var profile = manager.GetProfile(profileName);
+        if (profile == null)
+        {
+            // Try case-insensitive match
+            var match = manager.Profiles.FirstOrDefault(p =>
+                p.Key.Equals(profileName, StringComparison.OrdinalIgnoreCase) ||
+                p.Value.Name.Equals(profileName, StringComparison.OrdinalIgnoreCase));
+
+            if (match.Value == null)
+            {
+                Console.Error.WriteLine($"Error: Profile '{profileName}' not found.");
+                Console.Error.WriteLine("Available profiles:");
+                foreach (var p in manager.Profiles.Values)
+                {
+                    Console.Error.WriteLine($"  {p.Name}");
+                }
+                return ExitProfileNotFound;
+            }
+            profileName = match.Key;
+        }
+
+        manager.SetDefaultProfile(profileName);
+        Console.WriteLine($"Set '{profileName}' as the default profile.");
+        return ExitSuccess;
+    }
+
     private static int SendStartCommand(string? profileName)
     {
         // If no profile specified, look for default
@@ -290,7 +334,7 @@ public class Program
         {
             // No running instance - launch GUI with this profile
             Console.WriteLine($"Launching XOutputRenew with profile: {profileName}");
-            FreeConsole(); // Detach from console before launching GUI
+            HideConsoleWindow();
             return LaunchGui(profileName, false);
         }
 
@@ -400,6 +444,7 @@ COMMANDS:
   run                       Launch the GUI (same as no command)
   list-devices [--json]     List detected input devices
   list-profiles [--json]    List available profiles
+  set-default <profile>     Set a profile as the default
   start [profile]           Start a profile (uses default if not specified)
   stop                      Stop the running profile
   status [--json]           Get status from the running instance
@@ -410,6 +455,9 @@ STARTUP OPTIONS:
   --minimized               Start minimized to system tray
 
 EXAMPLES:
+  # Set a default profile
+  XOutputRenew set-default ""My Wheel""
+
   # Start the default profile
   XOutputRenew start
 
@@ -425,9 +473,6 @@ EXAMPLES:
 
   # List profiles as JSON (for scripting)
   XOutputRenew list-profiles --json
-
-  # Check status for scripting
-  XOutputRenew status --json
 
 EXIT CODES:
   0  Success
