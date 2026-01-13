@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 using XOutputRenew.App.ViewModels;
+using XOutputRenew.Core.Games;
 using XOutputRenew.Core.Mapping;
 using XOutputRenew.Emulation;
 using XOutputRenew.HidHide;
@@ -36,6 +37,8 @@ public partial class MainWindow : Window
     private readonly Dictionary<string, DateTime> _deviceLastInput = new();
     private readonly DispatcherTimer _inputHighlightTimer;
     private readonly IpcService _ipcService;
+    private readonly GameAssociationManager _gameManager;
+    private readonly GameMonitorService _gameMonitorService;
 
     // Test tab brushes
     private static readonly SolidColorBrush ReleasedBrush = new(Color.FromRgb(0xCC, 0xCC, 0xCC));
@@ -77,9 +80,17 @@ public partial class MainWindow : Window
         _ipcService.GetStatus = GetIpcStatus;
         _ipcService.StartServer();
 
+        // Initialize game manager and monitor service
+        _gameManager = new GameAssociationManager(GameAssociationManager.GetDefaultFilePath());
+        _gameManager.Load();
+        _gameMonitorService = new GameMonitorService(_gameManager);
+        _gameMonitorService.GameStarted += GameMonitorService_GameStarted;
+        _gameMonitorService.GameStopped += GameMonitorService_GameStopped;
+
         // Bind collections
         DeviceListView.ItemsSource = _devices;
         ProfileListView.ItemsSource = _profiles;
+        GamesListView.ItemsSource = _gameManager.Games;
 
         // Load data
         Loaded += MainWindow_Loaded;
@@ -881,6 +892,7 @@ public partial class MainWindow : Window
         _inputHighlightTimer.Stop();
 
         _ffbService?.Dispose();
+        _gameMonitorService.Dispose();
         _ipcService.Dispose();
         AppLogger.Shutdown();
         TrayIcon.Dispose();
@@ -933,6 +945,193 @@ public partial class MainWindow : Window
             ViGEmStatus = _vigemService.IsAvailable ? "Available" : "Not installed",
             HidHideStatus = _hidHideService.IsAvailable ? "Available" : "Not installed"
         };
+    }
+
+    #endregion
+
+    #region Games
+
+    private void GamesListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        var hasSelection = GamesListView.SelectedItem != null;
+        EditGameButton.IsEnabled = hasSelection;
+        RemoveGameButton.IsEnabled = hasSelection;
+    }
+
+    private void GamesListView_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (GamesListView.SelectedItem is GameAssociation game)
+        {
+            EditGame(game);
+        }
+    }
+
+    private void AddGame_Click(object sender, RoutedEventArgs e)
+    {
+        var profileInfos = _profiles.Select(p => new GameEditorDialog.ProfileInfo
+        {
+            Name = p.Name,
+            FileName = p.FileName
+        });
+
+        var dialog = new GameEditorDialog(profileInfos)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() == true && dialog.Result != null)
+        {
+            _gameManager.Add(dialog.Result);
+            RefreshGamesListView();
+            StatusText.Text = $"Added game: {dialog.Result.Name}";
+        }
+    }
+
+    private void EditGame_Click(object sender, RoutedEventArgs e)
+    {
+        if (GamesListView.SelectedItem is GameAssociation game)
+        {
+            EditGame(game);
+        }
+    }
+
+    private void EditGame(GameAssociation game)
+    {
+        var profileInfos = _profiles.Select(p => new GameEditorDialog.ProfileInfo
+        {
+            Name = p.Name,
+            FileName = p.FileName
+        });
+
+        var dialog = new GameEditorDialog(profileInfos, game)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() == true && dialog.Result != null)
+        {
+            // Preserve the ID from the original
+            dialog.Result.Id = game.Id;
+            _gameManager.Update(dialog.Result);
+            RefreshGamesListView();
+            StatusText.Text = $"Updated game: {dialog.Result.Name}";
+        }
+    }
+
+    private void RemoveGame_Click(object sender, RoutedEventArgs e)
+    {
+        if (GamesListView.SelectedItem is not GameAssociation game) return;
+
+        var result = MessageBox.Show($"Remove game '{game.Name}' from the list?", "Remove Game",
+            MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            _gameManager.Remove(game.Id);
+            RefreshGamesListView();
+            StatusText.Text = $"Removed game: {game.Name}";
+        }
+    }
+
+    private void ToggleGameMonitoring_Click(object sender, RoutedEventArgs e)
+    {
+        if (_gameMonitorService.IsEnabled)
+        {
+            StopGameMonitoring();
+        }
+        else
+        {
+            StartGameMonitoring();
+        }
+    }
+
+    private void StartGameMonitoring()
+    {
+        if (_gameManager.Games.Count == 0)
+        {
+            MessageBox.Show("No games configured. Add a game first.",
+                "No Games", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        _gameMonitorService.StartMonitoring();
+        UpdateMonitoringUI();
+        StatusText.Text = "Game monitoring enabled - watching for configured games";
+        AppLogger.Info("Game monitoring started");
+    }
+
+    private void StopGameMonitoring()
+    {
+        _gameMonitorService.StopMonitoring();
+        UpdateMonitoringUI();
+        StatusText.Text = "Game monitoring disabled";
+        AppLogger.Info("Game monitoring stopped");
+    }
+
+    private void UpdateMonitoringUI()
+    {
+        if (_gameMonitorService.IsEnabled)
+        {
+            GameMonitorButton.Content = "Disable Monitoring";
+            GameMonitorButton.Background = new SolidColorBrush(Color.FromRgb(0xF4, 0x43, 0x36)); // Red
+            MonitorStatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)); // Green
+            MonitorStatusText.Text = _gameMonitorService.ActiveGame != null
+                ? $"Running: {_gameMonitorService.ActiveGame.Name}"
+                : $"Monitoring {_gameManager.Games.Count} game(s)...";
+            MonitorStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xE0, 0xE0, 0xE0));
+        }
+        else
+        {
+            GameMonitorButton.Content = "Enable Monitoring";
+            GameMonitorButton.Background = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)); // Green
+            MonitorStatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)); // Gray
+            MonitorStatusText.Text = "Monitoring disabled";
+            MonitorStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x9E, 0x9E, 0x9E));
+        }
+    }
+
+    private void GameMonitorService_GameStarted(GameAssociation game)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            AppLogger.Info($"Game detected: {game.Name}, starting profile: {game.ProfileName}");
+
+            // Find the associated profile
+            var profile = _profiles.FirstOrDefault(p =>
+                p.Name.Equals(game.ProfileName, StringComparison.OrdinalIgnoreCase));
+
+            if (profile == null)
+            {
+                AppLogger.Warning($"Profile '{game.ProfileName}' not found for game '{game.Name}'");
+                StatusText.Text = $"Game detected but profile '{game.ProfileName}' not found";
+                return;
+            }
+
+            // Start the profile
+            StartProfile(profile);
+            UpdateMonitoringUI();
+            StatusText.Text = $"Game detected: {game.Name} - Profile started";
+            ToastNotificationService.ShowGameLaunched(game.Name, profile.Name);
+        });
+    }
+
+    private void GameMonitorService_GameStopped(GameAssociation game)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            AppLogger.Info($"Game exited: {game.Name}, stopping profile");
+            StopProfile();
+            UpdateMonitoringUI();
+            StatusText.Text = $"Game exited: {game.Name}";
+            ToastNotificationService.ShowGameExited(game.Name);
+        });
+    }
+
+    private void RefreshGamesListView()
+    {
+        // Force refresh by re-binding
+        GamesListView.ItemsSource = null;
+        GamesListView.ItemsSource = _gameManager.Games;
     }
 
     #endregion

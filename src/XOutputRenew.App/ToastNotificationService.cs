@@ -47,6 +47,44 @@ public static class ToastNotificationService
     }
 
     /// <summary>
+    /// Shows a toast notification when a game is launched.
+    /// </summary>
+    public static void ShowGameLaunched(string gameName, string profileName)
+    {
+        try
+        {
+            new ToastContentBuilder()
+                .AddText($"{AppName}")
+                .AddText($"Launched: {gameName}")
+                .AddAttributionText($"Profile: {profileName}")
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to show toast notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Shows a toast notification when a game exits.
+    /// </summary>
+    public static void ShowGameExited(string gameName)
+    {
+        try
+        {
+            new ToastContentBuilder()
+                .AddText($"{AppName}")
+                .AddText($"Game exited: {gameName}")
+                .AddAttributionText("Profile stopped")
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to show toast notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Cleans up toast notification resources on app exit.
     /// Call this when the application is closing.
     /// </summary>

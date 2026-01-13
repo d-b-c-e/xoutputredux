@@ -406,6 +406,72 @@
                     </Grid>
                 </TabItem>
 
+                <!-- Games Tab -->
+                <TabItem Header="Games">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                            <Button Content="Add Game" Padding="15,5" Click="AddGame_Click"/>
+                            <Button Content="Edit" Padding="15,5" Margin="10,0,0,0" Click="EditGame_Click"
+                                    x:Name="EditGameButton" IsEnabled="False"/>
+                            <Button Content="Remove" Padding="15,5" Margin="10,0,0,0" Click="RemoveGame_Click"
+                                    x:Name="RemoveGameButton" IsEnabled="False"/>
+                            <Separator Margin="20,0"/>
+                            <Button x:Name="GameMonitorButton" Content="Enable Monitoring" Padding="20,5"
+                                    Click="ToggleGameMonitoring_Click"
+                                    Background="#4CAF50" Foreground="White" FontWeight="Bold"
+                                    ToolTip="Monitor for running games and auto-start profiles"/>
+                        </StackPanel>
+
+                        <!-- Monitor Status -->
+                        <Border Grid.Row="1" Background="#2D2D30" Padding="10,8" CornerRadius="3" Margin="0,0,0,10">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse x:Name="MonitorStatusIndicator" Width="10" Height="10" Fill="#888888"
+                                         VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock x:Name="MonitorStatusText" Text="Monitoring disabled"
+                                           Foreground="#9E9E9E" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <ListView x:Name="GamesListView" Grid.Row="2"
+                                  SelectionChanged="GamesListView_SelectionChanged"
+                                  MouseDoubleClick="GamesListView_DoubleClick">
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Edit" Click="EditGame_Click"/>
+                                    <MenuItem Header="Remove" Click="RemoveGame_Click"/>
+                                </ContextMenu>
+                            </ListView.ContextMenu>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Game" Width="200"
+                                                    DisplayMemberBinding="{Binding Name}"/>
+                                    <GridViewColumn Header="Executable" Width="300">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding ExecutablePath}" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding ExecutablePath}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Profile" Width="150"
+                                                    DisplayMemberBinding="{Binding ProfileName}"/>
+                                </GridView>
+                            </ListView.View>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Setter Property="ToolTip" Value="{Binding ExecutablePath}"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+                    </Grid>
+                </TabItem>
+
                 <!-- Status Tab -->
                 <TabItem Header="Status">
                     <Grid Margin="10">

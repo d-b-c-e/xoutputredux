@@ -164,12 +164,17 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Add to System PATH option
 - [x] Console app with hidden window for GUI mode (proper CLI support)
 
-### Phase 7: Game Auto-Launch (PLANNED)
-- [ ] "Games" tab in main window
-- [ ] Process monitor to detect game launches
-- [ ] Associate games with profiles (auto-start when game launches)
-- [ ] Browse for game exe or select from running processes
-- [ ] Grid view with checkbox for auto-start, dropdown for profile selection
+### Phase 7: Game Auto-Profile ✓ COMPLETE
+- [x] "Games" tab in main window with Add/Edit/Remove buttons
+- [x] GameAssociation model and GameAssociationManager for persistence
+- [x] GameMonitorService for polling running processes and detecting games
+- [x] GameEditorDialog for adding/editing games (browse exe, pick from processes, or Steam games)
+- [x] SteamGamePickerDialog for browsing installed Steam games
+- [x] Background monitoring: detects when configured games start → starts profile
+- [x] Auto-stop: when game exits → stops profile
+- [x] Toggle "Enable Monitoring" / "Disable Monitoring" button with status indicator
+- [x] Toast notifications for game detected/exited
+- [x] Games stored in %AppData%\XOutputRenew\games.json
 
 ### Phase 8: Headless Mode (PLANNED)
 - [ ] Run without GUI for scripting/service scenarios
@@ -534,6 +539,42 @@ AppLogger.Error("Something failed", exception);
 ---
 
 ## Recent Session Notes
+
+### Session 2026-01-12 (Part 2) - ACTIVE DEBUGGING
+
+**Phase 7: Game Auto-Profile - COMPLETE BUT BUGGY**
+
+Implementation complete, tested with "SP Grand Prix" game. Two issues found:
+
+**Issue 1: Toast notifications not visible in fullscreen**
+- Game started, profile auto-started correctly
+- Toast notification wasn't visible (game was in fullscreen exclusive mode)
+- This is likely a Windows limitation - toasts don't overlay fullscreen exclusive apps
+- Possible workarounds to investigate:
+  - Check if there's a "priority" or "alarm" toast type
+  - Consider playing a sound instead/additionally
+  - May just be an accepted limitation
+
+**Issue 2: Profile didn't stop when game exited - FIXED**
+- Game "SP Grand Prix" was detected and profile started ✓
+- When game was closed (Alt+F4), profile did NOT stop automatically ✗
+- **Root cause**: The `finally` block at line 197 was disposing ALL processes, including the one stored in `_activeGameProcess`. On the next poll, `HasExited` was called on a disposed object.
+- **Fix**: Changed from storing `Process` object to storing just `processId` (int). Now uses `Process.GetProcessById()` which properly throws `ArgumentException` when process no longer exists.
+- Changes made to `GameMonitorService.cs`:
+  - `_activeGameProcess` → `_activeGameProcessId` (Process → int)
+  - `OnGameDetected(game, process)` → `OnGameDetected(game, process.Id)`
+  - Exit check uses `Process.GetProcessById()` with proper exception handling
+
+**New Files (Phase 7):**
+- `Core/Games/GameAssociation.cs` - Model for game-profile associations
+- `Core/Games/GameAssociationManager.cs` - Persistence to games.json
+- `App/GameMonitorService.cs` - Background process monitoring
+- `App/GameEditorDialog.xaml/.cs` - Add/edit game dialog
+- `App/SteamGamePickerDialog.xaml/.cs` - Steam game browser
+- `App/ExecutablePickerDialog.xaml/.cs` - Executable picker for multi-exe games
+- `App/ToastNotificationService.cs` - Extended with game launch/exit methods
+
+---
 
 ### Session 2026-01-12
 
