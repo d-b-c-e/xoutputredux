@@ -1,0 +1,112 @@
+; XOutputRenew Inno Setup Script
+; Requires Inno Setup 6.x
+
+#define MyAppName "XOutputRenew"
+#define MyAppPublisher "XOutputRenew"
+#define MyAppURL "https://github.com/d-b-c-e/xoutputrenew"
+#define MyAppExeName "XOutputRenew.exe"
+
+; Version is passed in via command line: /DMyAppVersion=0.7.0-alpha
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0"
+#endif
+
+[Setup]
+AppId={{8A9E1F2D-4B3C-5D6E-7F8A-9B0C1D2E3F4A}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}/issues
+AppUpdatesURL={#MyAppURL}/releases
+DefaultDirName={autopf}\{#MyAppName}
+DefaultGroupName={#MyAppName}
+AllowNoIcons=yes
+LicenseFile=..\LICENSE
+OutputDir=..\dist
+OutputBaseFilename=XOutputRenew-{#MyAppVersion}-Setup
+SetupIconFile=..\src\XOutputRenew.App\app.ico
+Compression=lzma2/ultra64
+SolidCompression=yes
+WizardStyle=modern
+PrivilegesRequired=admin
+ArchitecturesInstallIn64BitMode=x64compatible
+MinVersion=10.0.17763
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "addtopath"; Description: "Add to system PATH (enables CLI from any terminal)"; GroupDescription: "System Integration:"; Flags: unchecked
+Name: "startwithwindows"; Description: "Start XOutputRenew when Windows starts"; GroupDescription: "System Integration:"; Flags: unchecked
+
+[Files]
+; Main application files from publish directory
+Source: "..\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[Registry]
+; Add to PATH if selected
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Tasks: addtopath; Check: NeedsAddPath('{app}')
+; Start with Windows if selected
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "XOutputRenew"; ValueData: """{app}\{#MyAppExeName}"" --minimized"; Tasks: startwithwindows; Flags: uninsdeletevalue
+
+[UninstallDelete]
+; Clean up app data on uninstall (optional - commented out to preserve user settings)
+; Type: filesandordirs; Name: "{userappdata}\XOutputRenew"
+
+[Code]
+// Check if path already contains the directory
+function NeedsAddPath(Param: string): boolean;
+var
+  OrigPath: string;
+begin
+  if not RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'Path', OrigPath) then
+  begin
+    Result := True;
+    exit;
+  end;
+  // Look for the path with leading and trailing semicolons
+  Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
+end;
+
+// Remove from PATH on uninstall
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  OrigPath, NewPath: string;
+  AppDir: string;
+  P: Integer;
+begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    AppDir := ExpandConstant('{app}');
+    if RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'Path', OrigPath) then
+    begin
+      NewPath := OrigPath;
+      // Remove the path entry
+      P := Pos(';' + AppDir, NewPath);
+      if P > 0 then
+        Delete(NewPath, P, Length(AppDir) + 1)
+      else
+      begin
+        P := Pos(AppDir + ';', NewPath);
+        if P > 0 then
+          Delete(NewPath, P, Length(AppDir) + 1)
+        else if NewPath = AppDir then
+          NewPath := '';
+      end;
+      // Update registry
+      if NewPath <> OrigPath then
+        RegWriteStringValue(HKLM, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'Path', NewPath);
+    end;
+  end;
+end;

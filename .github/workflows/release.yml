@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Extract version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          echo "Version: $version"
+
+      - name: Update version in csproj
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $csprojPath = "src/XOutputRenew.App/XOutputRenew.App.csproj"
+
+          # Update version in csproj
+          $content = Get-Content $csprojPath -Raw
+          $content = $content -replace '<Version>.*?</Version>', "<Version>$version</Version>"
+          $content = $content -replace '<InformationalVersion>.*?</InformationalVersion>', "<InformationalVersion>$version</InformationalVersion>"
+
+          # Update assembly version (strip pre-release suffix)
+          $assemblyVersion = $version -replace '-.*$', ''
+          if ($assemblyVersion -notmatch '^\d+\.\d+\.\d+\.\d+$') {
+            $assemblyVersion = "$assemblyVersion.0"
+          }
+          $content = $content -replace '<AssemblyVersion>.*?</AssemblyVersion>', "<AssemblyVersion>$assemblyVersion</AssemblyVersion>"
+          $content = $content -replace '<FileVersion>.*?</FileVersion>', "<FileVersion>$assemblyVersion</FileVersion>"
+
+          Set-Content $csprojPath $content
+          echo "Updated csproj to version $version"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+      - name: Run tests
+        run: dotnet test -c Release --no-build --verbosity normal
+
+      - name: Publish
+        run: |
+          dotnet publish src/XOutputRenew.App/XOutputRenew.App.csproj -c Release -o publish -p:PublishReadyToRun=true --self-contained false
+
+      - name: Create portable ZIP
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          Compress-Archive -Path "publish\*" -DestinationPath "dist\XOutputRenew-$version-Portable.zip" -CompressionLevel Optimal
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=$version installer\XOutputRenew.iss
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: XOutputRenew v${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION, 'alpha') || contains(steps.version.outputs.VERSION, 'beta') || contains(steps.version.outputs.VERSION, 'rc') }}
+          generate_release_notes: true
+          files: |
+            dist/XOutputRenew-${{ steps.version.outputs.VERSION }}-Portable.zip
+            dist/XOutputRenew-${{ steps.version.outputs.VERSION }}-Setup.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

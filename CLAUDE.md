@@ -197,6 +197,14 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [ ] User reviews/redacts sensitive info before submitting (privacy-friendly)
 - [ ] No server required - uses GitHub issue URL parameters
 
+### Phase 11: Portable Mode (PLANNED)
+- [ ] Detect portable mode (e.g., presence of `portable.txt` or `XOutputRenew.portable` marker file)
+- [ ] Store all settings in app directory instead of %AppData% when portable
+- [ ] Profiles stored in `.\Profiles\` relative to exe
+- [ ] Logs stored in `.\logs\` relative to exe
+- [ ] No registry modifications in portable mode
+- [ ] Document portable usage in README
+
 ---
 
 ## CLI Interface
