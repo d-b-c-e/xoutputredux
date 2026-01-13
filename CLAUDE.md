@@ -177,6 +177,21 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [ ] All control via CLI commands (start, stop, status)
 - [ ] Useful for Stream Deck, gaming frontend integration, or running as a service
 
+### Phase 9: Update Checker (PLANNED)
+- [ ] Query GitHub Releases API on startup (no hosted backend needed)
+- [ ] Compare `tag_name` to current assembly version
+- [ ] Show toast notification if update available with link to download
+- [ ] "Check for updates on startup" checkbox in Options
+- [ ] Cache check (once per day max) to respect rate limits
+
+### Phase 10: Crash/Bug Reporting (PLANNED)
+- [ ] Global unhandled exception handler in App.xaml.cs
+- [ ] Collect: exception, stack trace, app version, Windows version, device list
+- [ ] Show error dialog with "Report Issue" and "Copy to Clipboard" buttons
+- [ ] "Report Issue" opens browser with pre-filled GitHub issue URL
+- [ ] User reviews/redacts sensitive info before submitting (privacy-friendly)
+- [ ] No server required - uses GitHub issue URL parameters
+
 ---
 
 ## CLI Interface
