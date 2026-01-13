@@ -664,6 +664,9 @@ public partial class MainWindow : Window
 
             // Hide devices if HidHide is enabled for this profile
             HideProfileDevices(profile.Profile);
+
+            // Show toast notification
+            ToastNotificationService.ShowProfileStarted(profile.Name);
         }
         catch (Exception ex)
         {
@@ -754,9 +757,13 @@ public partial class MainWindow : Window
 
         if (_runningProfile != null)
         {
+            var stoppedProfileName = _runningProfile.Name;
             _runningProfile.IsRunning = false;
-            StatusText.Text = $"Stopped profile: {_runningProfile.Name}";
+            StatusText.Text = $"Stopped profile: {stoppedProfileName}";
             _runningProfile = null;
+
+            // Show toast notification
+            ToastNotificationService.ShowProfileStopped(stoppedProfileName);
         }
 
         UpdateStartStopButton();
@@ -848,6 +855,7 @@ public partial class MainWindow : Window
         // Actually closing - cleanup
         _isExiting = true;
         StopProfile();
+        ToastNotificationService.Cleanup();
 
         // Stop input listening if active
         if (_isListeningForInput)
