@@ -96,25 +96,20 @@ XOutputRenew list-profiles [--json]
 XOutputRenew help
 ```
 
-### Headless Mode
+### Stream Deck Integration
 
-Run without any GUI window - ideal for Stream Deck, gaming frontends, or automation:
+XOutputRenew includes a native Stream Deck plugin for controlling profiles directly from your Stream Deck.
 
-```bash
-# Run headless with default profile
-XOutputRenew headless
+**Installation:**
+1. Download `com.xoutputrenew.streamDeckPlugin` from the [Releases page](https://github.com/d-b-c-e/xoutputrenew/releases)
+2. Double-click to install
 
-# Run headless with specific profile
-XOutputRenew headless "My Profile"
+**Available Actions:**
+- **Start/Stop Profile** - Toggle a specific profile on/off (select from dropdown)
+- **Game Monitor** - Toggle game auto-profile monitoring on/off
+- **Launch App** - Open the XOutputRenew GUI
 
-# Run headless with game monitoring only
-XOutputRenew headless --monitor
-
-# Run headless with profile AND monitoring
-XOutputRenew headless "My Profile" --monitor
-```
-
-Control headless mode with `XOutputRenew stop`, `XOutputRenew monitor on/off`, or Ctrl+C.
+The plugin communicates directly with the running GUI via IPC. If the GUI isn't running when you press an action, it will start automatically (minimized to tray).
 
 ### Startup Options
 
@@ -158,14 +153,15 @@ XOutputRenew/
 │   ├── XOutputRenew.Input/          # DirectInput, RawInput device handling
 │   ├── XOutputRenew.Emulation/      # ViGEm Xbox controller emulation
 │   ├── XOutputRenew.HidHide/        # HidHide integration
-│   └── XOutputRenew.App/            # WPF GUI + CLI application
+│   ├── XOutputRenew.App/            # WPF GUI + CLI application
+│   └── XOutputRenew.StreamDeck/     # Stream Deck plugin
 └── tests/
     └── XOutputRenew.Tests/
 ```
 
 ## Current Status
 
-**v0.7.0-alpha** - Core functionality complete, in active testing.
+**v0.8.0-alpha** - Stream Deck plugin added, headless mode removed.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
@@ -192,7 +188,7 @@ XOutputRenew/
 - **Add to System PATH** - Option to add XOutputRenew to PATH for CLI access from anywhere
 - **Game auto-profile** - Automatically start/stop profiles when games launch/exit
 - **Steam game browser** - Browse installed Steam games with smart executable detection
-- **Headless mode** - Run without GUI for Stream Deck, gaming frontends, or services
+- **Stream Deck plugin** - Native plugin with profile toggle, monitoring toggle, and launch actions
 - **ViGEmBus auto-install** - Prompt to download and install if missing
 - **Auto-update** - Check for updates on startup with in-app download and install
 
@@ -203,7 +199,6 @@ XOutputRenew/
 
 ### Coming Soon
 - **Chocolatey package** - Easy install/update via `choco install xoutputrenew`
-- **Stream Deck plugin** - Native Stream Deck integration
 
 ## Background
 

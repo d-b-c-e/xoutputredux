@@ -429,3 +429,9 @@ FodyWeavers.xsd
 # Claude Code temp files
 tmpclaude-*-cwd
 nul
+
+# Temp scripts
+check-*.ps1
+
+# Old nodejs plugin (replaced by C# plugin)
+streamdeck-plugin-nodejs/

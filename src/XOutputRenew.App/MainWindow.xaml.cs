@@ -1073,6 +1073,7 @@ public partial class MainWindow : Window
         {
             IsRunning = _runningProfile != null,
             ProfileName = _runningProfile?.Name,
+            IsMonitoring = _gameMonitorService?.IsEnabled ?? false,
             ViGEmStatus = _vigemService.IsAvailable ? "Available" : "Not installed",
             HidHideStatus = _hidHideService.IsAvailable ? "Available" : "Not installed"
         };

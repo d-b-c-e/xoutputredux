@@ -176,13 +176,11 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Toast notifications for game detected/exited
 - [x] Games stored in %AppData%\XOutputRenew\games.json
 
-### Phase 8: Headless Mode ✓ COMPLETE
-- [x] Run without GUI for scripting/service scenarios
-- [x] `headless <profile>` command to start without window
-- [x] `headless --monitor` for game monitoring without profile
-- [x] `headless <profile> --monitor` for both profile and monitoring
-- [x] All control via CLI commands (start, stop, status, monitor on/off) or Ctrl+C
-- [x] Useful for Stream Deck, gaming frontend integration, or running as a service
+### Phase 8: Headless Mode ✗ REMOVED
+- Removed in v0.8.0 - headless mode caused issues with Stream Deck plugin
+- CLI commands spawning processes constantly looked suspicious in Task Manager
+- Solution: Stream Deck plugin now uses direct IPC (named pipes) to communicate with running GUI
+- GUI starts minimized to tray when needed by external tools
 
 ### Phase 9: Update Checker ✓ COMPLETE
 - [x] Query GitHub Releases API on startup (all releases including pre-releases)
@@ -221,17 +219,16 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Status tab shows clear error state (red text) when ViGEmBus missing
 
 ### Phase 13: Stream Deck Plugin ✓ COMPLETE
-- [x] Create Stream Deck plugin using Stream Deck SDK (Node.js/TypeScript)
-- [x] Actions: Start Profile, Stop Profile, Toggle Profile
-- [x] Profile picker dropdown in action configuration
-- [x] Status indicator (icon changes when profile running)
-- [x] Uses CLI commands under the hood (`XOutputRenew start/stop`)
-- [x] Plugin build system (Rollup, npm scripts)
-- [x] Documentation for installation and usage
-- [x] Property Inspector UI for configuration
-- [ ] TODO: Create proper icon assets (currently using placeholder)
-- [ ] TODO: Test with actual Stream Deck device
-- [ ] TODO: Create .streamDeckPlugin installer package
+- [x] Native C# plugin using BarRaider StreamDeck-Tools library
+- [x] Actions: Start/Stop Profile (toggle), Game Monitor (toggle), Launch App
+- [x] Profile picker dropdown populated from profiles directory
+- [x] Dynamic button icons with gamepad emoji + status text
+- [x] Direct IPC communication via named pipes (no CLI process spawning)
+- [x] Auto-start GUI minimized when action triggered and GUI not running
+- [x] Custom icon generation script (PowerShell)
+- [x] Property Inspector UI for profile selection
+- [x] .streamDeckPlugin package for easy installation
+- [x] Tested with actual Stream Deck device
 
 ---
 
@@ -578,6 +575,14 @@ AppLogger.Error("Something failed", exception);
 - **Cause**: WPF's built-in TabItem ControlTemplate has light-theme hover/focus states that show through dark backgrounds
 - **Fix**: Requires custom ControlTemplate for TabItem with dark-themed VisualStates (~50-80 lines XAML)
 - **Priority**: Low (cosmetic only)
+
+### Invisible Running Instance (Ghost Process)
+- **Symptom**: XOutputRenew.exe runs without appearing in taskbar or system tray notification area
+- **Cause**: When started via `--minimized` flag (e.g., by Stream Deck plugin's auto-start), the app may not properly show in the notification area
+- **Impact**: User has no way to know the app is running without checking Task Manager/process list
+- **Workaround**: Check Task Manager or use `tasklist | grep XOutput` to find and kill the process
+- **Priority**: High (major UX issue - users can't interact with or close the invisible app)
+- **Investigation Needed**: Check MainWindow initialization when `--minimized` is passed, verify NotifyIcon is created and visible
 
 ---
 

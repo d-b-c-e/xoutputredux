@@ -325,6 +325,7 @@ public class IpcStatus
 {
     public bool IsRunning { get; set; }
     public string? ProfileName { get; set; }
+    public bool IsMonitoring { get; set; }
     public string? ViGEmStatus { get; set; }
     public string? HidHideStatus { get; set; }
 }
