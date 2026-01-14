@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build output
+com.xoutputrenew.sdPlugin/bin/
+*.streamDeckPlugin
+
+# Logs
+com.xoutputrenew.sdPlugin/logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
