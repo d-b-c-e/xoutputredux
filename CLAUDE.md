@@ -214,6 +214,16 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Add `ViGEmBusPromptDeclined` to AppSettings
 - [x] Status tab shows clear error state (red text) when ViGEmBus missing
 
+### Phase 13: Stream Deck Plugin (PLANNED)
+- [ ] Create Stream Deck plugin using Stream Deck SDK
+- [ ] Actions: Start Profile, Stop Profile, Toggle Profile
+- [ ] Profile picker dropdown in action configuration
+- [ ] Status indicator (icon changes when profile running)
+- [ ] Uses CLI commands under the hood (`XOutputRenew start/stop`)
+- [ ] Plugin installer (.streamDeckPlugin file)
+- [ ] Documentation for installation and usage
+- [ ] Property Inspector UI for configuration
+
 ---
 
 ## CLI Interface
@@ -226,7 +236,7 @@ Usage: XOutputRenew [command] [options]
 Commands:
   (no command)            Launch the GUI application
   run                     Launch the GUI (same as no command)
-  headless <profile>      Run without GUI (for scripting/services)
+  headless [profile]      Run without GUI (uses default profile if not specified)
   list-devices [--json]   List detected input devices
   list-profiles [--json]  List available profiles
   start [profile]         Start a profile (uses default if not specified)
@@ -246,7 +256,8 @@ Exit Codes:
 
 Examples:
   XOutputRenew                                    # Open GUI
-  XOutputRenew headless "My Wheel"                # Run without GUI
+  XOutputRenew headless                           # Run headless with default profile
+  XOutputRenew headless "My Wheel"                # Run headless with specific profile
   XOutputRenew start                              # Start default profile
   XOutputRenew start "My Wheel"                   # Start specific profile
   XOutputRenew --start-profile "My Wheel" --minimized

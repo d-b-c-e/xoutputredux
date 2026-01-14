@@ -134,7 +134,7 @@ public class Program
 
         // Headless mode command
         var headlessCommand = new Command("headless", "Run in headless mode without GUI (for scripting/services)");
-        var headlessProfileArg = new Argument<string>("profile", "Name of the profile to run");
+        var headlessProfileArg = new Argument<string?>("profile", () => null, "Name of the profile to run (optional, uses default if not specified)");
         headlessCommand.AddArgument(headlessProfileArg);
         headlessCommand.SetHandler((profile) =>
         {
@@ -172,10 +172,30 @@ public class Program
         return app.Run();
     }
 
-    private static int RunHeadless(string profileName)
+    private static int RunHeadless(string? profileName)
     {
         // Initialize logging for headless mode
         AppLogger.Initialize();
+
+        // If no profile specified, look for default
+        if (string.IsNullOrEmpty(profileName))
+        {
+            var profilesDir = ProfileManager.GetDefaultProfilesDirectory();
+            var manager = new ProfileManager(profilesDir);
+            manager.LoadProfiles();
+
+            var defaultProfile = manager.GetDefaultProfile();
+            if (defaultProfile == null)
+            {
+                Console.Error.WriteLine("Error: No profile specified and no default profile is set.");
+                Console.Error.WriteLine("Either specify a profile name: XOutputRenew headless \"ProfileName\"");
+                Console.Error.WriteLine("Or set a default profile in the Profile Editor.");
+                return ExitError;
+            }
+
+            profileName = defaultProfile.Name;
+            Console.WriteLine($"Using default profile: {profileName}");
+        }
 
         using var runner = new HeadlessRunner();
         return runner.Run(profileName);
@@ -461,11 +481,11 @@ USAGE:
 COMMANDS:
   (no command)              Launch the GUI application
   run                       Launch the GUI (same as no command)
-  headless <profile>        Run without GUI (for scripting/services)
+  headless [profile]        Run without GUI (uses default profile if not specified)
   list-devices [--json]     List detected input devices
   list-profiles [--json]    List available profiles
   set-default <profile>     Set a profile as the default
-  start [profile]           Start a profile (uses default if not specified)
+  start [profile]           Start a profile via GUI (uses default if not specified)
   stop                      Stop the running profile
   status [--json]           Get status from the running instance
   help                      Show this help
@@ -493,7 +513,10 @@ EXAMPLES:
   # Start a specific profile
   XOutputRenew start ""My Wheel""
 
-  # Run headless (no GUI)
+  # Run headless with default profile
+  XOutputRenew headless
+
+  # Run headless with specific profile
   XOutputRenew headless ""My Wheel""
 
   # Launch minimized with a profile
