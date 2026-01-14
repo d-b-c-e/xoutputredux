@@ -1535,6 +1535,12 @@ public partial class MainWindow : Window
 
     private async Task CheckForUpdatesOnStartupAsync()
     {
+#if DEBUG
+        // Skip automatic update checks in debug builds
+        AppLogger.Info("Skipping automatic update check (debug build)");
+        await Task.CompletedTask; // Suppress warning
+        return;
+#else
         if (!_appSettings.ShouldCheckForUpdates())
             return;
 
@@ -1556,6 +1562,7 @@ public partial class MainWindow : Window
         {
             AppLogger.Warning($"Startup update check failed: {ex.Message}");
         }
+#endif
     }
 
     #endregion
