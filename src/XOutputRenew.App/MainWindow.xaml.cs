@@ -139,8 +139,10 @@ public partial class MainWindow : Window
         // Check for minimized startup
         if (Application.Current.Properties["Minimized"] is true)
         {
+            // Must call Show() first to ensure tray icon initializes properly
+            // Window_StateChanged will call Hide() when we set Minimized state
+            Show();
             WindowState = WindowState.Minimized;
-            Hide();
         }
 
         // Restore game monitoring if it was enabled
