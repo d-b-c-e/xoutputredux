@@ -459,6 +459,11 @@ AppLogger.Error("Something failed", exception);
 - **Fix**: Requires custom ControlTemplate for TabItem with dark-themed VisualStates (~50-80 lines XAML)
 - **Priority**: Low (cosmetic only)
 
+### Options Tab Content Overflow
+- **Symptom**: Options tab content extends beyond window height, bottom options not visible
+- **Cause**: Tab content is taller than minimum window size (600px)
+- **Fix**: Add ScrollViewer to Options tab, or refactor layout to be more compact
+- **Priority**: Medium (usability issue)
 
 ---
 
