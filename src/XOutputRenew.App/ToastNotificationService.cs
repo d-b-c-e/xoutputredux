@@ -98,6 +98,47 @@ public static class ToastNotificationService
     }
 
     /// <summary>
+    /// Shows a toast notification when game monitoring starts.
+    /// </summary>
+    public static void ShowMonitoringStarted(int gameCount)
+    {
+        if (!Enabled) return;
+
+        try
+        {
+            new ToastContentBuilder()
+                .AddText($"{AppName}")
+                .AddText("Game monitoring enabled")
+                .AddAttributionText($"Watching for {gameCount} game(s)")
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to show toast notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Shows a toast notification when game monitoring stops.
+    /// </summary>
+    public static void ShowMonitoringStopped()
+    {
+        if (!Enabled) return;
+
+        try
+        {
+            new ToastContentBuilder()
+                .AddText($"{AppName}")
+                .AddText("Game monitoring disabled")
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to show toast notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Cleans up toast notification resources on app exit.
     /// Call this when the application is closing.
     /// </summary>

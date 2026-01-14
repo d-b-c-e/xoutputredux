@@ -124,6 +124,25 @@ public class Program
         });
         rootCommand.AddCommand(stopCommand);
 
+        // Monitoring commands
+        var monitorCommand = new Command("monitor", "Control game monitoring");
+
+        var monitorOnCommand = new Command("on", "Enable game monitoring");
+        monitorOnCommand.SetHandler(() =>
+        {
+            Environment.ExitCode = SendMonitoringCommand(true);
+        });
+        monitorCommand.AddCommand(monitorOnCommand);
+
+        var monitorOffCommand = new Command("off", "Disable game monitoring");
+        monitorOffCommand.SetHandler(() =>
+        {
+            Environment.ExitCode = SendMonitoringCommand(false);
+        });
+        monitorCommand.AddCommand(monitorOffCommand);
+
+        rootCommand.AddCommand(monitorCommand);
+
         var statusCommand = new Command("status", "Get status from the running instance");
         statusCommand.AddOption(jsonOption);
         statusCommand.SetHandler((json) =>
@@ -411,6 +430,30 @@ public class Program
         }
     }
 
+    private static int SendMonitoringCommand(bool enable)
+    {
+        if (!IpcService.IsAnotherInstanceRunning())
+        {
+            Console.Error.WriteLine("Error: No running instance of XOutputRenew found.");
+            return ExitNoRunningInstance;
+        }
+
+        var result = enable
+            ? IpcService.SendMonitoringOnCommand()
+            : IpcService.SendMonitoringOffCommand();
+
+        if (result.Success)
+        {
+            Console.WriteLine(result.Message);
+            return ExitSuccess;
+        }
+        else
+        {
+            Console.Error.WriteLine($"Error: {result.Message}");
+            return ExitError;
+        }
+    }
+
     private static int GetStatus(bool asJson)
     {
         if (!IpcService.IsAnotherInstanceRunning())
@@ -487,6 +530,8 @@ COMMANDS:
   set-default <profile>     Set a profile as the default
   start [profile]           Start a profile via GUI (uses default if not specified)
   stop                      Stop the running profile
+  monitor on                Enable game monitoring
+  monitor off               Disable game monitoring
   status [--json]           Get status from the running instance
   help                      Show this help
 

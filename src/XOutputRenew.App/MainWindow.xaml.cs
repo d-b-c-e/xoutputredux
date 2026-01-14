@@ -77,6 +77,8 @@ public partial class MainWindow : Window
         _ipcService = new IpcService();
         _ipcService.StartProfileRequested += IpcService_StartProfileRequested;
         _ipcService.StopRequested += IpcService_StopRequested;
+        _ipcService.MonitoringEnableRequested += IpcService_MonitoringEnableRequested;
+        _ipcService.MonitoringDisableRequested += IpcService_MonitoringDisableRequested;
         _ipcService.GetStatus = GetIpcStatus;
         _ipcService.StartServer();
 
@@ -142,7 +144,7 @@ public partial class MainWindow : Window
         // Restore game monitoring if it was enabled
         if (_appSettings.GameMonitoringEnabled && _gameManager.Games.Count > 0)
         {
-            StartGameMonitoring(saveToSettings: false);
+            StartGameMonitoring(saveToSettings: false, showToast: false);
         }
     }
 
@@ -1034,6 +1036,32 @@ public partial class MainWindow : Window
         });
     }
 
+    private void IpcService_MonitoringEnableRequested()
+    {
+        // Must run on UI thread
+        Dispatcher.Invoke(() =>
+        {
+            AppLogger.Info("IPC: Enabling game monitoring");
+            if (!_gameMonitorService.IsEnabled)
+            {
+                StartGameMonitoring();
+            }
+        });
+    }
+
+    private void IpcService_MonitoringDisableRequested()
+    {
+        // Must run on UI thread
+        Dispatcher.Invoke(() =>
+        {
+            AppLogger.Info("IPC: Disabling game monitoring");
+            if (_gameMonitorService.IsEnabled)
+            {
+                StopGameMonitoring();
+            }
+        });
+    }
+
     private IpcStatus GetIpcStatus()
     {
         return new IpcStatus
@@ -1143,7 +1171,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void StartGameMonitoring(bool saveToSettings = true)
+    private void StartGameMonitoring(bool saveToSettings = true, bool showToast = true)
     {
         if (_gameManager.Games.Count == 0)
         {
@@ -1157,6 +1185,11 @@ public partial class MainWindow : Window
         StatusText.Text = "Game monitoring enabled - watching for configured games";
         AppLogger.Info("Game monitoring started");
 
+        if (showToast)
+        {
+            ToastNotificationService.ShowMonitoringStarted(_gameManager.Games.Count);
+        }
+
         if (saveToSettings)
         {
             _appSettings.GameMonitoringEnabled = true;
@@ -1164,12 +1197,17 @@ public partial class MainWindow : Window
         }
     }
 
-    private void StopGameMonitoring(bool saveToSettings = true)
+    private void StopGameMonitoring(bool saveToSettings = true, bool showToast = true)
     {
         _gameMonitorService.StopMonitoring();
         UpdateMonitoringUI();
         StatusText.Text = "Game monitoring disabled";
         AppLogger.Info("Game monitoring stopped");
+
+        if (showToast)
+        {
+            ToastNotificationService.ShowMonitoringStopped();
+        }
 
         if (saveToSettings)
         {
