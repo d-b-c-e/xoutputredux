@@ -459,15 +459,6 @@ AppLogger.Error("Something failed", exception);
 - **Fix**: Requires custom ControlTemplate for TabItem with dark-themed VisualStates (~50-80 lines XAML)
 - **Priority**: Low (cosmetic only)
 
-### Invisible Running Instance (Ghost Process)
-- **Symptom**: XOutputRenew.exe runs without appearing in taskbar or system tray notification area
-- **Cause**: When started via `--minimized` flag (e.g., by Stream Deck plugin's auto-start), the app may not properly show in the notification area
-- **Impact**: User has no way to know the app is running without checking Task Manager/process list
-- **Workaround**: Check Task Manager or use `tasklist | grep XOutput` to find and kill the process
-- **Priority**: High (major UX issue - users can't interact with or close the invisible app)
-- **Investigation Needed**: Check MainWindow initialization when `--minimized` is passed, verify NotifyIcon is created and visible
-
-
 
 ---
 
