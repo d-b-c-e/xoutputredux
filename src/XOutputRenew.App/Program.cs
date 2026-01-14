@@ -154,11 +154,13 @@ public class Program
         // Headless mode command
         var headlessCommand = new Command("headless", "Run in headless mode without GUI (for scripting/services)");
         var headlessProfileArg = new Argument<string?>("profile", () => null, "Name of the profile to run (optional, uses default if not specified)");
+        var headlessMonitorOption = new Option<bool>("--monitor", "Enable game monitoring in headless mode");
         headlessCommand.AddArgument(headlessProfileArg);
-        headlessCommand.SetHandler((profile) =>
+        headlessCommand.AddOption(headlessMonitorOption);
+        headlessCommand.SetHandler((profile, monitor) =>
         {
-            Environment.ExitCode = RunHeadless(profile);
-        }, headlessProfileArg);
+            Environment.ExitCode = RunHeadless(profile, monitor);
+        }, headlessProfileArg, headlessMonitorOption);
         rootCommand.AddCommand(headlessCommand);
 
         // Help command with examples
@@ -191,13 +193,13 @@ public class Program
         return app.Run();
     }
 
-    private static int RunHeadless(string? profileName)
+    private static int RunHeadless(string? profileName, bool enableMonitoring)
     {
         // Initialize logging for headless mode
         AppLogger.Initialize();
 
-        // If no profile specified, look for default
-        if (string.IsNullOrEmpty(profileName))
+        // If no profile specified and no monitoring, look for default
+        if (string.IsNullOrEmpty(profileName) && !enableMonitoring)
         {
             var profilesDir = ProfileManager.GetDefaultProfilesDirectory();
             var manager = new ProfileManager(profilesDir);
@@ -209,6 +211,7 @@ public class Program
                 Console.Error.WriteLine("Error: No profile specified and no default profile is set.");
                 Console.Error.WriteLine("Either specify a profile name: XOutputRenew headless \"ProfileName\"");
                 Console.Error.WriteLine("Or set a default profile in the Profile Editor.");
+                Console.Error.WriteLine("Or use --monitor to run with game monitoring only.");
                 return ExitError;
             }
 
@@ -217,7 +220,7 @@ public class Program
         }
 
         using var runner = new HeadlessRunner();
-        return runner.Run(profileName);
+        return runner.Run(profileName, enableMonitoring);
     }
 
     private static void ListDevices(bool asJson)
@@ -524,7 +527,7 @@ USAGE:
 COMMANDS:
   (no command)              Launch the GUI application
   run                       Launch the GUI (same as no command)
-  headless [profile]        Run without GUI (uses default profile if not specified)
+  headless [profile] [--monitor]  Run without GUI
   list-devices [--json]     List detected input devices
   list-profiles [--json]    List available profiles
   set-default <profile>     Set a profile as the default
@@ -546,7 +549,10 @@ HEADLESS MODE:
   - Running as a Windows service
   - Scripting and automation
 
-  Control headless mode with 'stop' command or Ctrl+C.
+  Control headless mode with:
+  - Ctrl+C - graceful shutdown
+  - 'XOutputRenew stop' - stop via IPC
+  - 'XOutputRenew monitor on/off' - toggle monitoring via IPC
 
 EXAMPLES:
   # Set a default profile
@@ -563,6 +569,12 @@ EXAMPLES:
 
   # Run headless with specific profile
   XOutputRenew headless ""My Wheel""
+
+  # Run headless with game monitoring only
+  XOutputRenew headless --monitor
+
+  # Run headless with profile AND monitoring
+  XOutputRenew headless ""My Wheel"" --monitor
 
   # Launch minimized with a profile
   XOutputRenew --start-profile ""My Wheel"" --minimized
