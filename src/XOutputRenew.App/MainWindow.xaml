@@ -524,6 +524,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
@@ -577,7 +578,7 @@
                         </GroupBox>
 
                         <!-- Command Line -->
-                        <GroupBox Grid.Row="3" Header="Command Line">
+                        <GroupBox Grid.Row="3" Header="Command Line" Margin="0,0,0,10">
                             <StackPanel Margin="10">
                                 <StackPanel Orientation="Horizontal">
                                     <CheckBox x:Name="AddToPathCheckBox" Content="Add to System PATH"
@@ -587,8 +588,21 @@
                                                MouseLeftButtonUp="PathHelp_Click"
                                                ToolTip="Click for help"/>
                                 </StackPanel>
-                                <TextBlock Text="Enable to run 'XOutputRenew.App start MyProfile' from any terminal."
+                                <TextBlock Text="Enable to run 'XOutputRenew start MyProfile' from any terminal."
                                            Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- Updates -->
+                        <GroupBox Grid.Row="4" Header="Updates">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="CheckForUpdatesCheckBox" Content="Check for updates on startup"
+                                          Checked="CheckForUpdates_Changed" Unchecked="CheckForUpdates_Changed"/>
+                                <TextBlock Text="Checks GitHub for new releases when the application starts."
+                                           Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
+                                <Button x:Name="CheckForUpdatesButton" Content="Check Now"
+                                        Padding="15,5" Margin="0,10,0,0" HorizontalAlignment="Left"
+                                        Click="CheckForUpdatesNow_Click"/>
                             </StackPanel>
                         </GroupBox>
                     </Grid>

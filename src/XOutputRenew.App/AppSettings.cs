@@ -48,6 +48,40 @@ public class AppSettings
     public bool GameMonitoringEnabled { get; set; }
 
     /// <summary>
+    /// Whether to check for updates on startup.
+    /// </summary>
+    public bool CheckForUpdatesOnStartup { get; set; } = true;
+
+    /// <summary>
+    /// Last time we checked for updates (for rate limiting).
+    /// </summary>
+    public DateTime? LastUpdateCheck { get; set; }
+
+    /// <summary>
+    /// Checks if enough time has passed to check for updates again.
+    /// </summary>
+    public bool ShouldCheckForUpdates()
+    {
+        if (!CheckForUpdatesOnStartup)
+            return false;
+
+        if (LastUpdateCheck == null)
+            return true;
+
+        // Check once per 24 hours
+        return DateTime.UtcNow - LastUpdateCheck.Value > TimeSpan.FromHours(24);
+    }
+
+    /// <summary>
+    /// Records that an update check was performed.
+    /// </summary>
+    public void RecordUpdateCheck()
+    {
+        LastUpdateCheck = DateTime.UtcNow;
+        Save();
+    }
+
+    /// <summary>
     /// Loads settings from disk.
     /// </summary>
     public static AppSettings Load()

@@ -146,6 +146,9 @@ public partial class MainWindow : Window
         {
             StartGameMonitoring(saveToSettings: false, showToast: false);
         }
+
+        // Check for updates on startup (async, doesn't block)
+        _ = CheckForUpdatesOnStartupAsync();
     }
 
     private void CheckDriverStatus()
@@ -1307,6 +1310,9 @@ public partial class MainWindow : Window
 
         // PATH checkbox - show current state
         AddToPathCheckBox.IsChecked = IsInSystemPath();
+
+        // Updates checkbox
+        CheckForUpdatesCheckBox.IsChecked = _appSettings.CheckForUpdatesOnStartup;
     }
 
     private void RefreshStartupProfileComboBox()
@@ -1478,6 +1484,78 @@ public partial class MainWindow : Window
         var newPath = string.Join(";", paths);
         Environment.SetEnvironmentVariable("PATH", newPath, EnvironmentVariableTarget.Machine);
         AppLogger.Info($"Removed from system PATH: {appDir}");
+    }
+
+    private void CheckForUpdates_Changed(object sender, RoutedEventArgs e)
+    {
+        _appSettings.CheckForUpdatesOnStartup = CheckForUpdatesCheckBox.IsChecked == true;
+        _appSettings.Save();
+    }
+
+    private async void CheckForUpdatesNow_Click(object sender, RoutedEventArgs e)
+    {
+        CheckForUpdatesButton.IsEnabled = false;
+        CheckForUpdatesButton.Content = "Checking...";
+
+        try
+        {
+            var updateService = new UpdateService();
+            var release = await updateService.CheckForUpdateAsync();
+
+            if (release != null)
+            {
+                var dialog = new UpdateDialog(release) { Owner = this };
+                dialog.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show(
+                    $"You're running the latest version ({UpdateService.GetCurrentVersion()}).",
+                    "No Updates Available",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.None);
+            }
+
+            _appSettings.RecordUpdateCheck();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to check for updates: {ex.Message}",
+                "Update Check Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            CheckForUpdatesButton.IsEnabled = true;
+            CheckForUpdatesButton.Content = "Check Now";
+        }
+    }
+
+    private async Task CheckForUpdatesOnStartupAsync()
+    {
+        if (!_appSettings.ShouldCheckForUpdates())
+            return;
+
+        try
+        {
+            var updateService = new UpdateService();
+            var release = await updateService.CheckForUpdateAsync();
+
+            if (release != null)
+            {
+                // Show update dialog
+                var dialog = new UpdateDialog(release) { Owner = this };
+                dialog.ShowDialog();
+            }
+
+            _appSettings.RecordUpdateCheck();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Startup update check failed: {ex.Message}");
+        }
     }
 
     #endregion

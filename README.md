@@ -194,6 +194,7 @@ XOutputRenew/
 - **Steam game browser** - Browse installed Steam games with smart executable detection
 - **Headless mode** - Run without GUI for Stream Deck, gaming frontends, or services
 - **ViGEmBus auto-install** - Prompt to download and install if missing
+- **Auto-update** - Check for updates on startup with in-app download and install
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)
@@ -201,7 +202,6 @@ XOutputRenew/
 - X-Arcade dual joystick (RawInput)
 
 ### Coming Soon
-- **Update checker** - Check for new releases on GitHub at startup
 - **Portable mode** - Store all settings in app directory for USB drive use
 - **Stream Deck plugin** - Native Stream Deck integration
 
