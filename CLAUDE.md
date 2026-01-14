@@ -203,13 +203,13 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [ ] User reviews/redacts sensitive info before submitting (privacy-friendly)
 - [ ] No server required - uses GitHub issue URL parameters
 
-### Phase 11: Portable Mode (PLANNED)
-- [ ] Detect portable mode (e.g., presence of `portable.txt` or `XOutputRenew.portable` marker file)
-- [ ] Store all settings in app directory instead of %AppData% when portable
-- [ ] Profiles stored in `.\Profiles\` relative to exe
-- [ ] Logs stored in `.\logs\` relative to exe
-- [ ] No registry modifications in portable mode
-- [ ] Document portable usage in README
+### Phase 11: Chocolatey Package (PLANNED - after stable release)
+- [ ] Create Chocolatey package for easy install/update
+- [ ] `choco install xoutputrenew` / `choco upgrade xoutputrenew`
+- [ ] Automatic PATH via Chocolatey shims
+- [ ] Silent install support for arcade/kiosk provisioning
+- [ ] Submit to Chocolatey Community Repository
+- [ ] Document Chocolatey installation in README
 
 ### Phase 12: ViGEmBus Driver Check ✓ COMPLETE
 - [x] Check for ViGEmBus driver on startup (similar to HidHide check)

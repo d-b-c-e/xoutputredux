@@ -202,7 +202,7 @@ XOutputRenew/
 - X-Arcade dual joystick (RawInput)
 
 ### Coming Soon
-- **Portable mode** - Store all settings in app directory for USB drive use
+- **Chocolatey package** - Easy install/update via `choco install xoutputrenew`
 - **Stream Deck plugin** - Native Stream Deck integration
 
 ## Background
