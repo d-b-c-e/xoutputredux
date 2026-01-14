@@ -23,6 +23,11 @@ public class AppSettings
     public bool MinimizeToTrayOnClose { get; set; } = true;
 
     /// <summary>
+    /// When true, toast notifications are shown for profile start/stop and game detection.
+    /// </summary>
+    public bool ToastNotificationsEnabled { get; set; } = true;
+
+    /// <summary>
     /// Profile to start automatically when the app launches.
     /// </summary>
     public string? StartupProfile { get; set; }

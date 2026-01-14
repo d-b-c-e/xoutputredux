@@ -50,6 +50,10 @@ public class HeadlessRunner : IDisposable
         Console.WriteLine($"XOutputRenew Headless Mode");
         Console.WriteLine($"==========================");
 
+        // Load app settings for toast notifications
+        var appSettings = AppSettings.Load();
+        ToastNotificationService.Enabled = appSettings.ToastNotificationsEnabled;
+
         // Initialize services
         if (!_vigemService.Initialize())
         {

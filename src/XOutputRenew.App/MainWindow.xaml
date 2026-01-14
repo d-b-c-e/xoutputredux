@@ -534,6 +534,12 @@
                                           Checked="MinimizeToTray_Changed" Unchecked="MinimizeToTray_Changed"/>
                                 <TextBlock Text="When unchecked, closing the window will exit the application."
                                            Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
+
+                                <CheckBox x:Name="ToastNotificationsCheckBox" Content="Show toast notifications"
+                                          Margin="0,15,0,0"
+                                          Checked="ToastNotifications_Changed" Unchecked="ToastNotifications_Changed"/>
+                                <TextBlock Text="Show Windows notifications when profiles start/stop and games are detected."
+                                           Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
                             </StackPanel>
                         </GroupBox>
 

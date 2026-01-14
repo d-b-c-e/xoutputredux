@@ -10,10 +10,17 @@ public static class ToastNotificationService
     private const string AppName = "XOutputRenew";
 
     /// <summary>
+    /// Whether toast notifications are enabled.
+    /// </summary>
+    public static bool Enabled { get; set; } = true;
+
+    /// <summary>
     /// Shows a toast notification when a profile starts.
     /// </summary>
     public static void ShowProfileStarted(string profileName)
     {
+        if (!Enabled) return;
+
         try
         {
             new ToastContentBuilder()
@@ -33,6 +40,8 @@ public static class ToastNotificationService
     /// </summary>
     public static void ShowProfileStopped(string profileName)
     {
+        if (!Enabled) return;
+
         try
         {
             new ToastContentBuilder()
@@ -51,6 +60,8 @@ public static class ToastNotificationService
     /// </summary>
     public static void ShowGameLaunched(string gameName, string profileName)
     {
+        if (!Enabled) return;
+
         try
         {
             new ToastContentBuilder()
@@ -70,6 +81,8 @@ public static class ToastNotificationService
     /// </summary>
     public static void ShowGameExited(string gameName)
     {
+        if (!Enabled) return;
+
         try
         {
             new ToastContentBuilder()

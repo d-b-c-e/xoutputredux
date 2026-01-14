@@ -1252,6 +1252,8 @@ public partial class MainWindow : Window
     {
         // Load settings into UI
         MinimizeToTrayCheckBox.IsChecked = _appSettings.MinimizeToTrayOnClose;
+        ToastNotificationsCheckBox.IsChecked = _appSettings.ToastNotificationsEnabled;
+        ToastNotificationService.Enabled = _appSettings.ToastNotificationsEnabled;
         StartWithWindowsCheckBox.IsChecked = AppSettings.GetStartWithWindows();
 
         // Populate startup profile dropdown
@@ -1289,6 +1291,13 @@ public partial class MainWindow : Window
     private void MinimizeToTray_Changed(object sender, RoutedEventArgs e)
     {
         _appSettings.MinimizeToTrayOnClose = MinimizeToTrayCheckBox.IsChecked == true;
+        _appSettings.Save();
+    }
+
+    private void ToastNotifications_Changed(object sender, RoutedEventArgs e)
+    {
+        _appSettings.ToastNotificationsEnabled = ToastNotificationsCheckBox.IsChecked == true;
+        ToastNotificationService.Enabled = _appSettings.ToastNotificationsEnabled;
         _appSettings.Save();
     }
 
