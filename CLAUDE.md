@@ -179,7 +179,9 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 ### Phase 8: Headless Mode ✓ COMPLETE
 - [x] Run without GUI for scripting/service scenarios
 - [x] `headless <profile>` command to start without window
-- [x] All control via CLI commands (start, stop, status) or Ctrl+C
+- [x] `headless --monitor` for game monitoring without profile
+- [x] `headless <profile> --monitor` for both profile and monitoring
+- [x] All control via CLI commands (start, stop, status, monitor on/off) or Ctrl+C
 - [x] Useful for Stream Deck, gaming frontend integration, or running as a service
 
 ### Phase 9: Update Checker (PLANNED)
@@ -236,11 +238,13 @@ Usage: XOutputRenew [command] [options]
 Commands:
   (no command)            Launch the GUI application
   run                     Launch the GUI (same as no command)
-  headless [profile]      Run without GUI (uses default profile if not specified)
+  headless [profile] [--monitor]  Run without GUI
   list-devices [--json]   List detected input devices
   list-profiles [--json]  List available profiles
   start [profile]         Start a profile (uses default if not specified)
   stop                    Stop the running profile
+  monitor on              Enable game monitoring
+  monitor off             Disable game monitoring
   status [--json]         Get status from running instance
   help                    Show detailed help
 
@@ -258,6 +262,8 @@ Examples:
   XOutputRenew                                    # Open GUI
   XOutputRenew headless                           # Run headless with default profile
   XOutputRenew headless "My Wheel"                # Run headless with specific profile
+  XOutputRenew headless --monitor                 # Run headless with game monitoring only
+  XOutputRenew headless "My Wheel" --monitor      # Run headless with profile + monitoring
   XOutputRenew start                              # Start default profile
   XOutputRenew start "My Wheel"                   # Start specific profile
   XOutputRenew --start-profile "My Wheel" --minimized
