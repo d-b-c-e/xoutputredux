@@ -1,9 +1,10 @@
 # XOutputRenew Release Script
-# Creates installer and portable ZIP for distribution
-# Usage: .\release.ps1 [-SkipBuild] [-InnoSetupPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"]
+# Creates installer, portable ZIP, and Stream Deck plugin for distribution
+# Usage: .\release.ps1 [-SkipBuild] [-SkipStreamDeck] [-InnoSetupPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"]
 
 param(
     [switch]$SkipBuild,
+    [switch]$SkipStreamDeck,
     [string]$InnoSetupPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 )
 
@@ -32,17 +33,53 @@ if (-not (Test-Path $DistDir)) {
     New-Item -ItemType Directory -Path $DistDir | Out-Null
 }
 
+# Determine total steps
+$totalSteps = 3
+if (-not $SkipStreamDeck) { $totalSteps++ }
+$currentStep = 0
+
 # Build if not skipped
+$currentStep++
 if (-not $SkipBuild) {
-    Write-Host "`n[1/3] Building application..." -ForegroundColor Yellow
+    Write-Host "`n[$currentStep/$totalSteps] Building application..." -ForegroundColor Yellow
     & "$ProjectRoot\build.ps1" -Configuration Release -Clean
     if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 } else {
-    Write-Host "`n[1/3] Skipping build (using existing publish folder)" -ForegroundColor Gray
+    Write-Host "`n[$currentStep/$totalSteps] Skipping build (using existing publish folder)" -ForegroundColor Gray
+}
+
+# Build Stream Deck plugin
+if (-not $SkipStreamDeck) {
+    $currentStep++
+    Write-Host "`n[$currentStep/$totalSteps] Building Stream Deck plugin..." -ForegroundColor Yellow
+    $StreamDeckDir = Join-Path $ProjectRoot "streamdeck-plugin"
+    $StreamDeckBuildScript = Join-Path $StreamDeckDir "scripts\build-plugin.ps1"
+
+    if (Test-Path $StreamDeckBuildScript) {
+        Push-Location $StreamDeckDir
+        try {
+            & $StreamDeckBuildScript -OutputDir "$DistDir"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Stream Deck plugin build failed (non-fatal)" -ForegroundColor Yellow
+            } else {
+                # Copy to publish directory so it's included in the portable ZIP
+                $PluginFile = Get-ChildItem "$DistDir\XOutputRenew.streamDeckPlugin" -ErrorAction SilentlyContinue
+                if ($PluginFile) {
+                    Copy-Item $PluginFile.FullName -Destination $PublishDir
+                    Write-Host "Stream Deck plugin bundled with application" -ForegroundColor Green
+                }
+            }
+        } finally {
+            Pop-Location
+        }
+    } else {
+        Write-Host "Stream Deck build script not found, skipping" -ForegroundColor Yellow
+    }
 }
 
 # Create portable ZIP
-Write-Host "`n[2/3] Creating portable ZIP..." -ForegroundColor Yellow
+$currentStep++
+Write-Host "`n[$currentStep/$totalSteps] Creating portable ZIP..." -ForegroundColor Yellow
 $ZipName = "XOutputRenew-$Version-Portable.zip"
 $ZipPath = Join-Path $DistDir $ZipName
 
@@ -54,7 +91,8 @@ Compress-Archive -Path "$PublishDir\*" -DestinationPath $ZipPath -CompressionLev
 Write-Host "Created: $ZipName" -ForegroundColor Green
 
 # Build installer
-Write-Host "`n[3/3] Building installer..." -ForegroundColor Yellow
+$currentStep++
+Write-Host "`n[$currentStep/$totalSteps] Building installer..." -ForegroundColor Yellow
 
 if (-not (Test-Path $InnoSetupPath)) {
     Write-Host "Inno Setup not found at: $InnoSetupPath" -ForegroundColor Red

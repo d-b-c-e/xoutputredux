@@ -10,6 +10,7 @@ export interface XOutputStatus {
   isRunning: boolean;
   profileName: string | null;
   uptime: string | null;
+  isMonitoring?: boolean;
 }
 
 export interface XOutputProfile {
@@ -134,5 +135,65 @@ export async function toggleProfile(profileName: string): Promise<boolean> {
     // If a different profile is running, starting a new one will stop the old one
     await startProfile(profileName);
     return true;
+  }
+}
+
+/**
+ * Starts game monitoring.
+ * @returns True if successful, false otherwise.
+ */
+export async function startMonitoring(): Promise<boolean> {
+  try {
+    await runCommand("monitor on");
+    return true;
+  } catch (error) {
+    console.error("Failed to start monitoring:", error);
+    return false;
+  }
+}
+
+/**
+ * Stops game monitoring.
+ * @returns True if successful, false otherwise.
+ */
+export async function stopMonitoring(): Promise<boolean> {
+  try {
+    await runCommand("monitor off");
+    return true;
+  } catch (error) {
+    console.error("Failed to stop monitoring:", error);
+    return false;
+  }
+}
+
+/**
+ * Toggles game monitoring on/off.
+ * @returns The new state (true = monitoring, false = not monitoring).
+ */
+export async function toggleMonitoring(): Promise<boolean> {
+  const status = await getStatus();
+
+  if (status.isMonitoring) {
+    await stopMonitoring();
+    return false;
+  } else {
+    await startMonitoring();
+    return true;
+  }
+}
+
+/**
+ * Launches the XOutputRenew application.
+ * @returns True if successful, false otherwise.
+ */
+export async function launchApp(): Promise<boolean> {
+  try {
+    // Use 'start' to launch without waiting, or just run the command
+    // The 'run' command launches the GUI
+    await runCommand("run");
+    return true;
+  } catch (error) {
+    console.error("Failed to launch app:", error);
+    return false;
   }
 }

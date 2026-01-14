@@ -4,9 +4,23 @@ Control XOutputRenew Xbox controller emulator profiles from your Stream Deck.
 
 ## Features
 
-- **Start Profile** - Start a specific XOutputRenew profile
-- **Stop Profile** - Stop the currently running profile
-- **Toggle Profile** - Toggle a profile on/off with visual state indicator
+### Actions (Keypad)
+
+| Action | Description |
+|--------|-------------|
+| **Start Profile** | Start a specific XOutputRenew profile |
+| **Stop Profile** | Stop the currently running profile |
+| **Toggle Profile** | Toggle a profile on/off with visual state indicator |
+| **Start Monitoring** | Start game monitoring (auto-switch profiles) |
+| **Stop Monitoring** | Stop game monitoring |
+| **Toggle Monitoring** | Toggle game monitoring on/off |
+| **Launch App** | Launch the XOutputRenew application |
+
+### Encoder Actions (Stream Deck+)
+
+| Action | Description |
+|--------|-------------|
+| **Profile Dial** | Rotate to browse profiles, press to toggle selected profile |
 
 ## Requirements
 
@@ -16,6 +30,12 @@ Control XOutputRenew Xbox controller emulator profiles from your Stream Deck.
 
 ## Installation
 
+### From XOutputRenew App
+
+1. Open XOutputRenew
+2. Go to **Options** tab
+3. Click **Install Stream Deck Plugin**
+
 ### From Release
 
 1. Download the `.streamDeckPlugin` file from the releases page
@@ -23,26 +43,14 @@ Control XOutputRenew Xbox controller emulator profiles from your Stream Deck.
 
 ### From Source
 
-1. Install dependencies:
-   ```bash
-   cd streamdeck-plugin
-   npm install
-   ```
+```bash
+cd streamdeck-plugin
+npm install
+npm run build
+.\scripts\build-plugin.ps1
+```
 
-2. Build the plugin:
-   ```bash
-   npm run build
-   ```
-
-3. For development with auto-reload:
-   ```bash
-   npm run watch
-   ```
-
-4. To create distributable package:
-   ```bash
-   npm run pack
-   ```
+The packaged plugin will be in the `dist` folder.
 
 ## Actions
 
@@ -50,7 +58,7 @@ Control XOutputRenew Xbox controller emulator profiles from your Stream Deck.
 
 Starts a specific XOutputRenew profile. Configure which profile to start in the action settings.
 
-- Select "Default Profile" to start whichever profile is marked as default in XOutputRenew
+- Select "Default Profile" to start whichever profile is marked as default
 - Or select a specific profile from the dropdown
 
 ### Stop Profile
@@ -61,9 +69,22 @@ Stops the currently running XOutputRenew profile. No configuration needed.
 
 Toggles a specific profile on/off. The button state updates to show whether the profile is currently running.
 
-- Select a profile from the dropdown
-- Press to toggle on/off
-- Button shows different icon when profile is running
+### Start/Stop/Toggle Monitoring
+
+Controls the game monitoring feature which automatically switches profiles when games are detected.
+
+### Launch App
+
+Opens the XOutputRenew application window.
+
+### Profile Dial (Stream Deck+ only)
+
+Use the dial to browse through profiles:
+- **Rotate**: Browse profiles
+- **Press**: Toggle the selected profile on/off
+- **Touch**: Refresh profile list
+
+The LCD strip shows the current profile name and status.
 
 ## Troubleshooting
 
@@ -77,26 +98,13 @@ Ensure XOutputRenew is installed and added to your system PATH:
 
 ### Profiles not showing in dropdown
 
-Click the "Refresh Profiles" button in the action settings to reload the profile list from XOutputRenew.
+Click the "Refresh Profiles" button in the action settings to reload the profile list.
 
-## Icon Assets
+### Plugin doesn't appear in Stream Deck
 
-The plugin requires these icon files in `com.xoutputrenew.sdPlugin/imgs/`:
-
-| File | Size | Description |
-|------|------|-------------|
-| `plugin-icon.png` | 144x144 | Main plugin icon |
-| `plugin-icon@2x.png` | 288x288 | Retina plugin icon |
-| `category-icon.png` | 28x28 | Category icon |
-| `category-icon@2x.png` | 56x56 | Retina category icon |
-| `action-start.png` | 72x72 | Start action icon |
-| `action-start@2x.png` | 144x144 | Retina start action icon |
-| `action-stop.png` | 72x72 | Stop action icon |
-| `action-stop@2x.png` | 144x144 | Retina stop action icon |
-| `action-toggle-off.png` | 72x72 | Toggle off state icon |
-| `action-toggle-off@2x.png` | 144x144 | Retina toggle off icon |
-| `action-toggle-on.png` | 72x72 | Toggle on state icon |
-| `action-toggle-on@2x.png` | 144x144 | Retina toggle on icon |
+1. Ensure Stream Deck software is version 6.9 or higher
+2. Try restarting the Stream Deck software
+3. Check Windows Event Viewer for errors
 
 ## Development
 
@@ -109,10 +117,13 @@ streamdeck-plugin/
 │   ├── imgs/                     # Icon assets
 │   ├── ui/                       # Property Inspector HTML
 │   └── manifest.json             # Plugin manifest
+├── scripts/
+│   ├── generate-icons.ps1        # Generate icon assets
+│   └── build-plugin.ps1          # Build .streamDeckPlugin package
 ├── src/                          # TypeScript source
 │   ├── actions/                  # Action implementations
 │   ├── plugin.ts                 # Entry point
-│   └── xoutput-cli.ts           # CLI wrapper
+│   └── xoutput-cli.ts            # CLI wrapper
 ├── package.json
 ├── rollup.config.mjs
 └── tsconfig.json
@@ -121,11 +132,19 @@ streamdeck-plugin/
 ### Building
 
 ```bash
-npm install      # Install dependencies
-npm run build    # Build once
-npm run watch    # Build with auto-reload
-npm run pack     # Create .streamDeckPlugin file
+npm install           # Install dependencies
+npm run build         # Build once
+npm run watch         # Build with auto-reload
+.\scripts\build-plugin.ps1   # Create .streamDeckPlugin file
 ```
+
+### Generating Icons
+
+```powershell
+.\scripts\generate-icons.ps1
+```
+
+This creates all required icons in `com.xoutputrenew.sdPlugin/imgs/`.
 
 ## License
 

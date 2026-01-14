@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -1530,6 +1532,47 @@ public partial class MainWindow : Window
         {
             CheckForUpdatesButton.IsEnabled = true;
             CheckForUpdatesButton.Content = "Check Now";
+        }
+    }
+
+    private void InstallStreamDeckPlugin_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            // Look for the bundled plugin file next to the executable
+            var exeDir = AppDomain.CurrentDomain.BaseDirectory;
+            var pluginPath = Path.Combine(exeDir, "XOutputRenew.streamDeckPlugin");
+
+            if (!File.Exists(pluginPath))
+            {
+                MessageBox.Show(
+                    "Stream Deck plugin file not found.\n\n" +
+                    "The plugin should be included with the application. " +
+                    "Please reinstall or download the plugin from the GitHub releases page.",
+                    "Plugin Not Found",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            // Open the plugin file - this will launch Stream Deck's installer
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = pluginPath,
+                UseShellExecute = true
+            };
+            Process.Start(startInfo);
+
+            AppLogger.Info($"Launched Stream Deck plugin installer: {pluginPath}");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Failed to install Stream Deck plugin", ex);
+            MessageBox.Show(
+                $"Failed to install Stream Deck plugin: {ex.Message}",
+                "Installation Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
