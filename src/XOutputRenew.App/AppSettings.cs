@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Win32;
 
 namespace XOutputRenew.App;
@@ -9,6 +10,11 @@ namespace XOutputRenew.App;
 /// </summary>
 public class AppSettings
 {
+    /// <summary>
+    /// Current schema version. Increment when making breaking changes.
+    /// </summary>
+    public const int CurrentSchemaVersion = 1;
+
     private static readonly string SettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "XOutputRenew",
@@ -16,6 +22,11 @@ public class AppSettings
 
     private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string AppName = "XOutputRenew";
+
+    /// <summary>
+    /// Schema version of this settings file. Used for migration.
+    /// </summary>
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
     /// <summary>
     /// When true, closing the window minimizes to tray instead of exiting.
@@ -82,6 +93,28 @@ public class AppSettings
     }
 
     /// <summary>
+    /// Whether this settings instance needs migration.
+    /// </summary>
+    [JsonIgnore]
+    public bool NeedsMigration => SchemaVersion < CurrentSchemaVersion;
+
+    /// <summary>
+    /// Migrates settings to the current schema version.
+    /// </summary>
+    private void Migrate()
+    {
+        // Migration from version 0 (no version field) to version 1
+        if (SchemaVersion < 1)
+        {
+            SchemaVersion = 1;
+        }
+
+        // Future migrations go here
+
+        SchemaVersion = CurrentSchemaVersion;
+    }
+
+    /// <summary>
     /// Loads settings from disk.
     /// </summary>
     public static AppSettings Load()
@@ -91,7 +124,16 @@ public class AppSettings
             if (File.Exists(SettingsPath))
             {
                 var json = File.ReadAllText(SettingsPath);
-                return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+
+                // Check if migration is needed
+                if (settings.NeedsMigration)
+                {
+                    settings.Migrate();
+                    settings.Save();
+                }
+
+                return settings;
             }
         }
         catch

@@ -170,6 +170,16 @@ public class MappingProfile
 /// </summary>
 public class MappingProfileData
 {
+    /// <summary>
+    /// Current schema version. Increment when making breaking changes.
+    /// </summary>
+    public const int CurrentSchemaVersion = 1;
+
+    /// <summary>
+    /// Schema version of this profile data. Used for migration.
+    /// </summary>
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+
     public string Name { get; set; } = "";
     public string? Description { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -178,6 +188,36 @@ public class MappingProfileData
     public List<OutputMappingData> Mappings { get; set; } = new();
     public ForceFeedbackSettingsData? ForceFeedback { get; set; }
     public HidHideSettingsData? HidHide { get; set; }
+
+    /// <summary>
+    /// Whether this data needs to be migrated to the current schema version.
+    /// </summary>
+    [JsonIgnore]
+    public bool NeedsMigration => SchemaVersion < CurrentSchemaVersion;
+
+    /// <summary>
+    /// Migrates the data to the current schema version.
+    /// Call this after deserialization if NeedsMigration is true.
+    /// </summary>
+    public void Migrate()
+    {
+        // Migration from version 0 (no version field) to version 1
+        if (SchemaVersion < 1)
+        {
+            // Version 1 is the initial versioned schema
+            // No data transformations needed, just set the version
+            SchemaVersion = 1;
+        }
+
+        // Future migrations go here:
+        // if (SchemaVersion < 2)
+        // {
+        //     // Migration logic for v1 -> v2
+        //     SchemaVersion = 2;
+        // }
+
+        SchemaVersion = CurrentSchemaVersion;
+    }
 
     /// <summary>
     /// Creates data from a profile.
