@@ -1,6 +1,50 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace XOutputRenew.Core.Games;
+
+/// <summary>
+/// Wrapper for games.json with schema versioning.
+/// </summary>
+public class GamesData
+{
+    /// <summary>
+    /// Current schema version. Increment when making breaking changes.
+    /// </summary>
+    public const int CurrentSchemaVersion = 1;
+
+    /// <summary>
+    /// Schema version of this data. Used for migration.
+    /// </summary>
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+
+    /// <summary>
+    /// List of game associations.
+    /// </summary>
+    public List<GameAssociation> Games { get; set; } = new();
+
+    /// <summary>
+    /// Whether this data needs migration.
+    /// </summary>
+    [JsonIgnore]
+    public bool NeedsMigration => SchemaVersion < CurrentSchemaVersion;
+
+    /// <summary>
+    /// Migrates the data to the current schema version.
+    /// </summary>
+    public void Migrate()
+    {
+        // Migration from version 0 (no version/raw list) to version 1
+        if (SchemaVersion < 1)
+        {
+            SchemaVersion = 1;
+        }
+
+        // Future migrations go here
+
+        SchemaVersion = CurrentSchemaVersion;
+    }
+}
 
 /// <summary>
 /// Manages game-profile associations, including persistence to disk.
@@ -50,10 +94,55 @@ public class GameAssociationManager
         try
         {
             var json = File.ReadAllText(_filePath);
-            var games = JsonSerializer.Deserialize<List<GameAssociation>>(json, JsonOptions);
-            if (games != null)
+
+            // Try to load as new format (GamesData with schema version)
+            GamesData? data = null;
+            bool needsResave = false;
+
+            try
             {
-                _games.AddRange(games);
+                data = JsonSerializer.Deserialize<GamesData>(json, JsonOptions);
+
+                // Check if it's actually the new format (has SchemaVersion property)
+                if (data != null && json.Contains("\"schemaVersion\"", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (data.NeedsMigration)
+                    {
+                        data.Migrate();
+                        needsResave = true;
+                    }
+                }
+                else
+                {
+                    // Old format - try to parse as raw list
+                    data = null;
+                }
+            }
+            catch
+            {
+                data = null;
+            }
+
+            // Fallback: try legacy format (raw list)
+            if (data == null)
+            {
+                var legacyGames = JsonSerializer.Deserialize<List<GameAssociation>>(json, JsonOptions);
+                if (legacyGames != null)
+                {
+                    data = new GamesData { Games = legacyGames };
+                    needsResave = true; // Convert to new format
+                }
+            }
+
+            if (data != null)
+            {
+                _games.AddRange(data.Games);
+
+                // Re-save if migrated or converted from legacy format
+                if (needsResave)
+                {
+                    Save();
+                }
             }
         }
         catch (Exception ex)
@@ -75,7 +164,8 @@ public class GameAssociationManager
                 Directory.CreateDirectory(dir);
             }
 
-            var json = JsonSerializer.Serialize(_games, JsonOptions);
+            var data = new GamesData { Games = _games.ToList() };
+            var json = JsonSerializer.Serialize(data, JsonOptions);
             File.WriteAllText(_filePath, json);
         }
         catch (Exception ex)

@@ -10,10 +10,17 @@ public static class ToastNotificationService
     private const string AppName = "XOutputRenew";
 
     /// <summary>
+    /// Whether toast notifications are enabled.
+    /// </summary>
+    public static bool Enabled { get; set; } = true;
+
+    /// <summary>
     /// Shows a toast notification when a profile starts.
     /// </summary>
     public static void ShowProfileStarted(string profileName)
     {
+        if (!Enabled) return;
+
         try
         {
             new ToastContentBuilder()
@@ -33,6 +40,8 @@ public static class ToastNotificationService
     /// </summary>
     public static void ShowProfileStopped(string profileName)
     {
+        if (!Enabled) return;
+
         try
         {
             new ToastContentBuilder()
@@ -51,6 +60,8 @@ public static class ToastNotificationService
     /// </summary>
     public static void ShowGameLaunched(string gameName, string profileName)
     {
+        if (!Enabled) return;
+
         try
         {
             new ToastContentBuilder()
@@ -70,12 +81,55 @@ public static class ToastNotificationService
     /// </summary>
     public static void ShowGameExited(string gameName)
     {
+        if (!Enabled) return;
+
         try
         {
             new ToastContentBuilder()
                 .AddText($"{AppName}")
                 .AddText($"Game exited: {gameName}")
                 .AddAttributionText("Profile stopped")
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to show toast notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Shows a toast notification when game monitoring starts.
+    /// </summary>
+    public static void ShowMonitoringStarted(int gameCount)
+    {
+        if (!Enabled) return;
+
+        try
+        {
+            new ToastContentBuilder()
+                .AddText($"{AppName}")
+                .AddText("Game monitoring enabled")
+                .AddAttributionText($"Watching for {gameCount} game(s)")
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to show toast notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Shows a toast notification when game monitoring stops.
+    /// </summary>
+    public static void ShowMonitoringStopped()
+    {
+        if (!Enabled) return;
+
+        try
+        {
+            new ToastContentBuilder()
+                .AddText($"{AppName}")
+                .AddText("Game monitoring disabled")
                 .Show();
         }
         catch (Exception ex)

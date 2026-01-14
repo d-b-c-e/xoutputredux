@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Win32;
 
 namespace XOutputRenew.App;
@@ -9,6 +10,11 @@ namespace XOutputRenew.App;
 /// </summary>
 public class AppSettings
 {
+    /// <summary>
+    /// Current schema version. Increment when making breaking changes.
+    /// </summary>
+    public const int CurrentSchemaVersion = 1;
+
     private static readonly string SettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "XOutputRenew",
@@ -18,9 +24,19 @@ public class AppSettings
     private const string AppName = "XOutputRenew";
 
     /// <summary>
+    /// Schema version of this settings file. Used for migration.
+    /// </summary>
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+
+    /// <summary>
     /// When true, closing the window minimizes to tray instead of exiting.
     /// </summary>
     public bool MinimizeToTrayOnClose { get; set; } = true;
+
+    /// <summary>
+    /// When true, toast notifications are shown for profile start/stop and game detection.
+    /// </summary>
+    public bool ToastNotificationsEnabled { get; set; } = true;
 
     /// <summary>
     /// Profile to start automatically when the app launches.
@@ -33,9 +49,70 @@ public class AppSettings
     public bool HidHidePromptDeclined { get; set; }
 
     /// <summary>
+    /// Whether the user has declined the ViGEmBus installation prompt.
+    /// </summary>
+    public bool ViGEmBusPromptDeclined { get; set; }
+
+    /// <summary>
     /// Whether game monitoring should be enabled on startup.
     /// </summary>
     public bool GameMonitoringEnabled { get; set; }
+
+    /// <summary>
+    /// Whether to check for updates on startup.
+    /// </summary>
+    public bool CheckForUpdatesOnStartup { get; set; } = true;
+
+    /// <summary>
+    /// Last time we checked for updates (for rate limiting).
+    /// </summary>
+    public DateTime? LastUpdateCheck { get; set; }
+
+    /// <summary>
+    /// Checks if enough time has passed to check for updates again.
+    /// </summary>
+    public bool ShouldCheckForUpdates()
+    {
+        if (!CheckForUpdatesOnStartup)
+            return false;
+
+        if (LastUpdateCheck == null)
+            return true;
+
+        // Check once per 24 hours
+        return DateTime.UtcNow - LastUpdateCheck.Value > TimeSpan.FromHours(24);
+    }
+
+    /// <summary>
+    /// Records that an update check was performed.
+    /// </summary>
+    public void RecordUpdateCheck()
+    {
+        LastUpdateCheck = DateTime.UtcNow;
+        Save();
+    }
+
+    /// <summary>
+    /// Whether this settings instance needs migration.
+    /// </summary>
+    [JsonIgnore]
+    public bool NeedsMigration => SchemaVersion < CurrentSchemaVersion;
+
+    /// <summary>
+    /// Migrates settings to the current schema version.
+    /// </summary>
+    private void Migrate()
+    {
+        // Migration from version 0 (no version field) to version 1
+        if (SchemaVersion < 1)
+        {
+            SchemaVersion = 1;
+        }
+
+        // Future migrations go here
+
+        SchemaVersion = CurrentSchemaVersion;
+    }
 
     /// <summary>
     /// Loads settings from disk.
@@ -47,7 +124,16 @@ public class AppSettings
             if (File.Exists(SettingsPath))
             {
                 var json = File.ReadAllText(SettingsPath);
-                return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+
+                // Check if migration is needed
+                if (settings.NeedsMigration)
+                {
+                    settings.Migrate();
+                    settings.Save();
+                }
+
+                return settings;
             }
         }
         catch

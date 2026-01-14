@@ -124,6 +124,25 @@ public class Program
         });
         rootCommand.AddCommand(stopCommand);
 
+        // Monitoring commands
+        var monitorCommand = new Command("monitor", "Control game monitoring");
+
+        var monitorOnCommand = new Command("on", "Enable game monitoring");
+        monitorOnCommand.SetHandler(() =>
+        {
+            Environment.ExitCode = SendMonitoringCommand(true);
+        });
+        monitorCommand.AddCommand(monitorOnCommand);
+
+        var monitorOffCommand = new Command("off", "Disable game monitoring");
+        monitorOffCommand.SetHandler(() =>
+        {
+            Environment.ExitCode = SendMonitoringCommand(false);
+        });
+        monitorCommand.AddCommand(monitorOffCommand);
+
+        rootCommand.AddCommand(monitorCommand);
+
         var statusCommand = new Command("status", "Get status from the running instance");
         statusCommand.AddOption(jsonOption);
         statusCommand.SetHandler((json) =>
@@ -131,6 +150,18 @@ public class Program
             Environment.ExitCode = GetStatus(json);
         }, jsonOption);
         rootCommand.AddCommand(statusCommand);
+
+        // Headless mode command
+        var headlessCommand = new Command("headless", "Run in headless mode without GUI (for scripting/services)");
+        var headlessProfileArg = new Argument<string?>("profile", () => null, "Name of the profile to run (optional, uses default if not specified)");
+        var headlessMonitorOption = new Option<bool>("--monitor", "Enable game monitoring in headless mode");
+        headlessCommand.AddArgument(headlessProfileArg);
+        headlessCommand.AddOption(headlessMonitorOption);
+        headlessCommand.SetHandler((profile, monitor) =>
+        {
+            Environment.ExitCode = RunHeadless(profile, monitor);
+        }, headlessProfileArg, headlessMonitorOption);
+        rootCommand.AddCommand(headlessCommand);
 
         // Help command with examples
         var helpCommand = new Command("help", "Show detailed help and examples");
@@ -160,6 +191,36 @@ public class Program
         app.Properties["Minimized"] = minimized;
 
         return app.Run();
+    }
+
+    private static int RunHeadless(string? profileName, bool enableMonitoring)
+    {
+        // Initialize logging for headless mode
+        AppLogger.Initialize();
+
+        // If no profile specified and no monitoring, look for default
+        if (string.IsNullOrEmpty(profileName) && !enableMonitoring)
+        {
+            var profilesDir = ProfileManager.GetDefaultProfilesDirectory();
+            var manager = new ProfileManager(profilesDir);
+            manager.LoadProfiles();
+
+            var defaultProfile = manager.GetDefaultProfile();
+            if (defaultProfile == null)
+            {
+                Console.Error.WriteLine("Error: No profile specified and no default profile is set.");
+                Console.Error.WriteLine("Either specify a profile name: XOutputRenew headless \"ProfileName\"");
+                Console.Error.WriteLine("Or set a default profile in the Profile Editor.");
+                Console.Error.WriteLine("Or use --monitor to run with game monitoring only.");
+                return ExitError;
+            }
+
+            profileName = defaultProfile.Name;
+            Console.WriteLine($"Using default profile: {profileName}");
+        }
+
+        using var runner = new HeadlessRunner();
+        return runner.Run(profileName, enableMonitoring);
     }
 
     private static void ListDevices(bool asJson)
@@ -372,6 +433,30 @@ public class Program
         }
     }
 
+    private static int SendMonitoringCommand(bool enable)
+    {
+        if (!IpcService.IsAnotherInstanceRunning())
+        {
+            Console.Error.WriteLine("Error: No running instance of XOutputRenew found.");
+            return ExitNoRunningInstance;
+        }
+
+        var result = enable
+            ? IpcService.SendMonitoringOnCommand()
+            : IpcService.SendMonitoringOffCommand();
+
+        if (result.Success)
+        {
+            Console.WriteLine(result.Message);
+            return ExitSuccess;
+        }
+        else
+        {
+            Console.Error.WriteLine($"Error: {result.Message}");
+            return ExitError;
+        }
+    }
+
     private static int GetStatus(bool asJson)
     {
         if (!IpcService.IsAnotherInstanceRunning())
@@ -442,17 +527,32 @@ USAGE:
 COMMANDS:
   (no command)              Launch the GUI application
   run                       Launch the GUI (same as no command)
+  headless [profile] [--monitor]  Run without GUI
   list-devices [--json]     List detected input devices
   list-profiles [--json]    List available profiles
   set-default <profile>     Set a profile as the default
-  start [profile]           Start a profile (uses default if not specified)
+  start [profile]           Start a profile via GUI (uses default if not specified)
   stop                      Stop the running profile
+  monitor on                Enable game monitoring
+  monitor off               Disable game monitoring
   status [--json]           Get status from the running instance
   help                      Show this help
 
 STARTUP OPTIONS:
   --start-profile <name>    Start with a profile already running
   --minimized               Start minimized to system tray
+
+HEADLESS MODE:
+  Runs without any GUI window - useful for:
+  - Stream Deck integration
+  - Gaming frontend launchers (LaunchBox, Playnite)
+  - Running as a Windows service
+  - Scripting and automation
+
+  Control headless mode with:
+  - Ctrl+C - graceful shutdown
+  - 'XOutputRenew stop' - stop via IPC
+  - 'XOutputRenew monitor on/off' - toggle monitoring via IPC
 
 EXAMPLES:
   # Set a default profile
@@ -463,6 +563,18 @@ EXAMPLES:
 
   # Start a specific profile
   XOutputRenew start ""My Wheel""
+
+  # Run headless with default profile
+  XOutputRenew headless
+
+  # Run headless with specific profile
+  XOutputRenew headless ""My Wheel""
+
+  # Run headless with game monitoring only
+  XOutputRenew headless --monitor
+
+  # Run headless with profile AND monitoring
+  XOutputRenew headless ""My Wheel"" --monitor
 
   # Launch minimized with a profile
   XOutputRenew --start-profile ""My Wheel"" --minimized

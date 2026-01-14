@@ -1,0 +1,80 @@
+<Window x:Class="XOutputRenew.App.UpdateDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Update Available"
+        Height="450" Width="550"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#1E1E1E">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+            <TextBlock Text="A new version is available!"
+                       FontSize="18" FontWeight="SemiBold"
+                       Foreground="#E0E0E0"/>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <TextBlock Text="Current: " Foreground="#909090"/>
+                <TextBlock x:Name="CurrentVersionText" Text="0.0.0" Foreground="#909090"/>
+                <TextBlock Text="  →  " Foreground="#909090"/>
+                <TextBlock Text="New: " Foreground="#909090"/>
+                <TextBlock x:Name="NewVersionText" Text="0.0.0" Foreground="#4CAF50" FontWeight="SemiBold"/>
+                <TextBlock x:Name="PrereleaseLabel" Text=" (pre-release)" Foreground="#FFA726"
+                           Visibility="Collapsed" FontStyle="Italic"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Release name and date -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,10">
+            <TextBlock x:Name="ReleaseNameText" Text="Release Name"
+                       FontSize="14" Foreground="#B0B0B0"/>
+            <TextBlock x:Name="ReleaseDateText" Text="Published: Jan 1, 2024"
+                       FontSize="11" Foreground="#707070" Margin="0,2,0,0"/>
+        </StackPanel>
+
+        <!-- Changelog -->
+        <Border Grid.Row="2" Background="#252526" CornerRadius="4"
+                BorderBrush="#3C3C3C" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                <TextBlock x:Name="ChangelogText"
+                           Text="Loading changelog..."
+                           Foreground="#C0C0C0"
+                           TextWrapping="Wrap"/>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Progress section (hidden initially) -->
+        <StackPanel x:Name="ProgressPanel" Grid.Row="3" Margin="0,15,0,0" Visibility="Collapsed">
+            <TextBlock x:Name="ProgressText" Text="Downloading..." Foreground="#B0B0B0" Margin="0,0,0,5"/>
+            <ProgressBar x:Name="DownloadProgress" Height="20" Minimum="0" Maximum="100" Value="0"
+                         Background="#3C3C3C" Foreground="#4CAF50"/>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button x:Name="ViewOnGitHubButton" Content="View on GitHub"
+                    Width="120" Height="32" Margin="0,0,10,0"
+                    Click="ViewOnGitHubButton_Click"
+                    Background="#2D2D30" Foreground="#E0E0E0"
+                    BorderBrush="#3C3C3C" Cursor="Hand"/>
+            <Button x:Name="SkipButton" Content="Skip"
+                    Width="80" Height="32" Margin="0,0,10,0"
+                    Click="SkipButton_Click"
+                    Background="#2D2D30" Foreground="#E0E0E0"
+                    BorderBrush="#3C3C3C" Cursor="Hand"/>
+            <Button x:Name="DownloadButton" Content="Download &amp; Install"
+                    Width="140" Height="32"
+                    Click="DownloadButton_Click"
+                    Background="#4CAF50" Foreground="White"
+                    BorderBrush="#4CAF50" FontWeight="SemiBold" Cursor="Hand"/>
+        </StackPanel>
+    </Grid>
+</Window>

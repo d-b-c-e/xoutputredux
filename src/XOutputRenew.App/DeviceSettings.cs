@@ -1,7 +1,50 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace XOutputRenew.App;
+
+/// <summary>
+/// Wrapper for device-settings.json with schema versioning.
+/// </summary>
+public class DeviceSettingsData
+{
+    /// <summary>
+    /// Current schema version. Increment when making breaking changes.
+    /// </summary>
+    public const int CurrentSchemaVersion = 1;
+
+    /// <summary>
+    /// Schema version of this data. Used for migration.
+    /// </summary>
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+
+    /// <summary>
+    /// Device settings entries keyed by device unique ID.
+    /// </summary>
+    public Dictionary<string, DeviceSettingsEntry> Entries { get; set; } = new();
+
+    /// <summary>
+    /// Whether this data needs migration.
+    /// </summary>
+    [JsonIgnore]
+    public bool NeedsMigration => SchemaVersion < CurrentSchemaVersion;
+
+    /// <summary>
+    /// Migrates the data to the current schema version.
+    /// </summary>
+    public void Migrate()
+    {
+        if (SchemaVersion < 1)
+        {
+            SchemaVersion = 1;
+        }
+
+        // Future migrations go here
+
+        SchemaVersion = CurrentSchemaVersion;
+    }
+}
 
 /// <summary>
 /// Stores user-defined device settings (friendly names, etc).
@@ -54,7 +97,50 @@ public class DeviceSettings
             if (File.Exists(SettingsPath))
             {
                 var json = File.ReadAllText(SettingsPath);
-                _entries = JsonSerializer.Deserialize<Dictionary<string, DeviceSettingsEntry>>(json) ?? new();
+                DeviceSettingsData? data = null;
+                bool needsResave = false;
+
+                // Try new format first
+                try
+                {
+                    data = JsonSerializer.Deserialize<DeviceSettingsData>(json);
+                    if (data != null && json.Contains("\"schemaVersion\"", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (data.NeedsMigration)
+                        {
+                            data.Migrate();
+                            needsResave = true;
+                        }
+                    }
+                    else
+                    {
+                        data = null;
+                    }
+                }
+                catch
+                {
+                    data = null;
+                }
+
+                // Fallback: legacy format (raw dictionary)
+                if (data == null)
+                {
+                    var legacyEntries = JsonSerializer.Deserialize<Dictionary<string, DeviceSettingsEntry>>(json);
+                    if (legacyEntries != null)
+                    {
+                        data = new DeviceSettingsData { Entries = legacyEntries };
+                        needsResave = true;
+                    }
+                }
+
+                if (data != null)
+                {
+                    _entries = data.Entries;
+                    if (needsResave)
+                    {
+                        Save();
+                    }
+                }
             }
         }
         catch
@@ -76,7 +162,8 @@ public class DeviceSettings
                 Directory.CreateDirectory(dir);
             }
 
-            var json = JsonSerializer.Serialize(_entries, new JsonSerializerOptions { WriteIndented = true });
+            var data = new DeviceSettingsData { Entries = _entries };
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(SettingsPath, json);
         }
         catch

@@ -77,6 +77,8 @@ public partial class MainWindow : Window
         _ipcService = new IpcService();
         _ipcService.StartProfileRequested += IpcService_StartProfileRequested;
         _ipcService.StopRequested += IpcService_StopRequested;
+        _ipcService.MonitoringEnableRequested += IpcService_MonitoringEnableRequested;
+        _ipcService.MonitoringDisableRequested += IpcService_MonitoringDisableRequested;
         _ipcService.GetStatus = GetIpcStatus;
         _ipcService.StartServer();
 
@@ -142,8 +144,11 @@ public partial class MainWindow : Window
         // Restore game monitoring if it was enabled
         if (_appSettings.GameMonitoringEnabled && _gameManager.Games.Count > 0)
         {
-            StartGameMonitoring(saveToSettings: false);
+            StartGameMonitoring(saveToSettings: false, showToast: false);
         }
+
+        // Check for updates on startup (async, doesn't block)
+        _ = CheckForUpdatesOnStartupAsync();
     }
 
     private void CheckDriverStatus()
@@ -155,12 +160,20 @@ public partial class MainWindow : Window
             ViGEmStatusText.Text = "Installed";
             ViGEmStatusText.Foreground = new SolidColorBrush(Colors.Green);
             ViGEmInfoText.Text = "Virtual Xbox controller emulation available.";
+            InstallViGEmButton.Visibility = Visibility.Collapsed;
         }
         else
         {
             ViGEmStatusText.Text = "Not Installed";
             ViGEmStatusText.Foreground = new SolidColorBrush(Colors.Red);
-            ViGEmInfoText.Text = "Install ViGEmBus from https://github.com/nefarius/ViGEmBus/releases";
+            ViGEmInfoText.Text = "Required: Install ViGEmBus for Xbox controller emulation.";
+            InstallViGEmButton.Visibility = Visibility.Visible;
+
+            // Prompt to install if user hasn't declined before
+            if (!_appSettings.ViGEmBusPromptDeclined)
+            {
+                PromptViGEmBusInstall();
+            }
         }
 
         // Check HidHide
@@ -275,6 +288,90 @@ public partial class MainWindow : Window
         {
             InstallHidHideButton.IsEnabled = true;
             InstallHidHideButton.Content = "Retry Install";
+        }
+    }
+
+    private async void PromptViGEmBusInstall()
+    {
+        var result = MessageBox.Show(
+            "ViGEmBus driver is not installed. This driver is REQUIRED for XOutputRenew to create " +
+            "virtual Xbox controllers.\n\n" +
+            "Without ViGEmBus, XOutputRenew cannot emulate controllers and will not function.\n\n" +
+            "Would you like to download and install ViGEmBus now?\n\n" +
+            "(You can always install it later from the Status tab)",
+            "Install ViGEmBus?",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            await InstallViGEm();
+        }
+        else
+        {
+            // Remember that user declined
+            _appSettings.ViGEmBusPromptDeclined = true;
+            _appSettings.Save();
+        }
+    }
+
+    private async Task InstallViGEm()
+    {
+        StatusText.Text = "Downloading ViGEmBus...";
+        ViGEmInfoText.Text = "Downloading and installing...";
+
+        var (success, message) = await _vigemService.DownloadAndInstallAsync(progress =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                StatusText.Text = $"Installing ViGEmBus... {progress}%";
+            });
+        });
+
+        if (success)
+        {
+            ViGEmStatusText.Text = "Installed";
+            ViGEmStatusText.Foreground = new SolidColorBrush(Colors.Green);
+            ViGEmInfoText.Text = "Virtual Xbox controller emulation available.";
+            StatusText.Text = "ViGEmBus installed successfully";
+            InstallViGEmButton.Visibility = Visibility.Collapsed;
+
+            MessageBox.Show(
+                message + "\n\nYou may need to restart XOutputRenew for the driver to be fully available.",
+                "Installation Complete",
+                MessageBoxButton.OK,
+                MessageBoxImage.None);
+        }
+        else
+        {
+            ViGEmInfoText.Text = "Installation failed. Click to try again.";
+            StatusText.Text = $"ViGEmBus installation failed: {message}";
+
+            MessageBox.Show(
+                $"Failed to install ViGEmBus:\n\n{message}\n\n" +
+                "You can try installing manually from:\nhttps://github.com/nefarius/ViGEmBus/releases",
+                "Installation Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private async void InstallViGEm_Click(object sender, RoutedEventArgs e)
+    {
+        InstallViGEmButton.IsEnabled = false;
+        InstallViGEmButton.Content = "Installing...";
+
+        await InstallViGEm();
+
+        // Update button state based on result
+        if (_vigemService.IsAvailable)
+        {
+            InstallViGEmButton.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            InstallViGEmButton.IsEnabled = true;
+            InstallViGEmButton.Content = "Retry Install";
         }
     }
 
@@ -942,6 +1039,32 @@ public partial class MainWindow : Window
         });
     }
 
+    private void IpcService_MonitoringEnableRequested()
+    {
+        // Must run on UI thread
+        Dispatcher.Invoke(() =>
+        {
+            AppLogger.Info("IPC: Enabling game monitoring");
+            if (!_gameMonitorService.IsEnabled)
+            {
+                StartGameMonitoring();
+            }
+        });
+    }
+
+    private void IpcService_MonitoringDisableRequested()
+    {
+        // Must run on UI thread
+        Dispatcher.Invoke(() =>
+        {
+            AppLogger.Info("IPC: Disabling game monitoring");
+            if (_gameMonitorService.IsEnabled)
+            {
+                StopGameMonitoring();
+            }
+        });
+    }
+
     private IpcStatus GetIpcStatus()
     {
         return new IpcStatus
@@ -1051,7 +1174,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void StartGameMonitoring(bool saveToSettings = true)
+    private void StartGameMonitoring(bool saveToSettings = true, bool showToast = true)
     {
         if (_gameManager.Games.Count == 0)
         {
@@ -1065,6 +1188,11 @@ public partial class MainWindow : Window
         StatusText.Text = "Game monitoring enabled - watching for configured games";
         AppLogger.Info("Game monitoring started");
 
+        if (showToast)
+        {
+            ToastNotificationService.ShowMonitoringStarted(_gameManager.Games.Count);
+        }
+
         if (saveToSettings)
         {
             _appSettings.GameMonitoringEnabled = true;
@@ -1072,12 +1200,17 @@ public partial class MainWindow : Window
         }
     }
 
-    private void StopGameMonitoring(bool saveToSettings = true)
+    private void StopGameMonitoring(bool saveToSettings = true, bool showToast = true)
     {
         _gameMonitorService.StopMonitoring();
         UpdateMonitoringUI();
         StatusText.Text = "Game monitoring disabled";
         AppLogger.Info("Game monitoring stopped");
+
+        if (showToast)
+        {
+            ToastNotificationService.ShowMonitoringStopped();
+        }
 
         if (saveToSettings)
         {
@@ -1160,6 +1293,8 @@ public partial class MainWindow : Window
     {
         // Load settings into UI
         MinimizeToTrayCheckBox.IsChecked = _appSettings.MinimizeToTrayOnClose;
+        ToastNotificationsCheckBox.IsChecked = _appSettings.ToastNotificationsEnabled;
+        ToastNotificationService.Enabled = _appSettings.ToastNotificationsEnabled;
         StartWithWindowsCheckBox.IsChecked = AppSettings.GetStartWithWindows();
 
         // Populate startup profile dropdown
@@ -1175,6 +1310,9 @@ public partial class MainWindow : Window
 
         // PATH checkbox - show current state
         AddToPathCheckBox.IsChecked = IsInSystemPath();
+
+        // Updates checkbox
+        CheckForUpdatesCheckBox.IsChecked = _appSettings.CheckForUpdatesOnStartup;
     }
 
     private void RefreshStartupProfileComboBox()
@@ -1197,6 +1335,13 @@ public partial class MainWindow : Window
     private void MinimizeToTray_Changed(object sender, RoutedEventArgs e)
     {
         _appSettings.MinimizeToTrayOnClose = MinimizeToTrayCheckBox.IsChecked == true;
+        _appSettings.Save();
+    }
+
+    private void ToastNotifications_Changed(object sender, RoutedEventArgs e)
+    {
+        _appSettings.ToastNotificationsEnabled = ToastNotificationsCheckBox.IsChecked == true;
+        ToastNotificationService.Enabled = _appSettings.ToastNotificationsEnabled;
         _appSettings.Save();
     }
 
@@ -1339,6 +1484,85 @@ public partial class MainWindow : Window
         var newPath = string.Join(";", paths);
         Environment.SetEnvironmentVariable("PATH", newPath, EnvironmentVariableTarget.Machine);
         AppLogger.Info($"Removed from system PATH: {appDir}");
+    }
+
+    private void CheckForUpdates_Changed(object sender, RoutedEventArgs e)
+    {
+        _appSettings.CheckForUpdatesOnStartup = CheckForUpdatesCheckBox.IsChecked == true;
+        _appSettings.Save();
+    }
+
+    private async void CheckForUpdatesNow_Click(object sender, RoutedEventArgs e)
+    {
+        CheckForUpdatesButton.IsEnabled = false;
+        CheckForUpdatesButton.Content = "Checking...";
+
+        try
+        {
+            var updateService = new UpdateService();
+            var release = await updateService.CheckForUpdateAsync();
+
+            if (release != null)
+            {
+                var dialog = new UpdateDialog(release) { Owner = this };
+                dialog.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show(
+                    $"You're running the latest version ({UpdateService.GetCurrentVersion()}).",
+                    "No Updates Available",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.None);
+            }
+
+            _appSettings.RecordUpdateCheck();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to check for updates: {ex.Message}",
+                "Update Check Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            CheckForUpdatesButton.IsEnabled = true;
+            CheckForUpdatesButton.Content = "Check Now";
+        }
+    }
+
+    private async Task CheckForUpdatesOnStartupAsync()
+    {
+#if DEBUG
+        // Skip automatic update checks in debug builds
+        AppLogger.Info("Skipping automatic update check (debug build)");
+        await Task.CompletedTask; // Suppress warning
+        return;
+#else
+        if (!_appSettings.ShouldCheckForUpdates())
+            return;
+
+        try
+        {
+            var updateService = new UpdateService();
+            var release = await updateService.CheckForUpdateAsync();
+
+            if (release != null)
+            {
+                // Show update dialog
+                var dialog = new UpdateDialog(release) { Owner = this };
+                dialog.ShowDialog();
+            }
+
+            _appSettings.RecordUpdateCheck();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Startup update check failed: {ex.Message}");
+        }
+#endif
     }
 
     #endregion

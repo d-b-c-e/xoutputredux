@@ -176,18 +176,24 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [x] Toast notifications for game detected/exited
 - [x] Games stored in %AppData%\XOutputRenew\games.json
 
-### Phase 8: Headless Mode (PLANNED)
-- [ ] Run without GUI for scripting/service scenarios
-- [ ] `--headless` flag to start without window
-- [ ] All control via CLI commands (start, stop, status)
-- [ ] Useful for Stream Deck, gaming frontend integration, or running as a service
+### Phase 8: Headless Mode ✓ COMPLETE
+- [x] Run without GUI for scripting/service scenarios
+- [x] `headless <profile>` command to start without window
+- [x] `headless --monitor` for game monitoring without profile
+- [x] `headless <profile> --monitor` for both profile and monitoring
+- [x] All control via CLI commands (start, stop, status, monitor on/off) or Ctrl+C
+- [x] Useful for Stream Deck, gaming frontend integration, or running as a service
 
-### Phase 9: Update Checker (PLANNED)
-- [ ] Query GitHub Releases API on startup (no hosted backend needed)
-- [ ] Compare `tag_name` to current assembly version
-- [ ] Show toast notification if update available with link to download
-- [ ] "Check for updates on startup" checkbox in Options
-- [ ] Cache check (once per day max) to respect rate limits
+### Phase 9: Update Checker ✓ COMPLETE
+- [x] Query GitHub Releases API on startup (all releases including pre-releases)
+- [x] Semantic version comparison with pre-release support (alpha < beta < rc < release)
+- [x] UpdateDialog with version info, changelog, and download progress
+- [x] In-app download with progress bar
+- [x] "Install Now" button launches installer and exits app
+- [x] "Check for updates on startup" checkbox in Options
+- [x] "Check Now" button for manual update check
+- [x] Cache check (once per 24 hours) to respect rate limits
+- [x] View on GitHub button to open release page
 
 ### Phase 10: Crash/Bug Reporting (PLANNED)
 - [ ] Global unhandled exception handler in App.xaml.cs
@@ -197,22 +203,32 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 - [ ] User reviews/redacts sensitive info before submitting (privacy-friendly)
 - [ ] No server required - uses GitHub issue URL parameters
 
-### Phase 11: Portable Mode (PLANNED)
-- [ ] Detect portable mode (e.g., presence of `portable.txt` or `XOutputRenew.portable` marker file)
-- [ ] Store all settings in app directory instead of %AppData% when portable
-- [ ] Profiles stored in `.\Profiles\` relative to exe
-- [ ] Logs stored in `.\logs\` relative to exe
-- [ ] No registry modifications in portable mode
-- [ ] Document portable usage in README
+### Phase 11: Chocolatey Package (PLANNED - after stable release)
+- [ ] Create Chocolatey package for easy install/update
+- [ ] `choco install xoutputrenew` / `choco upgrade xoutputrenew`
+- [ ] Automatic PATH via Chocolatey shims
+- [ ] Silent install support for arcade/kiosk provisioning
+- [ ] Submit to Chocolatey Community Repository
+- [ ] Document Chocolatey installation in README
 
-### Phase 12: ViGEmBus Driver Check (PLANNED)
-- [ ] Check for ViGEmBus driver on startup (similar to HidHide check)
-- [ ] Show warning dialog if not installed with explanation of why it's required
-- [ ] "Download" button to open GitHub releases page (https://github.com/nefarius/ViGEmBus/releases)
-- [ ] Optional: Auto-download and launch installer (like HidHide)
-- [ ] "Don't show again" checkbox to suppress future warnings
-- [ ] Add `ViGEmBusPromptDeclined` to AppSettings
-- [ ] Status tab should show clear error state when ViGEmBus missing
+### Phase 12: ViGEmBus Driver Check ✓ COMPLETE
+- [x] Check for ViGEmBus driver on startup (similar to HidHide check)
+- [x] Show warning dialog if not installed with explanation of why it's required
+- [x] "Install" button in Status tab to download and launch installer
+- [x] Auto-download and launch installer (like HidHide)
+- [x] "Don't show again" behavior via prompt decline
+- [x] Add `ViGEmBusPromptDeclined` to AppSettings
+- [x] Status tab shows clear error state (red text) when ViGEmBus missing
+
+### Phase 13: Stream Deck Plugin (PLANNED)
+- [ ] Create Stream Deck plugin using Stream Deck SDK
+- [ ] Actions: Start Profile, Stop Profile, Toggle Profile
+- [ ] Profile picker dropdown in action configuration
+- [ ] Status indicator (icon changes when profile running)
+- [ ] Uses CLI commands under the hood (`XOutputRenew start/stop`)
+- [ ] Plugin installer (.streamDeckPlugin file)
+- [ ] Documentation for installation and usage
+- [ ] Property Inspector UI for configuration
 
 ---
 
@@ -226,10 +242,13 @@ Usage: XOutputRenew [command] [options]
 Commands:
   (no command)            Launch the GUI application
   run                     Launch the GUI (same as no command)
+  headless [profile] [--monitor]  Run without GUI
   list-devices [--json]   List detected input devices
   list-profiles [--json]  List available profiles
   start [profile]         Start a profile (uses default if not specified)
   stop                    Stop the running profile
+  monitor on              Enable game monitoring
+  monitor off             Disable game monitoring
   status [--json]         Get status from running instance
   help                    Show detailed help
 
@@ -245,6 +264,10 @@ Exit Codes:
 
 Examples:
   XOutputRenew                                    # Open GUI
+  XOutputRenew headless                           # Run headless with default profile
+  XOutputRenew headless "My Wheel"                # Run headless with specific profile
+  XOutputRenew headless --monitor                 # Run headless with game monitoring only
+  XOutputRenew headless "My Wheel" --monitor      # Run headless with profile + monitoring
   XOutputRenew start                              # Start default profile
   XOutputRenew start "My Wheel"                   # Start specific profile
   XOutputRenew --start-profile "My Wheel" --minimized
@@ -556,6 +579,55 @@ AppLogger.Error("Something failed", exception);
 ---
 
 ## Recent Session Notes
+
+### Session 2026-01-13
+
+**Phase 12: ViGEmBus Driver Check - COMPLETE**
+
+Implemented automatic ViGEmBus driver detection and installation, following the same pattern as HidHide.
+
+**Features Added:**
+- Startup check for ViGEmBus driver with warning dialog if not installed
+- Clear messaging: "This driver is REQUIRED for XOutputRenew"
+- "Install" button in Status tab for manual installation
+- Auto-download from GitHub releases (latest release API, with fallback)
+- Installer runs with admin elevation (UAC prompt)
+- "Don't show again" behavior via `ViGEmBusPromptDeclined` setting
+- Status tab shows red "Not Installed" text when missing
+
+**Files Modified:**
+- `App/AppSettings.cs` - Added `ViGEmBusPromptDeclined` property
+- `Emulation/ViGEmService.cs` - Added `DownloadAndInstallAsync()` method
+- `App/MainWindow.xaml` - Added Install button for ViGEmBus
+- `App/MainWindow.xaml.cs` - Added prompt and install logic
+
+**Phase 8: Headless Mode - COMPLETE**
+
+Implemented headless mode for running without GUI window - useful for scripting, services, and gaming frontend integration.
+
+**Usage:**
+```bash
+XOutputRenew headless "My Profile"    # Run without GUI
+XOutputRenew stop                      # Stop from another terminal
+# Or press Ctrl+C to stop
+```
+
+**Features Added:**
+- `headless <profile>` CLI command runs the emulation without any window
+- Initializes ViGEm, HidHide, input devices, and IPC server
+- Graceful shutdown via Ctrl+C or `XOutputRenew stop`
+- Toast notifications still work (visible after exiting fullscreen games)
+- Full force feedback support
+- Device hiding via HidHide (if configured in profile)
+- Console output for status feedback
+
+**New Files:**
+- `App/HeadlessRunner.cs` - Standalone runner for headless operation
+
+**Files Modified:**
+- `App/Program.cs` - Added `headless` command and `RunHeadless()` method
+
+---
 
 ### Session 2026-01-12 (Part 2)
 

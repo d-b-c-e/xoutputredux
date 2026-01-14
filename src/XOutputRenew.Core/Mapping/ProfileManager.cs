@@ -71,7 +71,7 @@ public class ProfileManager
     }
 
     /// <summary>
-    /// Loads a single profile from a file.
+    /// Loads a single profile from a file, migrating if necessary.
     /// </summary>
     public MappingProfile? LoadProfile(string filePath)
     {
@@ -80,7 +80,21 @@ public class ProfileManager
 
         string json = File.ReadAllText(filePath);
         var data = JsonSerializer.Deserialize<MappingProfileData>(json, JsonOptions);
-        return data?.ToProfile();
+
+        if (data == null)
+            return null;
+
+        // Check if migration is needed
+        if (data.NeedsMigration)
+        {
+            data.Migrate();
+
+            // Re-save the migrated profile
+            string migratedJson = JsonSerializer.Serialize(data, JsonOptions);
+            File.WriteAllText(filePath, migratedJson);
+        }
+
+        return data.ToProfile();
     }
 
     /// <summary>

@@ -29,6 +29,16 @@ public class IpcService : IDisposable
     public event Action? StopRequested;
 
     /// <summary>
+    /// Event raised when monitoring should be enabled.
+    /// </summary>
+    public event Action? MonitoringEnableRequested;
+
+    /// <summary>
+    /// Event raised when monitoring should be disabled.
+    /// </summary>
+    public event Action? MonitoringDisableRequested;
+
+    /// <summary>
     /// Delegate to get the current status.
     /// </summary>
     public Func<IpcStatus>? GetStatus { get; set; }
@@ -85,6 +95,22 @@ public class IpcService : IDisposable
     public static IpcResult SendStatusCommand()
     {
         return SendCommand(new IpcCommand { Command = "status" });
+    }
+
+    /// <summary>
+    /// Sends a command to enable game monitoring.
+    /// </summary>
+    public static IpcResult SendMonitoringOnCommand()
+    {
+        return SendCommand(new IpcCommand { Command = "monitor-on" });
+    }
+
+    /// <summary>
+    /// Sends a command to disable game monitoring.
+    /// </summary>
+    public static IpcResult SendMonitoringOffCommand()
+    {
+        return SendCommand(new IpcCommand { Command = "monitor-off" });
     }
 
     private static IpcResult SendCommand(IpcCommand command)
@@ -230,6 +256,14 @@ public class IpcService : IDisposable
                     Message = status.IsRunning ? $"Running: {status.ProfileName}" : "No profile running",
                     Status = status
                 };
+
+            case "monitor-on":
+                MonitoringEnableRequested?.Invoke();
+                return new IpcResult { Success = true, Message = "Game monitoring enabled" };
+
+            case "monitor-off":
+                MonitoringDisableRequested?.Invoke();
+                return new IpcResult { Success = true, Message = "Game monitoring disabled" };
 
             default:
                 return new IpcResult { Success = false, Message = $"Unknown command: {command.Command}" };

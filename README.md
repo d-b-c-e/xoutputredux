@@ -76,11 +76,15 @@ XOutputRenew start
 # Start a specific profile
 XOutputRenew start "My Profile"
 
-# Stop the running profile (requires running instance)
+# Stop the running profile
 XOutputRenew stop
 
 # Check status of running instance
 XOutputRenew status [--json]
+
+# Enable/disable game monitoring
+XOutputRenew monitor on
+XOutputRenew monitor off
 
 # List detected input devices
 XOutputRenew list-devices [--json]
@@ -91,6 +95,26 @@ XOutputRenew list-profiles [--json]
 # Show help
 XOutputRenew help
 ```
+
+### Headless Mode
+
+Run without any GUI window - ideal for Stream Deck, gaming frontends, or automation:
+
+```bash
+# Run headless with default profile
+XOutputRenew headless
+
+# Run headless with specific profile
+XOutputRenew headless "My Profile"
+
+# Run headless with game monitoring only
+XOutputRenew headless --monitor
+
+# Run headless with profile AND monitoring
+XOutputRenew headless "My Profile" --monitor
+```
+
+Control headless mode with `XOutputRenew stop`, `XOutputRenew monitor on/off`, or Ctrl+C.
 
 ### Startup Options
 
@@ -163,11 +187,14 @@ XOutputRenew/
 - Profile editor with tabbed interface (Mapping, Force Feedback, Device Hiding)
 - **Read-only profile view** when profile is running
 - **Toast notifications** - Windows notifications when profiles start/stop
-- **CLI/IPC** - Control running instance from command line (`start`, `stop`, `status`)
+- **CLI/IPC** - Control running instance from command line (`start`, `stop`, `status`, `monitor on/off`)
 - **Default profile** - Set a profile as default for quick CLI start
 - **Add to System PATH** - Option to add XOutputRenew to PATH for CLI access from anywhere
 - **Game auto-profile** - Automatically start/stop profiles when games launch/exit
 - **Steam game browser** - Browse installed Steam games with smart executable detection
+- **Headless mode** - Run without GUI for Stream Deck, gaming frontends, or services
+- **ViGEmBus auto-install** - Prompt to download and install if missing
+- **Auto-update** - Check for updates on startup with in-app download and install
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)
@@ -175,9 +202,8 @@ XOutputRenew/
 - X-Arcade dual joystick (RawInput)
 
 ### Coming Soon
-- **Headless mode** - Run without GUI for scripting/service scenarios
-- **Portable mode** - Store all settings in app directory for USB drive use
-- **Update checker** - Check for new releases on startup
+- **Chocolatey package** - Easy install/update via `choco install xoutputrenew`
+- **Stream Deck plugin** - Native Stream Deck integration
 
 ## Background
 
