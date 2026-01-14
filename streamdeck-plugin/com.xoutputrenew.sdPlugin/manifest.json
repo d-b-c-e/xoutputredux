@@ -1,0 +1,70 @@
+{
+  "Name": "XOutputRenew",
+  "Version": "1.0.0",
+  "Author": "XOutputRenew",
+  "Description": "Control XOutputRenew Xbox controller emulator profiles from your Stream Deck",
+  "Category": "XOutputRenew",
+  "CategoryIcon": "imgs/category-icon",
+  "Icon": "imgs/plugin-icon",
+  "URL": "https://github.com/d-b-c-e/xoutputrenew",
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.9"
+  },
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Nodejs": {
+    "Version": "20",
+    "Debug": "enabled"
+  },
+  "Actions": [
+    {
+      "Name": "Start Profile",
+      "UUID": "com.xoutputrenew.start-profile",
+      "Icon": "imgs/action-start",
+      "Tooltip": "Start an XOutputRenew profile",
+      "States": [
+        {
+          "Image": "imgs/action-start",
+          "TitleAlignment": "bottom"
+        }
+      ],
+      "PropertyInspectorPath": "ui/start-profile.html"
+    },
+    {
+      "Name": "Stop Profile",
+      "UUID": "com.xoutputrenew.stop-profile",
+      "Icon": "imgs/action-stop",
+      "Tooltip": "Stop the running XOutputRenew profile",
+      "States": [
+        {
+          "Image": "imgs/action-stop",
+          "TitleAlignment": "bottom"
+        }
+      ]
+    },
+    {
+      "Name": "Toggle Profile",
+      "UUID": "com.xoutputrenew.toggle-profile",
+      "Icon": "imgs/action-toggle",
+      "Tooltip": "Toggle an XOutputRenew profile on/off",
+      "States": [
+        {
+          "Image": "imgs/action-toggle-off",
+          "TitleAlignment": "bottom",
+          "Name": "Off"
+        },
+        {
+          "Image": "imgs/action-toggle-on",
+          "TitleAlignment": "bottom",
+          "Name": "On"
+        }
+      ],
+      "PropertyInspectorPath": "ui/toggle-profile.html"
+    }
+  ]
+}
