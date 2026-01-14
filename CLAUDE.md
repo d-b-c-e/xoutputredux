@@ -105,12 +105,13 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 
 ### Future Roadmap (Late 2026)
 
-| Item | Rationale |
-|------|-----------|
-| **Upgrade to .NET 10** | .NET 8 LTS ends Nov 2026; .NET 10 is next LTS with extended support |
-| **Migrate SharpDX → Vortice.DirectInput** | SharpDX abandoned (2019); Vortice actively maintained, ensures future compatibility |
+| Item | Rationale | Effort |
+|------|-----------|--------|
+| **Upgrade to .NET 10** | .NET 8 LTS ends Nov 2026; .NET 10 is next LTS | ~1 day |
+| **Migrate SharpDX → Vortice.DirectInput** | SharpDX abandoned (2019); Vortice actively maintained | ~1 day |
+| **Fork/slim HidSharp** | HidSharp abandoned (2020); slim to ~500 lines for our needs | ~2-3 days |
 
-*Note: Neither provides meaningful performance gains for this I/O-bound application. These are maintenance/future-proofing upgrades.*
+*Note: These are maintenance/future-proofing upgrades, not performance improvements. See [CLAUDE_DEPENDENCY_ANALYSIS.md](CLAUDE_DEPENDENCY_ANALYSIS.md) for detailed analysis.*
 
 ---
 
