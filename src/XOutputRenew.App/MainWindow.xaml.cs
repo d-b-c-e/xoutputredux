@@ -155,12 +155,20 @@ public partial class MainWindow : Window
             ViGEmStatusText.Text = "Installed";
             ViGEmStatusText.Foreground = new SolidColorBrush(Colors.Green);
             ViGEmInfoText.Text = "Virtual Xbox controller emulation available.";
+            InstallViGEmButton.Visibility = Visibility.Collapsed;
         }
         else
         {
             ViGEmStatusText.Text = "Not Installed";
             ViGEmStatusText.Foreground = new SolidColorBrush(Colors.Red);
-            ViGEmInfoText.Text = "Install ViGEmBus from https://github.com/nefarius/ViGEmBus/releases";
+            ViGEmInfoText.Text = "Required: Install ViGEmBus for Xbox controller emulation.";
+            InstallViGEmButton.Visibility = Visibility.Visible;
+
+            // Prompt to install if user hasn't declined before
+            if (!_appSettings.ViGEmBusPromptDeclined)
+            {
+                PromptViGEmBusInstall();
+            }
         }
 
         // Check HidHide
@@ -275,6 +283,90 @@ public partial class MainWindow : Window
         {
             InstallHidHideButton.IsEnabled = true;
             InstallHidHideButton.Content = "Retry Install";
+        }
+    }
+
+    private async void PromptViGEmBusInstall()
+    {
+        var result = MessageBox.Show(
+            "ViGEmBus driver is not installed. This driver is REQUIRED for XOutputRenew to create " +
+            "virtual Xbox controllers.\n\n" +
+            "Without ViGEmBus, XOutputRenew cannot emulate controllers and will not function.\n\n" +
+            "Would you like to download and install ViGEmBus now?\n\n" +
+            "(You can always install it later from the Status tab)",
+            "Install ViGEmBus?",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            await InstallViGEm();
+        }
+        else
+        {
+            // Remember that user declined
+            _appSettings.ViGEmBusPromptDeclined = true;
+            _appSettings.Save();
+        }
+    }
+
+    private async Task InstallViGEm()
+    {
+        StatusText.Text = "Downloading ViGEmBus...";
+        ViGEmInfoText.Text = "Downloading and installing...";
+
+        var (success, message) = await _vigemService.DownloadAndInstallAsync(progress =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                StatusText.Text = $"Installing ViGEmBus... {progress}%";
+            });
+        });
+
+        if (success)
+        {
+            ViGEmStatusText.Text = "Installed";
+            ViGEmStatusText.Foreground = new SolidColorBrush(Colors.Green);
+            ViGEmInfoText.Text = "Virtual Xbox controller emulation available.";
+            StatusText.Text = "ViGEmBus installed successfully";
+            InstallViGEmButton.Visibility = Visibility.Collapsed;
+
+            MessageBox.Show(
+                message + "\n\nYou may need to restart XOutputRenew for the driver to be fully available.",
+                "Installation Complete",
+                MessageBoxButton.OK,
+                MessageBoxImage.None);
+        }
+        else
+        {
+            ViGEmInfoText.Text = "Installation failed. Click to try again.";
+            StatusText.Text = $"ViGEmBus installation failed: {message}";
+
+            MessageBox.Show(
+                $"Failed to install ViGEmBus:\n\n{message}\n\n" +
+                "You can try installing manually from:\nhttps://github.com/nefarius/ViGEmBus/releases",
+                "Installation Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private async void InstallViGEm_Click(object sender, RoutedEventArgs e)
+    {
+        InstallViGEmButton.IsEnabled = false;
+        InstallViGEmButton.Content = "Installing...";
+
+        await InstallViGEm();
+
+        // Update button state based on result
+        if (_vigemService.IsAvailable)
+        {
+            InstallViGEmButton.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            InstallViGEmButton.IsEnabled = true;
+            InstallViGEmButton.Content = "Retry Install";
         }
     }
 

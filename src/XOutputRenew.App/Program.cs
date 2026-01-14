@@ -132,6 +132,16 @@ public class Program
         }, jsonOption);
         rootCommand.AddCommand(statusCommand);
 
+        // Headless mode command
+        var headlessCommand = new Command("headless", "Run in headless mode without GUI (for scripting/services)");
+        var headlessProfileArg = new Argument<string>("profile", "Name of the profile to run");
+        headlessCommand.AddArgument(headlessProfileArg);
+        headlessCommand.SetHandler((profile) =>
+        {
+            Environment.ExitCode = RunHeadless(profile);
+        }, headlessProfileArg);
+        rootCommand.AddCommand(headlessCommand);
+
         // Help command with examples
         var helpCommand = new Command("help", "Show detailed help and examples");
         helpCommand.SetHandler(() =>
@@ -160,6 +170,15 @@ public class Program
         app.Properties["Minimized"] = minimized;
 
         return app.Run();
+    }
+
+    private static int RunHeadless(string profileName)
+    {
+        // Initialize logging for headless mode
+        AppLogger.Initialize();
+
+        using var runner = new HeadlessRunner();
+        return runner.Run(profileName);
     }
 
     private static void ListDevices(bool asJson)
@@ -442,6 +461,7 @@ USAGE:
 COMMANDS:
   (no command)              Launch the GUI application
   run                       Launch the GUI (same as no command)
+  headless <profile>        Run without GUI (for scripting/services)
   list-devices [--json]     List detected input devices
   list-profiles [--json]    List available profiles
   set-default <profile>     Set a profile as the default
@@ -454,6 +474,15 @@ STARTUP OPTIONS:
   --start-profile <name>    Start with a profile already running
   --minimized               Start minimized to system tray
 
+HEADLESS MODE:
+  Runs without any GUI window - useful for:
+  - Stream Deck integration
+  - Gaming frontend launchers (LaunchBox, Playnite)
+  - Running as a Windows service
+  - Scripting and automation
+
+  Control headless mode with 'stop' command or Ctrl+C.
+
 EXAMPLES:
   # Set a default profile
   XOutputRenew set-default ""My Wheel""
@@ -463,6 +492,9 @@ EXAMPLES:
 
   # Start a specific profile
   XOutputRenew start ""My Wheel""
+
+  # Run headless (no GUI)
+  XOutputRenew headless ""My Wheel""
 
   # Launch minimized with a profile
   XOutputRenew --start-profile ""My Wheel"" --minimized
