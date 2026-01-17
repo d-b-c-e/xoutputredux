@@ -542,6 +542,18 @@
                                           Checked="ToastNotifications_Changed" Unchecked="ToastNotifications_Changed"/>
                                 <TextBlock Text="Show Windows notifications when profiles start/stop and games are detected."
                                            Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
+
+                                <CheckBox x:Name="CrashReportingCheckBox" Content="Show crash reporting dialog"
+                                          Margin="0,15,0,0"
+                                          Checked="CrashReporting_Changed" Unchecked="CrashReporting_Changed"/>
+                                <TextBlock Text="Display a detailed dialog when errors occur with option to report on GitHub."
+                                           Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
+
+                                <CheckBox x:Name="IncludeProfileInCrashReportCheckBox" Content="Include profile name in crash reports"
+                                          Margin="20,10,0,0"
+                                          Checked="IncludeProfileInCrashReport_Changed" Unchecked="IncludeProfileInCrashReport_Changed"/>
+                                <TextBlock Text="When enabled, the active profile name is included in crash reports."
+                                           Foreground="Gray" Margin="40,5,0,0" FontSize="11"/>
                             </StackPanel>
                         </GroupBox>
 

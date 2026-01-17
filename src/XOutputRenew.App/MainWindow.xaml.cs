@@ -208,6 +208,9 @@ public partial class MainWindow : Window
                 PromptHidHideInstall();
             }
         }
+
+        // Report driver status for crash reporting
+        App.SetDriverStatus(_vigemService.IsAvailable, _hidHideService.IsAvailable);
     }
 
     private async void PromptHidHideInstall()
@@ -801,6 +804,9 @@ public partial class MainWindow : Window
 
             // Show toast notification
             ToastNotificationService.ShowProfileStarted(profile.Name);
+
+            // Track active profile for crash reporting
+            App.SetActiveProfile(profile.Name);
         }
         catch (Exception ex)
         {
@@ -899,6 +905,9 @@ public partial class MainWindow : Window
             // Show toast notification
             ToastNotificationService.ShowProfileStopped(stoppedProfileName);
         }
+
+        // Clear active profile for crash reporting
+        App.SetActiveProfile(null);
 
         UpdateStartStopButton();
         ActiveProfileText.Text = "No profile running";
@@ -1300,6 +1309,9 @@ public partial class MainWindow : Window
         MinimizeToTrayCheckBox.IsChecked = _appSettings.MinimizeToTrayOnClose;
         ToastNotificationsCheckBox.IsChecked = _appSettings.ToastNotificationsEnabled;
         ToastNotificationService.Enabled = _appSettings.ToastNotificationsEnabled;
+        CrashReportingCheckBox.IsChecked = _appSettings.CrashReportingEnabled;
+        IncludeProfileInCrashReportCheckBox.IsChecked = _appSettings.IncludeProfileInCrashReport;
+        IncludeProfileInCrashReportCheckBox.IsEnabled = _appSettings.CrashReportingEnabled;
         StartWithWindowsCheckBox.IsChecked = AppSettings.GetStartWithWindows();
 
         // Populate startup profile dropdown
@@ -1347,6 +1359,19 @@ public partial class MainWindow : Window
     {
         _appSettings.ToastNotificationsEnabled = ToastNotificationsCheckBox.IsChecked == true;
         ToastNotificationService.Enabled = _appSettings.ToastNotificationsEnabled;
+        _appSettings.Save();
+    }
+
+    private void CrashReporting_Changed(object sender, RoutedEventArgs e)
+    {
+        _appSettings.CrashReportingEnabled = CrashReportingCheckBox.IsChecked == true;
+        IncludeProfileInCrashReportCheckBox.IsEnabled = _appSettings.CrashReportingEnabled;
+        _appSettings.Save();
+    }
+
+    private void IncludeProfileInCrashReport_Changed(object sender, RoutedEventArgs e)
+    {
+        _appSettings.IncludeProfileInCrashReport = IncludeProfileInCrashReportCheckBox.IsChecked == true;
         _appSettings.Save();
     }
 

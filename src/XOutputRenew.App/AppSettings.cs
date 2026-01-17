@@ -13,7 +13,7 @@ public class AppSettings
     /// <summary>
     /// Current schema version. Increment when making breaking changes.
     /// </summary>
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     private static readonly string SettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -69,6 +69,16 @@ public class AppSettings
     public DateTime? LastUpdateCheck { get; set; }
 
     /// <summary>
+    /// Whether to show crash reporting dialog when an exception occurs.
+    /// </summary>
+    public bool CrashReportingEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Whether to include active profile name in crash reports.
+    /// </summary>
+    public bool IncludeProfileInCrashReport { get; set; } = true;
+
+    /// <summary>
     /// Checks if enough time has passed to check for updates again.
     /// </summary>
     public bool ShouldCheckForUpdates()
@@ -109,7 +119,13 @@ public class AppSettings
             SchemaVersion = 1;
         }
 
-        // Future migrations go here
+        // Migration from version 1 to version 2: add crash reporting settings
+        if (SchemaVersion < 2)
+        {
+            CrashReportingEnabled = true;
+            IncludeProfileInCrashReport = true;
+            SchemaVersion = 2;
+        }
 
         SchemaVersion = CurrentSchemaVersion;
     }
