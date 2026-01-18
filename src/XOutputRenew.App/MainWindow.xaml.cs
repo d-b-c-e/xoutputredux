@@ -1545,11 +1545,19 @@ public partial class MainWindow : Window
         try
         {
             var updateService = new UpdateService();
-            var release = await updateService.CheckForUpdateAsync();
+            var result = await updateService.CheckForUpdateAsync();
 
-            if (release != null)
+            if (!result.Success)
             {
-                var dialog = new UpdateDialog(release) { Owner = this };
+                MessageBox.Show(
+                    result.ErrorMessage ?? "Unknown error occurred.",
+                    "Update Check Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            else if (result.UpdateAvailable && result.Release != null)
+            {
+                var dialog = new UpdateDialog(result.Release) { Owner = this };
                 dialog.ShowDialog();
             }
             else
@@ -1730,14 +1738,15 @@ public partial class MainWindow : Window
         try
         {
             var updateService = new UpdateService();
-            var release = await updateService.CheckForUpdateAsync();
+            var result = await updateService.CheckForUpdateAsync();
 
-            if (release != null)
+            if (result.Success && result.UpdateAvailable && result.Release != null)
             {
                 // Show update dialog
-                var dialog = new UpdateDialog(release) { Owner = this };
+                var dialog = new UpdateDialog(result.Release) { Owner = this };
                 dialog.ShowDialog();
             }
+            // Silently ignore errors on startup - don't bother user
 
             _appSettings.RecordUpdateCheck();
         }

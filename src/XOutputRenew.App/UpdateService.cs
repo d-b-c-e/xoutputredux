@@ -8,6 +8,36 @@ using System.Text.RegularExpressions;
 namespace XOutputRenew.App;
 
 /// <summary>
+/// Result of an update check operation.
+/// </summary>
+public class UpdateCheckResult
+{
+    /// <summary>
+    /// Whether the check completed successfully.
+    /// </summary>
+    public bool Success { get; init; }
+
+    /// <summary>
+    /// Whether an update is available. Only valid if Success is true.
+    /// </summary>
+    public bool UpdateAvailable { get; init; }
+
+    /// <summary>
+    /// Release information if an update is available.
+    /// </summary>
+    public ReleaseInfo? Release { get; init; }
+
+    /// <summary>
+    /// Error message if the check failed.
+    /// </summary>
+    public string? ErrorMessage { get; init; }
+
+    public static UpdateCheckResult NoUpdate() => new() { Success = true, UpdateAvailable = false };
+    public static UpdateCheckResult Available(ReleaseInfo release) => new() { Success = true, UpdateAvailable = true, Release = release };
+    public static UpdateCheckResult Error(string message) => new() { Success = false, ErrorMessage = message };
+}
+
+/// <summary>
 /// Service for checking and downloading updates from GitHub Releases.
 /// </summary>
 public class UpdateService
@@ -52,8 +82,8 @@ public class UpdateService
     /// <summary>
     /// Checks for available updates on GitHub.
     /// </summary>
-    /// <returns>Release info if update available, null otherwise</returns>
-    public async Task<ReleaseInfo?> CheckForUpdateAsync()
+    /// <returns>Result indicating success/failure and update availability</returns>
+    public async Task<UpdateCheckResult> CheckForUpdateAsync()
     {
         try
         {
@@ -61,7 +91,7 @@ public class UpdateService
             var releases = JsonSerializer.Deserialize<JsonElement[]>(response);
 
             if (releases == null || releases.Length == 0)
-                return null;
+                return UpdateCheckResult.NoUpdate();
 
             var currentVersion = GetCurrentVersion();
             AppLogger.Info($"Update check: Current version = {currentVersion}");
@@ -139,16 +169,26 @@ public class UpdateService
             if (latestRelease != null && latestVersion != null && latestVersion > currentVersion)
             {
                 AppLogger.Info($"Update check: Update available!");
-                return latestRelease;
+                return UpdateCheckResult.Available(latestRelease);
             }
 
             AppLogger.Info("Update check: No update available");
-            return null;
+            return UpdateCheckResult.NoUpdate();
+        }
+        catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+        {
+            AppLogger.Warning($"Failed to check for updates: {ex.Message}");
+            return UpdateCheckResult.Error("Unable to check for updates. The repository may be private or the URL has changed.");
+        }
+        catch (HttpRequestException ex)
+        {
+            AppLogger.Warning($"Failed to check for updates: {ex.Message}");
+            return UpdateCheckResult.Error($"Unable to reach GitHub: {ex.Message}");
         }
         catch (Exception ex)
         {
             AppLogger.Warning($"Failed to check for updates: {ex.Message}");
-            return null;
+            return UpdateCheckResult.Error($"Update check failed: {ex.Message}");
         }
     }
 
