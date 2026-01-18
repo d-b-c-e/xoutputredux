@@ -35,7 +35,7 @@ XOutputRenew/
 | Package | Version | Purpose |
 |---------|---------|---------|
 | Nefarius.ViGEm.Client | 1.21.256 | Virtual Xbox controller |
-| SharpDX.DirectInput | 4.2.0 | DirectInput device access |
+| Vortice.DirectInput | 3.8.2 | DirectInput device access |
 | HidSharp | 2.1.0 | RawInput/HID device access |
 | System.CommandLine | 2.0.0-beta4 | CLI parsing |
 | Hardcodet.NotifyIcon.Wpf | 1.1.0 | System tray |

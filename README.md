@@ -226,5 +226,5 @@ MIT License
 - [XOutput](https://github.com/csutorasa/XOutput) - Original inspiration
 - [ViGEmBus](https://github.com/nefarius/ViGEmBus) - Virtual gamepad driver
 - [HidHide](https://github.com/nefarius/HidHide) - Device hiding driver
-- [SharpDX](https://github.com/sharpdx/SharpDX) - DirectInput access
+- [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows) - DirectInput access
 - [HidSharp](https://github.com/IntergatedCircuits/HidSharp) - HID device access
