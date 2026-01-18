@@ -99,7 +99,7 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 | 8: Headless Mode | ✗ Removed | Replaced by IPC - Stream Deck uses direct pipe communication |
 | 9: Update Checker | ✓ Complete | GitHub releases, semantic versioning, in-app download |
 | 10: Crash Reporting | ✓ Complete | GitHub issue URL with exception details, crash dialog |
-| 11: Chocolatey Package | Planned | Package distribution after stable release |
+| 11: Chocolatey Package | Post-1.0 | Package distribution after stable release |
 | 12: ViGEmBus Check | ✓ Complete | Driver detection, auto-install prompt |
 | 13: Stream Deck Plugin | ✓ Complete | Native C# plugin with IPC, profile/monitor toggles |
 | 14: Backup/Restore Settings | ✓ Complete | Export/import to `.xorbackup` file (ZIP containing all settings, profiles, games.json) |

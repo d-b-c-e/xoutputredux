@@ -38,7 +38,7 @@ MinVersion=10.0.17763
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "addtopath"; Description: "Add to system PATH (enables CLI from any terminal)"; GroupDescription: "System Integration:"; Flags: unchecked
 Name: "startwithwindows"; Description: "Start XOutputRenew when Windows starts"; GroupDescription: "System Integration:"; Flags: unchecked
 
