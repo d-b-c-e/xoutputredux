@@ -139,6 +139,48 @@ public static class ToastNotificationService
     }
 
     /// <summary>
+    /// Shows a toast notification when a backup is created.
+    /// </summary>
+    public static void ShowBackupCreated(string fileName)
+    {
+        if (!Enabled) return;
+
+        try
+        {
+            new ToastContentBuilder()
+                .AddText($"{AppName}")
+                .AddText("Backup created successfully")
+                .AddAttributionText(fileName)
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to show toast notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Shows a toast notification when settings are restored from backup.
+    /// </summary>
+    public static void ShowBackupRestored()
+    {
+        if (!Enabled) return;
+
+        try
+        {
+            new ToastContentBuilder()
+                .AddText($"{AppName}")
+                .AddText("Settings restored successfully")
+                .AddAttributionText("Restart may be required for some changes")
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to show toast notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Cleans up toast notification resources on app exit.
     /// Call this when the application is closing.
     /// </summary>

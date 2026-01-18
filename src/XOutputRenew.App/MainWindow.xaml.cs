@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using Microsoft.Win32;
 using System.Windows.Media;
 using System.Windows.Threading;
 using XOutputRenew.App.ViewModels;
@@ -1601,6 +1602,103 @@ public partial class MainWindow : Window
                 "Installation Failed",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
+        }
+    }
+
+    private async void BackupSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Filter = "XOutputRenew Backup|*.xorbackup",
+            FileName = BackupRestoreService.GetDefaultBackupFilename(),
+            DefaultExt = ".xorbackup",
+            Title = "Save Backup"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            BackupSettingsButton.IsEnabled = false;
+            RestoreSettingsButton.IsEnabled = false;
+            StatusText.Text = "Creating backup...";
+
+            try
+            {
+                var (success, message) = await BackupRestoreService.CreateBackupAsync(dialog.FileName);
+                StatusText.Text = message;
+
+                if (success)
+                {
+                    ToastNotificationService.ShowBackupCreated(Path.GetFileName(dialog.FileName));
+                }
+                else
+                {
+                    MessageBox.Show(message, "Backup Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            finally
+            {
+                BackupSettingsButton.IsEnabled = true;
+                RestoreSettingsButton.IsEnabled = true;
+            }
+        }
+    }
+
+    private async void RestoreSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = "XOutputRenew Backup|*.xorbackup",
+            DefaultExt = ".xorbackup",
+            Title = "Select Backup to Restore"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            // Confirm with user
+            var result = MessageBox.Show(
+                "This will replace all current settings and profiles with the backup.\n\n" +
+                "Any profiles with the same name will be overwritten.\n\n" +
+                "Continue?",
+                "Restore Settings",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                BackupSettingsButton.IsEnabled = false;
+                RestoreSettingsButton.IsEnabled = false;
+                StatusText.Text = "Restoring settings...";
+
+                try
+                {
+                    var (success, message) = await BackupRestoreService.RestoreBackupAsync(dialog.FileName);
+                    StatusText.Text = message;
+
+                    if (success)
+                    {
+                        ToastNotificationService.ShowBackupRestored();
+
+                        // Reload profiles
+                        RefreshProfiles();
+
+                        MessageBox.Show(
+                            "Settings restored successfully.\n\n" +
+                            "Please restart the application for all settings to take effect.",
+                            "Restore Complete",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show(message, "Restore Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                finally
+                {
+                    BackupSettingsButton.IsEnabled = true;
+                    RestoreSettingsButton.IsEnabled = true;
+                }
+            }
         }
     }
 

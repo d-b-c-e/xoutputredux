@@ -526,6 +526,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
@@ -619,8 +620,22 @@
                             </StackPanel>
                         </GroupBox>
 
+                        <!-- Backup & Restore -->
+                        <GroupBox Grid.Row="5" Header="Backup &amp; Restore" Margin="0,0,0,10">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="Export or import all settings, profiles, and game associations."
+                                           Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="BackupSettingsButton" Content="Backup Settings..."
+                                            Padding="15,5" Click="BackupSettings_Click"/>
+                                    <Button x:Name="RestoreSettingsButton" Content="Restore Settings..."
+                                            Padding="15,5" Margin="10,0,0,0" Click="RestoreSettings_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+
                         <!-- Stream Deck -->
-                        <GroupBox Grid.Row="5" Header="Stream Deck">
+                        <GroupBox Grid.Row="6" Header="Stream Deck">
                             <StackPanel Margin="10">
                                 <TextBlock Text="Install the Stream Deck plugin to control XOutputRenew from your Elgato Stream Deck."
                                            TextWrapping="Wrap" Margin="0,0,0,10"/>
