@@ -11,7 +11,7 @@
         MinHeight="600" MinWidth="700"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E1E"
-        Icon="pack://application:,,,/console-controller.png"
+        Icon="pack://application:,,,/Assets/Icons/favicon.ico"
         Closing="Window_Closing"
         StateChanged="Window_StateChanged">
 
@@ -276,7 +276,7 @@
         <!-- System Tray Icon -->
         <tb:TaskbarIcon x:Name="TrayIcon"
                         ToolTipText="XOutputRenew"
-                        IconSource="app.ico"
+                        IconSource="pack://application:,,,/Assets/Icons/favicon.ico"
                         Visibility="Visible">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>
@@ -872,9 +872,23 @@
                 <TabItem Header="About">
                     <Grid Margin="20">
                         <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" MaxWidth="500">
-                            <!-- App Title and Version -->
-                            <TextBlock Text="XOutputRenew" FontSize="28" FontWeight="Bold" Margin="0,0,0,5"/>
-                            <TextBlock x:Name="VersionText" Text="Version 0.0.0" FontSize="14" Foreground="Gray" Margin="0,0,0,10"/>
+                            <!-- App Logo and Title -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <!-- XOutput Redux Logo -->
+                                <Viewbox Width="80" Height="80" Stretch="Uniform" Margin="0,0,15,0">
+                                    <Grid Width="200" Height="200">
+                                        <Path Fill="{StaticResource SynthwaveRetroBrush}"
+                                              Data="M100,0 C44.77,0 0,44.77 0,100 C0,155.23 44.77,200 100,200 C155.23,200 200,155.23 200,100 C200,44.77 155.23,0 100,0 Z M100,175 C58.58,175 25,141.42 25,100 C25,58.58 58.58,25 100,25 C141.42,25 175,58.58 175,100 C175,141.42 141.42,175 100,175 Z" />
+                                        <Path Fill="{StaticResource SynthwaveRetroBrush}" Margin="45"
+                                              Data="M105.66,63.34 C109.57,59.44 109.57,53.1 105.66,49.2 C101.76,45.29 95.43,45.29 91.52,49.2 L63.34,77.38 L35.16,49.2 C31.25,45.29 24.92,45.29 21.02,49.2 C17.11,53.1 17.11,59.44 21.02,63.34 L49.2,91.52 L21.02,119.7 C17.11,123.6 17.11,129.94 21.02,133.84 C24.92,137.75 31.25,137.75 35.16,133.84 L63.34,105.66 L91.52,133.84 C95.43,137.75 101.76,137.75 105.66,133.84 C109.57,129.94 109.57,123.6 105.66,119.7 L77.48,91.52 L105.66,63.34 Z"
+                                              Stretch="Uniform"/>
+                                    </Grid>
+                                </Viewbox>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="XOutputRenew" FontSize="28" FontWeight="Bold"/>
+                                    <TextBlock x:Name="VersionText" Text="Version 0.0.0" FontSize="14" Foreground="Gray"/>
+                                </StackPanel>
+                            </StackPanel>
 
                             <!-- Updates -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,20">

@@ -9,7 +9,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>XOutputRenew.App</RootNamespace>
     <StartupObject>XOutputRenew.App.Program</StartupObject>
-    <ApplicationIcon>app.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\Icons\favicon.ico</ApplicationIcon>
 
     <!-- Versioning -->
     <Version>0.7.0-alpha</Version>
@@ -32,7 +32,7 @@
 
   <ItemGroup>
     <Resource Include="console-controller.png" />
-    <Resource Include="app.ico" />
+    <Resource Include="Assets\Icons\favicon.ico" />
   </ItemGroup>
 
   <ItemGroup>
