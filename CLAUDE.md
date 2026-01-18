@@ -103,7 +103,7 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 | 12: ViGEmBus Check | ✓ Complete | Driver detection, auto-install prompt |
 | 13: Stream Deck Plugin | ✓ Complete | Native C# plugin with IPC, profile/monitor toggles |
 | 14: Backup/Restore Settings | ✓ Complete | Export/import to `.xorbackup` file (ZIP containing all settings, profiles, games.json) |
-| 15: Portable Mode | Planned | True portable support - detect `portable.txt` and store settings alongside exe |
+| 15: Portable Mode | ✓ Complete | True portable support - detect `portable.txt` and store settings in `data\` subfolder |
 | 16: Code Signing | Planned | Sign installer/exe to avoid Windows Defender/SmartScreen warnings |
 
 ### Future Roadmap (Late 2026)

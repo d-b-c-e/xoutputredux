@@ -8,9 +8,7 @@ namespace XOutputRenew.App;
 /// </summary>
 public static class BackupRestoreService
 {
-    private static readonly string AppDataDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "XOutputRenew");
+    private static string AppDataDir => AppPaths.BaseDirectory;
 
     private static readonly string[] SettingsFiles =
     {

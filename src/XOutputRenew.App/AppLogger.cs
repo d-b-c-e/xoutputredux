@@ -11,9 +11,7 @@ namespace XOutputRenew.App;
 public static class AppLogger
 {
     private static readonly string LogPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "XOutputRenew",
-        "logs",
+        AppPaths.Logs,
         $"xoutputrenew-{DateTime.Now:yyyy-MM-dd}.log");
 
     private static readonly ConcurrentQueue<string> LogQueue = new();

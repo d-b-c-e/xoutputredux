@@ -51,10 +51,7 @@ public class DeviceSettingsData
 /// </summary>
 public class DeviceSettings
 {
-    private static readonly string SettingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "XOutputRenew",
-        "device-settings.json");
+    private static string SettingsPath => AppPaths.DeviceSettings;
 
     private Dictionary<string, DeviceSettingsEntry> _entries = new();
 

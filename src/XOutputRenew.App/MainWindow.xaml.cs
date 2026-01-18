@@ -65,7 +65,7 @@ public partial class MainWindow : Window
 
         // Initialize services
         _deviceManager = new InputDeviceManager();
-        _profileManager = new ProfileManager(ProfileManager.GetDefaultProfilesDirectory());
+        _profileManager = new ProfileManager(AppPaths.Profiles);
         _vigemService = new ViGEmService();
         _hidHideService = new HidHideService();
         _deviceSettings = new DeviceSettings();
@@ -86,7 +86,7 @@ public partial class MainWindow : Window
         _ipcService.StartServer();
 
         // Initialize game manager and monitor service
-        _gameManager = new GameAssociationManager(GameAssociationManager.GetDefaultFilePath());
+        _gameManager = new GameAssociationManager(AppPaths.Games);
         _gameManager.Load();
         _gameMonitorService = new GameMonitorService(_gameManager);
         _gameMonitorService.GameStarted += GameMonitorService_GameStarted;
@@ -119,6 +119,12 @@ public partial class MainWindow : Window
         RefreshProfiles();
         CheckDriverStatus();
         InitializeOptions();
+
+        // Show portable mode warning for Stream Deck if applicable
+        if (AppPaths.IsPortable)
+        {
+            PortableModeWarning.Visibility = Visibility.Visible;
+        }
 
         // Check for startup profile (command line takes precedence, then saved setting)
         string? startProfile = Application.Current.Properties["StartProfile"] as string;

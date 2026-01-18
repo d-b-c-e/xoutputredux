@@ -15,10 +15,7 @@ public class AppSettings
     /// </summary>
     public const int CurrentSchemaVersion = 2;
 
-    private static readonly string SettingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "XOutputRenew",
-        "app-settings.json");
+    private static string SettingsPath => AppPaths.AppSettings;
 
     private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string AppName = "XOutputRenew";

@@ -644,6 +644,10 @@
                                         Click="InstallStreamDeckPlugin_Click"/>
                                 <TextBlock Text="Requires Stream Deck software 6.9 or higher."
                                            Foreground="Gray" Margin="0,5,0,0" FontSize="11"/>
+                                <TextBlock x:Name="PortableModeWarning"
+                                           Text="⚠ Portable mode: Stream Deck plugin reads profiles from AppData, not the portable location."
+                                           Foreground="#FFA500" TextWrapping="Wrap" Margin="0,8,0,0" FontSize="11"
+                                           Visibility="Collapsed"/>
                             </StackPanel>
                         </GroupBox>
                     </Grid>
