@@ -4,6 +4,27 @@ Development session notes moved from CLAUDE.md for historical reference.
 
 ---
 
+## Session 2026-01-18
+
+**Update Checker Error Handling - COMPLETE**
+
+Fixed issue where failed update checks (e.g., private repo returning 404) would incorrectly show "You're running the latest version" instead of an error message.
+
+**Changes:**
+- Added `UpdateCheckResult` class to distinguish between three states:
+  - Success with update available
+  - Success with no update (on latest version)
+  - Error with message
+- Specific error handling for HTTP 404 (private repo or URL changed)
+- User-friendly error messages shown in "Check Now" dialog
+- Startup update check silently ignores errors (doesn't bother user)
+
+**Files Modified:**
+- `App/UpdateService.cs` - Added UpdateCheckResult class, updated CheckForUpdateAsync()
+- `App/MainWindow.xaml.cs` - Updated CheckForUpdatesNow_Click and CheckForUpdatesOnStartupAsync
+
+---
+
 ## Session 2026-01-13
 
 **Phase 12: ViGEmBus Driver Check - COMPLETE**

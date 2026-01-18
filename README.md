@@ -165,7 +165,7 @@ XOutputRenew/
 
 ## Current Status
 
-**v0.8.3-alpha** - Portable mode, About tab, installer improvements.
+**v0.8.4-alpha** - Improved update checker error handling.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
