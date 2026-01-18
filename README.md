@@ -14,6 +14,8 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 - **System tray integration** - Minimize to tray, run in background
 - **CLI support** - Command-line interface for scripting and automation
 - **Toast notifications** - Windows notifications when profiles start/stop or games are detected
+- **Backup/restore** - Export and import all settings via `.xorbackup` files
+- **Crash reporting** - One-click GitHub issue creation with diagnostic info
 
 ## Requirements
 
@@ -191,6 +193,8 @@ XOutputRenew/
 - **Stream Deck plugin** - Native plugin with profile toggle, monitoring toggle, and launch actions
 - **ViGEmBus auto-install** - Prompt to download and install if missing
 - **Auto-update** - Check for updates on startup with in-app download and install
+- **Crash reporting** - Detailed crash dialog with one-click GitHub issue creation
+- **Backup/restore settings** - Export all settings and profiles to `.xorbackup` file for easy migration
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)
