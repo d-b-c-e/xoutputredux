@@ -22,37 +22,36 @@ public class Program
     public const int ExitProfileNotFound = 2;
     public const int ExitNoRunningInstance = 3;
 
-    // Console window hiding for GUI mode (Exe apps have a console by default)
+    // Attach to parent console for CLI output (WinExe apps have no console by default)
     [DllImport("kernel32.dll")]
-    private static extern IntPtr GetConsoleWindow();
+    private static extern bool AttachConsole(int dwProcessId);
 
-    [DllImport("user32.dll")]
-    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("kernel32.dll")]
+    private static extern bool FreeConsole();
 
-    private const int SW_HIDE = 0;
+    private const int ATTACH_PARENT_PROCESS = -1;
 
     [STAThread]
     public static int Main(string[] args)
     {
-        // If no args, launch GUI directly (hide console window first)
+        // If no args, launch GUI directly (no console needed)
         if (args.Length == 0)
         {
-            HideConsoleWindow();
             return LaunchGui(null, false);
         }
 
+        // Attach to parent console for CLI output
+        AttachConsole(ATTACH_PARENT_PROCESS);
+
         // Build and run CLI
         var rootCommand = BuildRootCommand();
-        return rootCommand.Invoke(args);
-    }
+        var result = rootCommand.Invoke(args);
 
-    private static void HideConsoleWindow()
-    {
-        var handle = GetConsoleWindow();
-        if (handle != IntPtr.Zero)
-        {
-            ShowWindow(handle, SW_HIDE);
-        }
+        // Write a newline so the shell prompt appears correctly after our output
+        Console.WriteLine();
+
+        FreeConsole();
+        return result;
     }
 
     private static RootCommand BuildRootCommand()
@@ -353,7 +352,7 @@ public class Program
         {
             // No running instance - launch GUI with this profile
             Console.WriteLine($"Launching XOutputRenew with profile: {profileName}");
-            HideConsoleWindow();
+            FreeConsole();
             return LaunchGui(profileName, false);
         }
 
