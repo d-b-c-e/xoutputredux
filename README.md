@@ -16,6 +16,7 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 - **Toast notifications** - Windows notifications when profiles start/stop or games are detected
 - **Backup/restore** - Export and import all settings via `.xorbackup` files
 - **Crash reporting** - One-click GitHub issue creation with diagnostic info
+- **Portable mode** - Create `portable.txt` next to exe to store settings locally
 
 ## Requirements
 
@@ -47,6 +48,7 @@ Simply run `XOutputRenew.exe` to open the graphical interface.
 4. **Status tab** - Check driver status and active emulation
 5. **Options tab** - Configure startup behavior and settings
 6. **Test tab** - Visual Xbox controller showing real-time output state
+7. **About tab** - Version info and links to GitHub
 
 ### Creating a Profile
 
@@ -163,7 +165,7 @@ XOutputRenew/
 
 ## Current Status
 
-**v0.8.0-alpha** - Stream Deck plugin added, headless mode removed.
+**v0.8.3-alpha** - Portable mode, About tab, installer improvements.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
@@ -195,6 +197,8 @@ XOutputRenew/
 - **Auto-update** - Check for updates on startup with in-app download and install
 - **Crash reporting** - Detailed crash dialog with one-click GitHub issue creation
 - **Backup/restore settings** - Export all settings and profiles to `.xorbackup` file for easy migration
+- **Portable mode** - Create `portable.txt` next to exe to store all data in `data\` subfolder
+- **About tab** - Version info, GitHub links, and acknowledgments
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)
