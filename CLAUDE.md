@@ -106,12 +106,17 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 | 15: Portable Mode | ✓ Complete | True portable support - detect `portable.txt` and store settings in `data\` subfolder |
 | 16: Code Signing | Planned | Sign installer/exe to avoid Windows Defender/SmartScreen warnings |
 
+### Completed Dependency Upgrades
+
+| Item | Status | Notes |
+|------|--------|-------|
+| **Migrate SharpDX → Vortice.DirectInput** | ✓ Complete | Migrated 2026-01-18. Vortice 3.8.2 actively maintained. |
+
 ### Future Roadmap (Late 2026)
 
 | Item | Rationale | Effort |
 |------|-----------|--------|
 | **Upgrade to .NET 10** | .NET 8 LTS ends Nov 2026; .NET 10 is next LTS | ~1 day |
-| **Migrate SharpDX → Vortice.DirectInput** | SharpDX abandoned (2019); Vortice actively maintained | ~1 day |
 | **Fork/slim HidSharp** | HidSharp abandoned (2020); slim to ~500 lines for our needs | ~2-3 days |
 
 *Note: These are maintenance/future-proofing upgrades, not performance improvements. See [CLAUDE_DEPENDENCY_ANALYSIS.md](CLAUDE_DEPENDENCY_ANALYSIS.md) for detailed analysis.*

@@ -1,4 +1,4 @@
-using SharpDX.DirectInput;
+using Vortice.DirectInput;
 
 namespace XOutputRenew.Input.DirectInput;
 
@@ -11,7 +11,7 @@ public class DirectInputDeviceProvider : IDisposable
     // Emulated SCP device GUID to ignore
     private const string EmulatedScpId = "028e045e-0000-0000-0000-504944564944";
 
-    private readonly SharpDX.DirectInput.DirectInput _directInput;
+    private readonly IDirectInput8 _directInput;
     private readonly Dictionary<string, DirectInputDevice> _devices = new();
     private readonly object _lock = new();
     private IntPtr _windowHandle;
@@ -22,7 +22,7 @@ public class DirectInputDeviceProvider : IDisposable
 
     public DirectInputDeviceProvider()
     {
-        _directInput = new SharpDX.DirectInput.DirectInput();
+        _directInput = DInput.DirectInput8Create();
     }
 
     /// <summary>
@@ -125,15 +125,18 @@ public class DirectInputDeviceProvider : IDisposable
         if (!_directInput.IsDeviceAttached(instance.InstanceGuid))
             return null;
 
-        // Create joystick to get interface path
-        var joystick = new Joystick(_directInput, instance.InstanceGuid);
+        // Create device to get interface path
+        var device8 = _directInput.CreateDevice(instance.InstanceGuid);
 
         try
         {
+            // Set data format for joystick
+            device8.SetDataFormat<RawJoystickState>();
+
             // Check if device has any useful inputs
-            if (joystick.Capabilities.AxeCount < 1 && joystick.Capabilities.ButtonCount < 1)
+            if (device8.Capabilities.AxeCount < 1 && device8.Capabilities.ButtonCount < 1)
             {
-                joystick.Dispose();
+                device8.Dispose();
                 return null;
             }
 
@@ -144,7 +147,7 @@ public class DirectInputDeviceProvider : IDisposable
 
             if (instance.IsHumanInterfaceDevice)
             {
-                interfacePath = joystick.Properties.InterfacePath;
+                interfacePath = device8.Properties.InterfacePath;
                 hardwareId = IdHelper.GetHardwareId(interfacePath);
                 // Use hardware ID (VID/PID) for stable identification across USB ports
                 uniqueIdBase = hardwareId ?? interfacePath;
@@ -160,18 +163,18 @@ public class DirectInputDeviceProvider : IDisposable
             // Check if we already have this device
             if (_devices.ContainsKey(uniqueId))
             {
-                joystick.Dispose();
+                device8.Dispose();
                 return _devices[uniqueId];
             }
 
             // Set buffer size for event handling
-            joystick.Properties.BufferSize = 128;
+            device8.Properties.BufferSize = 128;
 
             // Detect force feedback capability
             bool hasForceFeedback = instance.ForceFeedbackDriverGuid != Guid.Empty;
 
             var device = new DirectInputDevice(
-                joystick,
+                device8,
                 uniqueId,
                 instance.ProductName,
                 hardwareId,
@@ -187,7 +190,7 @@ public class DirectInputDeviceProvider : IDisposable
         }
         catch
         {
-            joystick.Dispose();
+            device8.Dispose();
             throw;
         }
     }

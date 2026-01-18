@@ -1,5 +1,4 @@
-using SharpDX;
-using SharpDX.DirectInput;
+using Vortice.DirectInput;
 
 namespace XOutputRenew.Input.DirectInput;
 
@@ -9,14 +8,14 @@ namespace XOutputRenew.Input.DirectInput;
 /// </summary>
 public class DirectDeviceForceFeedback : IDisposable
 {
-    private readonly Joystick _joystick;
+    private readonly IDirectInputDevice8 _device;
     private readonly EffectInfo _effectInfo;
     private readonly int[] _axes;
     private readonly int[] _directions;
     private readonly int _gain;
     private readonly int _samplePeriod;
 
-    private Effect? _effect;
+    private IDirectInputEffect? _effect;
     private double _value;
     private bool _disposed;
 
@@ -45,16 +44,16 @@ public class DirectDeviceForceFeedback : IDisposable
     }
 
     public DirectDeviceForceFeedback(
-        Joystick joystick,
+        IDirectInputDevice8 device,
         EffectInfo effectInfo,
         DeviceObjectInstance actuator)
     {
-        _joystick = joystick;
+        _device = device;
         _effectInfo = effectInfo;
-        _gain = joystick.Properties.ForceFeedbackGain;
-        _samplePeriod = joystick.Capabilities.ForceFeedbackSamplePeriod;
-        _axes = new[] { (int)actuator.ObjectId };
-        _directions = new[] { 0 };
+        _gain = device.Properties.ForceFeedbackGain;
+        _samplePeriod = device.Capabilities.ForceFeedbackSamplePeriod;
+        _axes = [(int)actuator.ObjectId];
+        _directions = [0];
     }
 
     /// <summary>
@@ -73,7 +72,7 @@ public class DirectDeviceForceFeedback : IDisposable
         _value = 0;
     }
 
-    private Effect? CreateAndStartEffect(Effect? oldEffect, double value)
+    private IDirectInputEffect? CreateAndStartEffect(IDirectInputEffect? oldEffect, double value)
     {
         var effectParams = new EffectParameters
         {
@@ -95,12 +94,12 @@ public class DirectDeviceForceFeedback : IDisposable
 
         try
         {
-            var newEffect = new Effect(_joystick, _effectInfo.Guid, effectParams);
+            var newEffect = _device.CreateEffect(_effectInfo.Guid, effectParams);
             oldEffect?.Dispose();
             newEffect.Start();
             return newEffect;
         }
-        catch (SharpDXException ex)
+        catch (SharpGen.Runtime.SharpGenException ex)
         {
             if (ex.Message.Contains("E_NOTIMPL"))
             {

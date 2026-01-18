@@ -6,6 +6,41 @@ Development session notes moved from CLAUDE.md for historical reference.
 
 ## Session 2026-01-18
 
+**Migrate SharpDX → Vortice.DirectInput - COMPLETE**
+
+Replaced abandoned SharpDX.DirectInput (last updated 2019) with actively maintained Vortice.DirectInput 3.8.2.
+
+**Changes:**
+- Updated `XOutputRenew.Input.csproj` package reference
+- Migrated `DirectInputDeviceProvider.cs`:
+  - `DirectInput` class → `IDirectInput8` interface
+  - `new DirectInput()` → `DInput.DirectInput8Create()`
+  - `new Joystick()` → `CreateDevice()` returning `IDirectInputDevice8`
+  - Added `SetDataFormat<RawJoystickState>()` call (required in Vortice)
+- Migrated `DirectInputDevice.cs`:
+  - `Joystick` type → `IDirectInputDevice8`
+  - `GetCurrentState()` → `GetCurrentJoystickState(ref state)`
+  - `SharpDXException` → `SharpGen.Runtime.SharpGenException`
+- Migrated `DirectInputSource.cs`: namespace change only
+- Migrated `DirectDeviceForceFeedback.cs`:
+  - `Joystick` → `IDirectInputDevice8`
+  - `Effect` → `IDirectInputEffect`
+  - `new Effect()` → `device.CreateEffect()`
+
+**API Mapping Reference:**
+| SharpDX | Vortice |
+|---------|---------|
+| `DirectInput` class | `IDirectInput8` interface |
+| `Joystick` class | `IDirectInputDevice8` interface |
+| `Effect` class | `IDirectInputEffect` interface |
+| `joystick.GetCurrentState()` | `device.GetCurrentJoystickState(ref state)` |
+| `new Effect(joystick, guid, params)` | `device.CreateEffect(guid, params)` |
+| `SharpDXException` | `SharpGen.Runtime.SharpGenException` |
+
+All 30 tests pass after migration.
+
+---
+
 **Update Checker Error Handling - COMPLETE**
 
 Fixed issue where failed update checks (e.g., private repo returning 404) would incorrectly show "You're running the latest version" instead of an error message.

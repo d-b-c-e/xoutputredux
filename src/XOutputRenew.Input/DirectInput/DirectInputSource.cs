@@ -1,4 +1,4 @@
-using SharpDX.DirectInput;
+using Vortice.DirectInput;
 
 namespace XOutputRenew.Input.DirectInput;
 

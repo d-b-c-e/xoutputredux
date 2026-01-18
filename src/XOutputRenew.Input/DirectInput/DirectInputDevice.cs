@@ -1,4 +1,4 @@
-using SharpDX.DirectInput;
+using Vortice.DirectInput;
 using XOutputRenew.Input.ForceFeedback;
 
 namespace XOutputRenew.Input.DirectInput;
@@ -28,7 +28,7 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
     public event EventHandler<InputChangedEventArgs>? InputChanged;
     public event EventHandler? Disconnected;
 
-    private readonly Joystick _joystick;
+    private readonly IDirectInputDevice8 _device;
     private readonly DirectInputSource[] _sources;
 
     // Force feedback fields
@@ -46,7 +46,7 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
     private bool _disposed;
 
     public DirectInputDevice(
-        Joystick joystick,
+        IDirectInputDevice8 device,
         string uniqueId,
         string name,
         string? hardwareId,
@@ -54,7 +54,7 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
         bool hasForceFeedback = false,
         IntPtr windowHandle = default)
     {
-        _joystick = joystick;
+        _device = device;
         UniqueId = uniqueId;
         Name = name;
         HardwareId = hardwareId;
@@ -70,18 +70,18 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
             try
             {
                 // Set exclusive cooperative level (required for FFB output)
-                joystick.SetCooperativeLevel(windowHandle,
+                device.SetCooperativeLevel(windowHandle,
                     CooperativeLevel.Background | CooperativeLevel.Exclusive);
 
                 // Find ConstantForce effect (preferred) or any effect
-                var effects = joystick.GetEffects().ToArray();
+                var effects = device.GetEffects().ToArray();
                 _effectInfo = effects.FirstOrDefault(e => e.Guid == EffectGuid.ConstantForce)
                               ?? effects.FirstOrDefault();
 
                 if (_effectInfo != null)
                 {
                     // Get FFB actuator axes
-                    var actuators = joystick.GetObjects()
+                    var actuators = device.GetObjects()
                         .Where(obj => obj.ObjectId.Flags.HasFlag(DeviceObjectTypeFlags.ForceFeedbackActuator))
                         .ToArray();
 
@@ -94,7 +94,7 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
                         foreach (var target in _ffbTargets)
                         {
                             var actuator = actuators.First(a => a.Offset == target.Offset);
-                            _ffbEffects[target] = new DirectDeviceForceFeedback(joystick, _effectInfo, actuator);
+                            _ffbEffects[target] = new DirectDeviceForceFeedback(device, _effectInfo, actuator);
                         }
                     }
                 }
@@ -111,7 +111,7 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
         var sources = new List<DirectInputSource>();
 
         // Buttons (up to 128)
-        var buttons = joystick.GetObjects(DeviceObjectTypeFlags.Button)
+        var buttons = device.GetObjects(DeviceObjectTypeFlags.Button)
             .Where(b => b.Usage > 0)
             .OrderBy(b => b.ObjectId.InstanceNumber)
             .Take(128)
@@ -126,24 +126,24 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
         sources.AddRange(axes);
 
         // Sliders
-        var sliders = joystick.GetObjects()
+        var sliders = device.GetObjects()
             .Where(o => o.ObjectType == ObjectGuid.Slider)
             .OrderBy(o => o.Usage)
             .Select((s, i) => DirectInputSource.FromSlider(s, i));
         sources.AddRange(sliders);
 
         // DPads
-        if (joystick.Capabilities.PovCount > 0)
+        if (device.Capabilities.PovCount > 0)
         {
-            var dpads = Enumerable.Range(0, joystick.Capabilities.PovCount)
+            var dpads = Enumerable.Range(0, device.Capabilities.PovCount)
                 .SelectMany(DirectInputSource.FromDPad);
             sources.AddRange(dpads);
         }
 
         _sources = sources.ToArray();
 
-        // Acquire the joystick
-        joystick.Acquire();
+        // Acquire the device
+        device.Acquire();
     }
 
     public void Start()
@@ -258,10 +258,11 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
             {
                 try
                 {
-                    var state = _joystick.GetCurrentState();
+                    var state = new JoystickState();
+                    _device.GetCurrentJoystickState(ref state);
                     ProcessState(state);
                 }
-                catch (SharpDX.SharpDXException)
+                catch (SharpGen.Runtime.SharpGenException)
                 {
                     // Device disconnected
                     _running = false;
@@ -297,7 +298,7 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
 
     private IEnumerable<DeviceObjectInstance> GetAxes()
     {
-        var axes = _joystick.GetObjects(DeviceObjectTypeFlags.AbsoluteAxis)
+        var axes = _device.GetObjects(DeviceObjectTypeFlags.AbsoluteAxis)
             .Where(o => o.ObjectType != ObjectGuid.Slider)
             .ToArray();
 
@@ -305,12 +306,12 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
         {
             try
             {
-                var properties = _joystick.GetObjectPropertiesById(axis.ObjectId);
+                var properties = _device.GetObjectPropertiesById(axis.ObjectId);
                 properties.Range = new InputRange(ushort.MinValue, ushort.MaxValue);
                 properties.DeadZone = 0;
                 properties.Saturation = 10000;
             }
-            catch (SharpDX.SharpDXException)
+            catch (SharpGen.Runtime.SharpGenException)
             {
                 // Some axes don't support property modification
             }
@@ -341,8 +342,8 @@ public class DirectInputDevice : IInputDevice, IForceFeedbackDevice
 
         try
         {
-            _joystick.Unacquire();
-            _joystick.Dispose();
+            _device.Unacquire();
+            _device.Dispose();
         }
         catch
         {
