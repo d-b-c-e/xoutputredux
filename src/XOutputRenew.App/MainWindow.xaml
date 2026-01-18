@@ -518,6 +518,7 @@
 
                 <!-- Options Tab -->
                 <TabItem Header="Options">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -651,6 +652,7 @@
                             </StackPanel>
                         </GroupBox>
                     </Grid>
+                    </ScrollViewer>
                 </TabItem>
 
                 <!-- Test Tab -->

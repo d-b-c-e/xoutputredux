@@ -41,6 +41,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "addtopath"; Description: "Add to system PATH (enables CLI from any terminal)"; GroupDescription: "System Integration:"; Flags: unchecked
 Name: "startwithwindows"; Description: "Start XOutputRenew when Windows starts"; GroupDescription: "System Integration:"; Flags: unchecked
+Name: "runasadmin"; Description: "Always run as administrator (recommended for device access)"; GroupDescription: "System Integration:"; Flags: unchecked
 
 [Files]
 ; Main application files from publish directory
@@ -59,6 +60,8 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Tasks: addtopath; Check: NeedsAddPath('{app}')
 ; Start with Windows if selected
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "XOutputRenew"; ValueData: """{app}\{#MyAppExeName}"" --minimized"; Tasks: startwithwindows; Flags: uninsdeletevalue
+; Always run as administrator if selected (sets Windows compatibility layer)
+Root: HKCU; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"; ValueType: string; ValueName: "{app}\{#MyAppExeName}"; ValueData: "RUNASADMIN"; Tasks: runasadmin; Flags: uninsdeletevalue
 
 [UninstallDelete]
 ; Clean up app data on uninstall (optional - commented out to preserve user settings)
