@@ -880,6 +880,74 @@
                         </ScrollViewer>
                     </Grid>
                 </TabItem>
+
+                <!-- About Tab -->
+                <TabItem Header="About">
+                    <Grid Margin="20">
+                        <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" MaxWidth="500">
+                            <!-- App Title and Version -->
+                            <TextBlock Text="XOutputRenew" FontSize="28" FontWeight="Bold" Margin="0,0,0,5"/>
+                            <TextBlock x:Name="VersionText" Text="Version 0.0.0" FontSize="14" Foreground="Gray" Margin="0,0,0,20"/>
+
+                            <!-- Description -->
+                            <TextBlock Text="Xbox controller emulator for Windows. Maps inputs from multiple gaming devices to a single emulated Xbox 360 controller."
+                                       TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+                            <!-- Links -->
+                            <TextBlock Text="Links" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <StackPanel Margin="0,0,0,20">
+                                <TextBlock Margin="0,0,0,5">
+                                    <Hyperlink x:Name="GitHubLink" RequestNavigate="Hyperlink_RequestNavigate"
+                                               NavigateUri="https://github.com/d-b-c-e/xoutputrenew">
+                                        GitHub Repository
+                                    </Hyperlink>
+                                </TextBlock>
+                                <TextBlock Margin="0,0,0,5">
+                                    <Hyperlink x:Name="ReleasesLink" RequestNavigate="Hyperlink_RequestNavigate"
+                                               NavigateUri="https://github.com/d-b-c-e/xoutputrenew/releases">
+                                        Releases / Downloads
+                                    </Hyperlink>
+                                </TextBlock>
+                                <TextBlock>
+                                    <Hyperlink x:Name="IssuesLink" RequestNavigate="Hyperlink_RequestNavigate"
+                                               NavigateUri="https://github.com/d-b-c-e/xoutputrenew/issues">
+                                        Report an Issue
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+
+                            <!-- Acknowledgments -->
+                            <TextBlock Text="Acknowledgments" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <StackPanel Margin="0,0,0,10">
+                                <TextBlock Margin="0,0,0,3">
+                                    <Hyperlink RequestNavigate="Hyperlink_RequestNavigate"
+                                               NavigateUri="https://github.com/nefarius/ViGEmBus">
+                                        ViGEmBus
+                                    </Hyperlink>
+                                    <Run Text=" - Virtual gamepad driver"/>
+                                </TextBlock>
+                                <TextBlock Margin="0,0,0,3">
+                                    <Hyperlink RequestNavigate="Hyperlink_RequestNavigate"
+                                               NavigateUri="https://github.com/nefarius/HidHide">
+                                        HidHide
+                                    </Hyperlink>
+                                    <Run Text=" - Device hiding driver"/>
+                                </TextBlock>
+                                <TextBlock Margin="0,0,0,3">
+                                    <Hyperlink RequestNavigate="Hyperlink_RequestNavigate"
+                                               NavigateUri="https://github.com/csutorasa/XOutput">
+                                        XOutput
+                                    </Hyperlink>
+                                    <Run Text=" - Original inspiration"/>
+                                </TextBlock>
+                            </StackPanel>
+
+                            <!-- Portable Mode Indicator -->
+                            <TextBlock x:Name="PortableModeText" Text="Running in portable mode"
+                                       Foreground="#FFA500" Margin="0,20,0,0" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
             </TabControl>
 
             <!-- Status Bar -->

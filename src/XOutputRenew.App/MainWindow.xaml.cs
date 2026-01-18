@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using Microsoft.Win32;
 using System.Windows.Media;
@@ -120,11 +121,18 @@ public partial class MainWindow : Window
         CheckDriverStatus();
         InitializeOptions();
 
-        // Show portable mode warning for Stream Deck if applicable
+        // Show portable mode indicators if applicable
         if (AppPaths.IsPortable)
         {
             PortableModeWarning.Visibility = Visibility.Visible;
+            PortableModeText.Visibility = Visibility.Visible;
         }
+
+        // Set version in About tab
+        var version = System.Reflection.Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion
+            ?? "Unknown";
+        VersionText.Text = $"Version {version}";
 
         // Check for startup profile (command line takes precedence, then saved setting)
         string? startProfile = Application.Current.Properties["StartProfile"] as string;
@@ -1815,6 +1823,27 @@ public partial class MainWindow : Window
     {
         var defaultState = new XboxControllerState();
         UpdateTestTab(defaultState);
+    }
+
+    #endregion
+
+    #region About Tab
+
+    private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = e.Uri.AbsoluteUri,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to open URL: {ex.Message}");
+        }
+        e.Handled = true;
     }
 
     #endregion
