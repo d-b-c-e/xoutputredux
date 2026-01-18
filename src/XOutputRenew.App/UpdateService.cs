@@ -36,10 +36,14 @@ public class UpdateService
         // Check for informational version which may contain pre-release tag
         var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
+        AppLogger.Info($"GetCurrentVersion: Raw InformationalVersion = '{infoVersion}'");
+
         if (!string.IsNullOrEmpty(infoVersion))
         {
             // Parse informational version like "0.7.0-alpha" or "0.8.0-beta.2+build123"
-            return SemanticVersion.Parse(infoVersion);
+            var parsed = SemanticVersion.Parse(infoVersion);
+            AppLogger.Info($"GetCurrentVersion: Parsed as {parsed.Major}.{parsed.Minor}.{parsed.Patch}-{parsed.Prerelease ?? "null"}");
+            return parsed;
         }
 
         return new SemanticVersion(version.Major, version.Minor, version.Build, null);
@@ -60,6 +64,7 @@ public class UpdateService
                 return null;
 
             var currentVersion = GetCurrentVersion();
+            AppLogger.Info($"Update check: Current version = {currentVersion}");
             ReleaseInfo? latestRelease = null;
             SemanticVersion? latestVersion = null;
 
@@ -124,11 +129,20 @@ public class UpdateService
             }
 
             // Return release only if it's newer than current
+            AppLogger.Info($"Update check: Latest version found = {latestVersion}, has release = {latestRelease != null}");
+            if (latestVersion != null)
+            {
+                var comparison = latestVersion.CompareTo(currentVersion);
+                AppLogger.Info($"Update check: Comparison result = {comparison} (positive means update available)");
+            }
+
             if (latestRelease != null && latestVersion != null && latestVersion > currentVersion)
             {
+                AppLogger.Info($"Update check: Update available!");
                 return latestRelease;
             }
 
+            AppLogger.Info("Update check: No update available");
             return null;
         }
         catch (Exception ex)
