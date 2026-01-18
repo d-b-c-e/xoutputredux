@@ -105,6 +105,7 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 | 14: Backup/Restore Settings | ✓ Complete | Export/import to `.xorbackup` file (ZIP containing all settings, profiles, games.json) |
 | 15: Portable Mode | ✓ Complete | True portable support - detect `portable.txt` and store settings in `data\` subfolder |
 | 16: Code Signing | Planned | Sign installer/exe to avoid Windows Defender/SmartScreen warnings |
+| 17: Rebrand to XOutput Redux | Planned | New name, icons, and color themes |
 
 ### Completed Dependency Upgrades
 
