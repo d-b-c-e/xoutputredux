@@ -125,6 +125,12 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 
 *Note: These are maintenance/future-proofing upgrades, not performance improvements. See [CLAUDE_DEPENDENCY_ANALYSIS.md](CLAUDE_DEPENDENCY_ANALYSIS.md) for detailed analysis.*
 
+### Future Enhancements
+
+| Item | Description | Priority |
+|------|-------------|----------|
+| **Improved Wheel FFB** | Current FFB uses ConstantForce in one direction (left), designed for gamepad rumble. Enhancements: (1) Use oscillating/periodic effects instead of constant force for more rumble-like feel, (2) Allow configuring effect type/direction in profile, (3) Apply magnitude symmetrically to avoid one-sided pull. Note: Xbox rumble → wheel FFB is inherently limited; games not designed for wheels will never feel like proper wheel games. | Low |
+
 ---
 
 ## CLI Interface
