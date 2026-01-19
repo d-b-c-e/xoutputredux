@@ -15,17 +15,17 @@ The library is functional but shows signs of its origins as a multi-platform lib
 
 ## Priority 1: Quick Wins (< 1 hour each)
 
-### 1.1 Replace Obsolete SHA256Managed
+### 1.1 ~~Replace Obsolete SHA256Managed~~ DONE
 - **Files**: `Platform/SystemEvents.cs` (lines 1063, 1071, 1425)
 - **Issue**: `SHA256Managed` is obsolete in .NET Core
-- **Fix**: Replace with `SHA256.Create()` in using statement
-- **Effort**: 15 minutes
+- **Fix**: Replaced with `SHA256.HashData()` static method
+- **Completed**: 2026-01-18
 
-### 1.2 Fix CA2014 Stackalloc Warning
+### 1.2 ~~Fix CA2014 Stackalloc Warning~~ DONE
 - **File**: `Platform/Windows/WinHidStream.cs` (line 180)
 - **Issue**: `stackalloc` inside loop risks stack overflow
-- **Fix**: Move allocation outside loop or use ArrayPool
-- **Effort**: 15 minutes
+- **Fix**: Moved allocation outside loop, reset struct each iteration
+- **Completed**: 2026-01-18
 
 ---
 
@@ -164,15 +164,15 @@ finally { ArrayPool<byte>.Shared.Return(buffer); }
 
 ## Effort Estimates
 
-| Priority | Description | Effort |
-|----------|-------------|--------|
-| P1 | Quick wins (SHA256, CA2014) | 30 min |
-| P2 | Dead code removal | 2-3 hrs |
-| P3 | Code quality fixes | 3-4 hrs |
-| P4 | Performance improvements | 4-6 hrs |
-| P5 | Modernization | 6-8 hrs |
+| Priority | Description | Effort | Status |
+|----------|-------------|--------|--------|
+| P1 | Quick wins (SHA256, CA2014) | 30 min | **DONE** |
+| P2 | Dead code removal | 2-3 hrs | Pending |
+| P3 | Code quality fixes | 3-4 hrs | Pending |
+| P4 | Performance improvements | 4-6 hrs | Pending |
+| P5 | Modernization | 6-8 hrs | Pending |
 
-**Total**: ~16-22 hours for all improvements
+**Total**: ~16-22 hours for all improvements (P1 complete)
 
 ---
 

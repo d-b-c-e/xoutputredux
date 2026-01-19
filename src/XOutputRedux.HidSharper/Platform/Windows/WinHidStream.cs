@@ -175,9 +175,10 @@ namespace XOutputRedux.HidSharper.Platform.Windows
 	                fixed (byte* ptr = _writeBuffer)
 	                {
 	                    int offset0 = 0;
+	                    var overlapped = stackalloc NativeOverlapped[1];
 	                    while (count > 0)
 	                    {
-                            var overlapped = stackalloc NativeOverlapped[1];
+                            overlapped[0] = default; // Reset for each iteration
                             overlapped[0].EventHandle = @event;
 
                             NativeMethods.OverlappedOperation(_handle, @event, WriteTimeout, _closeEventHandle,

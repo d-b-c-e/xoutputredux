@@ -1060,7 +1060,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
 
         static string GetEventFilename(string kind, string name)
         {
-            string bs64 = Convert.ToBase64String(new SHA256Managed().ComputeHash(Encoding.UTF8.GetBytes(name))).Replace('+', '-').Replace('/', '_').Replace("=", "");
+            string bs64 = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(name))).Replace('+', '-').Replace('/', '_').Replace("=", "");
             string directory = GetEventDirectory(kind);
             string filename = Path.Combine(directory, bs64 + ".tmp");
             return filename;
@@ -1068,7 +1068,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
 
         static string GetSHMFilename(string kind, string name)
         {
-            string shmName = string.Format("/HS.{0}.{1}", kind, Convert.ToBase64String(new SHA256Managed().ComputeHash(Encoding.UTF8.GetBytes(name))).Substring(0, 16).Replace('+', '-').Replace('/', '_'));
+            string shmName = string.Format("/HS.{0}.{1}", kind, Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(name))).Substring(0, 16).Replace('+', '-').Replace('/', '_'));
             return shmName;
         }
 
@@ -1422,7 +1422,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
         static string GetGlobalName(string name)
         {
             if (name == null) { throw new ArgumentNullException(); }
-            if (name.Length > 240) { name = "HIDSharp Global (" + Convert.ToBase64String(new SHA256Managed().ComputeHash(Encoding.UTF8.GetBytes(name))) + ")"; }
+            if (name.Length > 240) { name = "HIDSharp Global (" + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(name))) + ")"; }
             return @"Global\" + name;
         }
 
