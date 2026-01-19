@@ -25,7 +25,9 @@ XOutputRenew/
 │   ├── XOutputRenew.Input/          # DirectInput, RawInput device handling
 │   ├── XOutputRenew.Emulation/      # ViGEm Xbox controller emulation
 │   ├── XOutputRenew.HidHide/        # HidHide integration
-│   └── XOutputRenew.App/            # WPF GUI + CLI application
+│   ├── XOutputRenew.App/            # WPF GUI + CLI application
+│   │   └── Assets/                  # Icons, banners, branding assets
+│   └── XOutputRenew.StreamDeck/     # Stream Deck plugin
 └── tests/
     └── XOutputRenew.Tests/
 ```

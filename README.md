@@ -158,6 +158,7 @@ XOutputRenew/
 │   ├── XOutputRenew.Emulation/      # ViGEm Xbox controller emulation
 │   ├── XOutputRenew.HidHide/        # HidHide integration
 │   ├── XOutputRenew.App/            # WPF GUI + CLI application
+│   │   └── Assets/                  # Icons, banners, branding assets
 │   └── XOutputRenew.StreamDeck/     # Stream Deck plugin
 └── tests/
     └── XOutputRenew.Tests/
@@ -182,6 +183,7 @@ XOutputRenew/
 - Device renaming and info display
 - Verbose logging for debugging device issues
 - Dark mode UI theme with dark tooltips and dialogs
+- **Synthwave branding** - New logo and gradient color scheme
 - Visual Xbox controller test display
 - Options for startup profile and "Start with Windows"
 - Profile editor with tabbed interface (Mapping, Force Feedback, Device Hiding)
