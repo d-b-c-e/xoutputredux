@@ -477,6 +477,13 @@ AppLogger.Error("Something failed", exception);
 - **Fix**: Add ScrollViewer to Options tab, or refactor layout to be more compact
 - **Priority**: Medium (usability issue)
 
+### HidSharp Parse Errors for Certain Report IDs
+- **Symptom**: Some RawInput devices (e.g., VelocityOne Multi-Shift) generate parse errors for specific HID report IDs
+- **Cause**: HidSharp's parser can't handle certain report formats (likely feature/configuration reports, not input reports)
+- **Impact**: None - device input still works correctly; these reports aren't needed for input
+- **Mitigation**: Error logging is now throttled (logs once per report ID, with summary on dispose)
+- **Future**: Investigate during HidSharp fork (Phase: Fork/slim HidSharp) - may be able to fix parser or skip non-input reports
+
 ---
 
 ## Workspace Reference

@@ -37,6 +37,9 @@ public class RawInputDevice : IInputDevice
     private bool _running;
     private bool _disposed;
 
+    // Throttle parse error logging - only log each report ID once
+    private readonly Dictionary<int, int> _parseErrorCounts = new();
+
     public RawInputDevice(
         HidDevice device,
         HidStream hidStream,
@@ -170,7 +173,17 @@ public class RawInputDevice : IInputDevice
             }
             catch (Exception ex)
             {
-                InputLogger.Log($"[{Name}] Parse/process error for report {report.ReportID}: {ex.Message}");
+                // Throttle error logging - only log first occurrence per report ID
+                var reportId = report.ReportID;
+                if (!_parseErrorCounts.TryGetValue(reportId, out var count))
+                {
+                    InputLogger.Log($"[{Name}] Parse error for report {reportId}: {ex.Message} (further errors for this report will be suppressed)");
+                    _parseErrorCounts[reportId] = 1;
+                }
+                else
+                {
+                    _parseErrorCounts[reportId] = count + 1;
+                }
                 // Continue processing other reports - don't crash the poll loop
             }
         }
@@ -210,6 +223,18 @@ public class RawInputDevice : IInputDevice
         _disposed = true;
 
         Stop();
+
+        // Log summary of suppressed parse errors
+        if (_parseErrorCounts.Count > 0)
+        {
+            foreach (var (reportId, count) in _parseErrorCounts)
+            {
+                if (count > 1)
+                {
+                    InputLogger.Log($"[{Name}] Report {reportId} had {count} total parse errors (suppressed after first)");
+                }
+            }
+        }
 
         try
         {
