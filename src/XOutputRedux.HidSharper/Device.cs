@@ -32,7 +32,7 @@ namespace XOutputRedux.HidSharper
             return Open(null);
         }
 
-        public DeviceStream Open(OpenConfiguration openConfig)
+        public DeviceStream Open(OpenConfiguration? openConfig)
         {
             return OpenDeviceAndRestrictAccess(openConfig ?? new OpenConfiguration());
         }
@@ -41,7 +41,7 @@ namespace XOutputRedux.HidSharper
         {
             bool exclusive = (bool)openConfig.GetOption(OpenOption.Exclusive);
 
-            DeviceOpenUtility openUtility = null;
+            DeviceOpenUtility? openUtility = null;
             if (exclusive)
             {
                 string streamPath = GetStreamPath(openConfig);
@@ -53,9 +53,10 @@ namespace XOutputRedux.HidSharper
             try
             {
                 stream = OpenDeviceDirectly(openConfig);
-                if (exclusive)
+                if (exclusive && openUtility != null)
                 {
-                    stream.Closed += (sender, e) => openUtility.Close();
+                    var utility = openUtility; // Capture for closure
+                    stream.Closed += (sender, e) => utility.Close();
                     openUtility.InterruptRequested += (sender, e) =>
                         {
                             stream.OnInterruptRequested();
@@ -65,7 +66,7 @@ namespace XOutputRedux.HidSharper
             }
             catch
             {
-                if (exclusive) { openUtility.Close(); }
+                if (exclusive) { openUtility?.Close(); }
                 throw;
             }
 
@@ -85,18 +86,17 @@ namespace XOutputRedux.HidSharper
         /// </summary>
         /// <param name="stream">The stream to use to communicate with the device.</param>
         /// <returns><c>true</c> if the connection was successful.</returns>
-        public bool TryOpen(out DeviceStream stream)
+        public bool TryOpen(out DeviceStream? stream)
         {
             return TryOpen(null, out stream);
         }
 
-        public bool TryOpen(OpenConfiguration openConfig, out DeviceStream stream)
+        public bool TryOpen(OpenConfiguration? openConfig, out DeviceStream? stream)
         {
-            Exception exception;
-            return TryOpen(openConfig, out stream, out exception);
+            return TryOpen(openConfig, out stream, out _);
         }
 
-        public bool TryOpen(OpenConfiguration openConfig, out DeviceStream stream, out Exception exception)
+        public bool TryOpen(OpenConfiguration? openConfig, out DeviceStream? stream, out Exception? exception)
         {
             try
             {

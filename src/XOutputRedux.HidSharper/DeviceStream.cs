@@ -26,13 +26,13 @@ namespace XOutputRedux.HidSharper
         /// <summary>
         /// Occurs when the stream is closed.
         /// </summary>
-        public event EventHandler Closed;
+        public event EventHandler? Closed;
 
         /// <summary>
         /// Occurs when <see cref="OpenOption.Interruptible"/> is <c>true</c> and another process or thread with higher priority
         /// would like to open the stream.
         /// </summary>
-        public event EventHandler InterruptRequested;
+        public event EventHandler? InterruptRequested;
 
         /// <exclude/>
         protected DeviceStream(Device device)
@@ -57,7 +57,7 @@ namespace XOutputRedux.HidSharper
         }
 
         /// <inheritdoc/>
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             Throw.If.OutOfRange(buffer, offset, count);
             return AsyncResult<int>.BeginOperation(delegate()
@@ -73,7 +73,7 @@ namespace XOutputRedux.HidSharper
         }
 
         /// <inheritdoc/>
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             Throw.If.OutOfRange(buffer, offset, count);
             return AsyncResult<int>.BeginOperation(delegate()
@@ -195,7 +195,7 @@ namespace XOutputRedux.HidSharper
         /// <summary>
         /// An object storing user-defined data about the stream.
         /// </summary>
-        public object Tag
+        public object? Tag
         {
             get;
             set;

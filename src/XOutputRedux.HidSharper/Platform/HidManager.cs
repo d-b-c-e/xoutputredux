@@ -30,12 +30,12 @@ namespace XOutputRedux.HidSharper.Platform
         sealed class DeviceTypeInfo
         {
             public delegate object[] GetDeviceKeysCallbackType();
-            public delegate bool TryCreateDeviceCallbackType(object key, out Device device);
+            public delegate bool TryCreateDeviceCallbackType(object key, out Device? device);
 
             public object DevicesLock = new object();
             public Dictionary<object, Device> DeviceList = new Dictionary<object, Device>();
-            public GetDeviceKeysCallbackType GetDeviceKeysCallback;
-            public TryCreateDeviceCallbackType TryCreateDeviceCallback;
+            public GetDeviceKeysCallbackType GetDeviceKeysCallback = null!;
+            public TryCreateDeviceCallbackType TryCreateDeviceCallback = null!;
         }
         DeviceTypeInfo _hid;
 
@@ -97,10 +97,9 @@ namespace XOutputRedux.HidSharper.Platform
                     {
                         ThreadPool.QueueUserWorkItem(new WaitCallback(key =>
                         {
-                            Device device;
-                            bool created = tryCreateDeviceCallback(key, out device);
+                            bool created = tryCreateDeviceCallback(key, out Device? device);
 
-                            if (created)
+                            if (created && device != null)
                             {
                                 // By not adding on failure, we'll end up retrying every time.
                                 lock (_deviceList)
@@ -141,7 +140,7 @@ namespace XOutputRedux.HidSharper.Platform
 
         protected abstract object[] GetHidDeviceKeys();
 
-        protected abstract bool TryCreateHidDevice(object key, out Device device);
+        protected abstract bool TryCreateHidDevice(object key, out Device? device);
 
         public virtual bool AreDriversBeingInstalled
         {
@@ -152,7 +151,7 @@ namespace XOutputRedux.HidSharper.Platform
         {
             get;
             private set;
-        }
+        } = null!;
 
         public abstract string FriendlyName
         {

@@ -23,9 +23,9 @@ namespace XOutputRedux.HidSharper
     sealed class AsyncResult<T> : IAsyncResult
     {
         volatile bool _isCompleted;
-        ManualResetEvent _waitHandle;
+        ManualResetEvent? _waitHandle;
 
-        AsyncResult(AsyncCallback callback, object state)
+        AsyncResult(AsyncCallback? callback, object? state)
         {
             AsyncCallback = callback; AsyncState = state;
         }
@@ -44,7 +44,7 @@ namespace XOutputRedux.HidSharper
         internal delegate T OperationCallback();
 
         internal static IAsyncResult BeginOperation(OperationCallback operation,
-            AsyncCallback callback, object state)
+            AsyncCallback? callback, object? state)
         {
             var ar = new AsyncResult<T>(callback, state);
             ThreadPool.QueueUserWorkItem(delegate(object self)
@@ -75,13 +75,13 @@ namespace XOutputRedux.HidSharper
             return ((AsyncResult<T>)asyncResult).EndOperation();
         }
 
-        public AsyncCallback AsyncCallback
+        public AsyncCallback? AsyncCallback
         {
             get;
             private set;
         }
 
-        public object AsyncState
+        public object? AsyncState
         {
             get;
             private set;
@@ -113,7 +113,7 @@ namespace XOutputRedux.HidSharper
             get { return _isCompleted; }
         }
 
-        Exception Exception
+        Exception? Exception
         {
             get;
             set;

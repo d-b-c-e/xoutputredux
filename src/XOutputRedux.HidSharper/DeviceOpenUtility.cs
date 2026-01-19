@@ -28,17 +28,17 @@ namespace XOutputRedux.HidSharper
     // We run everything in the same thread, because on .NET, named mutexes must be closed by the thread that created them.
     sealed class DeviceOpenUtility
     {
-        public event EventHandler InterruptRequested;
+        public event EventHandler? InterruptRequested;
 
-        Device _device;
+        readonly Device _device;
 
-        string _resourcePrefix;
-        object _syncRoot;
-        Thread _thread;
-        ManualResetEvent _threadStartEvent;
-        Exception _threadStartError;
+        readonly string _resourcePrefix;
+        readonly object _syncRoot;
+        Thread? _thread;
+        ManualResetEvent? _threadStartEvent;
+        Exception? _threadStartError;
 
-        AutoResetEvent _closeEvent;
+        AutoResetEvent? _closeEvent;
 
         OpenPriority _priority;
         bool _interruptible;
@@ -92,10 +92,10 @@ namespace XOutputRedux.HidSharper
 
         void Run()
         {
-            SystemEvent exclusiveEvent = null;
-            SystemMutex exclusiveMutex = null; IDisposable exclusiveLock = null;
-            SystemMutex priorityMutex = null;
-            SystemMutex transientMutex = null;
+            SystemEvent? exclusiveEvent = null;
+            SystemMutex? exclusiveMutex = null; IDisposable? exclusiveLock = null;
+            SystemMutex? priorityMutex = null;
+            SystemMutex? transientMutex = null;
 
             try
             {
@@ -168,13 +168,13 @@ namespace XOutputRedux.HidSharper
                 }
                 finally
                 {
-                    _threadStartEvent.Set();
+                    _threadStartEvent?.Set();
                 }
 
                 // *** OK! Now run the sharing monitor.
                 {
-                    var handles = new WaitHandle[] { _closeEvent, exclusiveEvent.WaitHandle };
-                    Exception ex = null;
+                    var handles = new WaitHandle[] { _closeEvent!, exclusiveEvent!.WaitHandle };
+                    Exception? ex = null;
 
                     HidSharpDiagnostics.Trace("Started the sharing monitor thread ({0}).",
                                               Thread.CurrentThread.ManagedThreadId);
@@ -192,7 +192,7 @@ namespace XOutputRedux.HidSharper
                         lock (_syncRoot)
                         {
                             // Okay. We received the request. Let's check for request priorities higher than ours.
-                            exclusiveEvent.Reset();
+                            exclusiveEvent!.Reset();
 
                             HidSharpDiagnostics.Trace("Received an interrupt request ({0}).",
                                                       Thread.CurrentThread.ManagedThreadId);
@@ -221,7 +221,7 @@ namespace XOutputRedux.HidSharper
                 Close(ref exclusiveMutex);
                 Close(ref exclusiveEvent);
 
-                _closeEvent.Close();
+                _closeEvent?.Close();
                 _closeEvent = null;
                 _thread = null;
             }
@@ -242,7 +242,7 @@ namespace XOutputRedux.HidSharper
             }
         }
 
-        static void Close<T>(ref T obj) where T : class, IDisposable
+        static void Close<T>(ref T? obj) where T : class, IDisposable
         {
             if (obj != null) { obj.Dispose(); obj = null; }
         }

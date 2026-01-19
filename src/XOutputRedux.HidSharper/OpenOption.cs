@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace XOutputRedux.HidSharper
 {
-    public delegate object OpenOptionDeserializeCallback(byte[] buffer);
+    public delegate object? OpenOptionDeserializeCallback(byte[] buffer);
     public delegate byte[] OpenOptionSerializeCallback(object value);
 
     /// <summary>
@@ -28,63 +28,62 @@ namespace XOutputRedux.HidSharper
     /// </summary>
     public sealed class OpenOption
     {
-        static Dictionary<Guid, OpenOption> _options;
+        static readonly Dictionary<Guid, OpenOption> _options = new();
 
         /// <summary>
         /// Use HIDSharp's exclusivity layer.
         /// This allows one process using XOutputRedux.HidSharper to lock other processes out of using a HID device.
         /// Processes may request interruption, allowing interprocess cooperation.
         /// (For example, a data logging application can make itself interruptible and allow another process to use the HID device temporarily.)
-        /// 
+        ///
         /// Defaults to <c>false</c>.
         /// </summary>
-        public static OpenOption Exclusive { get; private set; }
+        public static OpenOption Exclusive { get; private set; } = null!;
 
         /// <summary>
         /// Allow other processes to send interruption requests.
         /// If another other process with higher priority attempts to open the HID device this process is using,
         /// this process will receive an <see cref="DeviceStream.InterruptRequested"/> event on an arbitrary thread.
-        /// 
+        ///
         /// <see cref="OpenOption.Exclusive"/> must be <c>true</c> for this to work.
         /// Defaults to <c>false</c>.
         /// </summary>
-        public static OpenOption Interruptible { get; private set; }
+        public static OpenOption Interruptible { get; private set; } = null!;
 
         /// <summary>
         /// The priority of the process. This is used for interruption requests.
         /// <see cref="OpenOption.Exclusive"/> must be <c>true</c> for this to work.
         /// Defaults to <see cref="OpenPriority.Normal"/>.
         /// </summary>
-        public static OpenOption Priority { get; private set; }
+        public static OpenOption Priority { get; private set; } = null!;
 
         /// <summary>
         /// The amount of time to wait for an interruptible process to give up the HID device before failing to open the stream.
         /// Defaults to 3000 milliseconds.
         /// </summary>
-        public static OpenOption TimeoutIfInterruptible { get; private set; }
+        public static OpenOption TimeoutIfInterruptible { get; private set; } = null!;
 
         /// <summary>
         /// The amount of time to wait for a transient process to give up the HID device before failing to open the stream.
         /// Defaults to 30000 milliseconds.
         /// </summary>
-        public static OpenOption TimeoutIfTransient { get; private set; }
+        public static OpenOption TimeoutIfTransient { get; private set; } = null!;
 
         /// <summary>
         /// If a HID device is opened by another process transiently, HIDSharp will wait some time for the process to give up the HID device before failing to open the stream.
-        /// 
+        ///
         /// <see cref="OpenOption.Exclusive"/> must be <c>true</c> for this to work.
         /// Defaults to <c>false</c>.
         /// </summary>
-        public static OpenOption Transient { get; private set; }
+        public static OpenOption Transient { get; private set; } = null!;
 
-        internal static OpenOption BleService { get; private set; }
+        internal static OpenOption BleService { get; private set; } = null!;
 
-        OpenOptionDeserializeCallback _deserializeCallback;
-        OpenOptionSerializeCallback _serializeCallback;
+        OpenOptionDeserializeCallback _deserializeCallback = null!;
+        OpenOptionSerializeCallback _serializeCallback = null!;
 
         static OpenOption()
         {
-            _options = new Dictionary<Guid, OpenOption>();
 
             Exclusive = OpenOption.New(new Guid("{49DB23CD-727E-4788-BBAD-7D67ACCBC469}"),
                                        deserializeCallback: DeserializeBoolean,
@@ -135,7 +134,7 @@ namespace XOutputRedux.HidSharper
 
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj == this;
         }
@@ -150,19 +149,18 @@ namespace XOutputRedux.HidSharper
             return FriendlyName;
         }
 
-        public static OpenOption FromGuid(Guid guid)
+        public static OpenOption? FromGuid(Guid guid)
         {
             lock (_options)
             {
-                OpenOption option;
-                return _options.TryGetValue(guid, out option) ? option : null;
+                return _options.TryGetValue(guid, out OpenOption? option) ? option : null;
             }
         }
 
         public static OpenOption New(Guid guid,
                                      OpenOptionDeserializeCallback deserializeCallback,
                                      OpenOptionSerializeCallback serializeCallback,
-                                     object defaultValue = null, string friendlyName = null)
+                                     object? defaultValue = null, string? friendlyName = null)
         {
             Throw.If.Null(deserializeCallback, "deserializeCallback");
             Throw.If.Null(serializeCallback, "serializeCallback");
@@ -185,7 +183,7 @@ namespace XOutputRedux.HidSharper
             return option;
         }
 
-        static object DeserializeBoolean(byte[] buffer)
+        static object? DeserializeBoolean(byte[] buffer)
         {
             if (buffer.Length < 1) { return null; }
             return (buffer[0] & 1) != 0;
@@ -196,7 +194,7 @@ namespace XOutputRedux.HidSharper
             return new[] { (byte)((bool)value ? 1 : 0) };
         }
 
-        static object DeserializeInt32(byte[] buffer)
+        static object? DeserializeInt32(byte[] buffer)
         {
             if (buffer.Length < 4) { return null; }
             return BitConverter.ToInt32(buffer, 0);
@@ -207,7 +205,7 @@ namespace XOutputRedux.HidSharper
             return BitConverter.GetBytes((int)value);
         }
 
-        public object Deserialize(byte[] buffer)
+        public object? Deserialize(byte[] buffer)
         {
             return _deserializeCallback(buffer);
         }
@@ -217,7 +215,7 @@ namespace XOutputRedux.HidSharper
             return _serializeCallback(value);
         }
 
-        public object DefaultValue
+        public object? DefaultValue
         {
             get;
             private set;
@@ -227,7 +225,7 @@ namespace XOutputRedux.HidSharper
         {
             get;
             private set;
-        }
+        } = string.Empty;
 
         public Guid Guid
         {

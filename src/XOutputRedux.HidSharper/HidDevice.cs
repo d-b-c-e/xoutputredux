@@ -104,7 +104,7 @@ namespace XOutputRedux.HidSharper
         {
             var reportDescriptor = GetReportDescriptor();
             var ditem = reportDescriptor.DeviceItems.FirstOrDefault();
-            return ditem.Usages.GetAllValues().FirstOrDefault();
+            return ditem?.Usages.GetAllValues().FirstOrDefault() ?? 0;
         }
 
         /// <inheritdoc/>
@@ -124,18 +124,18 @@ namespace XOutputRedux.HidSharper
         }
 
         /// <inheritdoc/>
-        public bool TryOpen(out HidStream stream)
+        public bool TryOpen(out HidStream? stream)
         {
             return TryOpen(null, out stream);
         }
 
         /// <inheritdoc/>
-        public bool TryOpen(OpenConfiguration openConfig, out HidStream stream)
+        public bool TryOpen(OpenConfiguration? openConfig, out HidStream? stream)
         {
-            DeviceStream baseStream;
-            bool result = base.TryOpen(openConfig, out baseStream);
-            stream = (HidStream)baseStream; return result;
-		}
+            bool result = base.TryOpen(openConfig, out DeviceStream? baseStream);
+            stream = (HidStream?)baseStream;
+            return result;
+        }
 
         public override bool HasImplementationDetail(Guid detail)
         {

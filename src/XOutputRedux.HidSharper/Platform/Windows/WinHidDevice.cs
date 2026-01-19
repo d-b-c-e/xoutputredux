@@ -35,21 +35,21 @@ namespace XOutputRedux.HidSharper.Platform.Windows
             ReportInfo = 8
         }
         GetInfoFlags _getInfoFlags;
-        object _getInfoLock = new object();
-        string _path, _id;
-        string _manufacturer;
-        string _productName;
-        string _serialNumber;
+        readonly object _getInfoLock = new object();
+        string _path = null!, _id = null!;
+        string _manufacturer = string.Empty;
+        string _productName = string.Empty;
+        string _serialNumber = string.Empty;
         int _vid, _pid, _version;
         int _maxInput, _maxOutput, _maxFeature;
-        byte[] _reportDescriptor;
+        byte[]? _reportDescriptor;
 
         WinHidDevice()
         {
 
         }
 
-        internal static WinHidDevice TryCreate(string path, string id)
+        internal static WinHidDevice? TryCreate(string path, string id)
         {
             var d = new WinHidDevice() { _path = path, _id = id };
 
@@ -145,7 +145,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
             char[] buffer = new char[128];
             if (!callback(handle, buffer, Marshal.SystemDefaultCharSize * buffer.Length))
             {
-                s = null;
+                s = string.Empty;
                 return Marshal.GetLastWin32Error() == NativeMethods.ERROR_GEN_FAILURE;
             }
             s = NativeMethods.NTString(buffer); return true;

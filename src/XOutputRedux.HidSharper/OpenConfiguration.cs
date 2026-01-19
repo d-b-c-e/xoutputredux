@@ -55,12 +55,11 @@ namespace XOutputRedux.HidSharper
         /// </summary>
         /// <param name="option">The option.</param>
         /// <returns>The option's value.</returns>
-        public object GetOption(OpenOption option)
+        public object? GetOption(OpenOption option)
         {
             Throw.If.Null(option, "option");
-            
-            object value;
-            return _options.TryGetValue(option, out value) ? value : option.DefaultValue;
+
+            return _options.TryGetValue(option, out object? value) ? value : option.DefaultValue;
         }
 
         /// <summary>
