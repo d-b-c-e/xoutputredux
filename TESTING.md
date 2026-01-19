@@ -1,4 +1,4 @@
-# XOutputRenew Testing Plan
+# XOutputRedux Testing Plan
 
 ## Device Detection
 - [x] Refresh devices - do all your controllers appear?
@@ -43,12 +43,12 @@
 ## CLI Commands
 ```powershell
 # Run from the build output directory
-.\XOutputRenew.App.exe list-devices
-.\XOutputRenew.App.exe list-devices --json
-.\XOutputRenew.App.exe list-profiles
-.\XOutputRenew.App.exe list-profiles --json
-.\XOutputRenew.App.exe --start-profile=YourProfileName
-.\XOutputRenew.App.exe --start-profile=YourProfileName --minimized
+.\XOutputRedux.App.exe list-devices
+.\XOutputRedux.App.exe list-devices --json
+.\XOutputRedux.App.exe list-profiles
+.\XOutputRedux.App.exe list-profiles --json
+.\XOutputRedux.App.exe --start-profile=YourProfileName
+.\XOutputRedux.App.exe --start-profile=YourProfileName --minimized
 ```
 
 ## Force Feedback (FFB)

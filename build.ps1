@@ -1,4 +1,4 @@
-# XOutputRenew Build Script
+# XOutputRedux Build Script
 # Usage: .\build.ps1 [-Configuration Release|Debug] [-SelfContained] [-Clean]
 
 param(
@@ -10,7 +10,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = $PSScriptRoot
-$AppProject = Join-Path $ProjectRoot "src\XOutputRenew.App\XOutputRenew.App.csproj"
+$AppProject = Join-Path $ProjectRoot "src\XOutputRedux.App\XOutputRedux.App.csproj"
 $PublishDir = Join-Path $ProjectRoot "publish"
 
 # Extract version from csproj
@@ -22,7 +22,7 @@ function Get-Version {
 }
 
 $Version = Get-Version
-Write-Host "Building XOutputRenew v$Version" -ForegroundColor Cyan
+Write-Host "Building XOutputRedux v$Version" -ForegroundColor Cyan
 Write-Host "Configuration: $Configuration" -ForegroundColor Gray
 Write-Host "Self-Contained: $SelfContained" -ForegroundColor Gray
 
@@ -68,7 +68,7 @@ if ($SelfContained) {
 if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
 
 # Summary
-$exePath = Join-Path $PublishDir "XOutputRenew.exe"
+$exePath = Join-Path $PublishDir "XOutputRedux.exe"
 if (Test-Path $exePath) {
     $fileInfo = Get-Item $exePath
     $sizeMB = [math]::Round($fileInfo.Length / 1MB, 2)
@@ -81,7 +81,7 @@ if (Test-Path $exePath) {
     Write-Host "Exe Size: $sizeMB MB"
     Write-Host ""
 } else {
-    throw "Build completed but XOutputRenew.exe not found"
+    throw "Build completed but XOutputRedux.exe not found"
 }
 
 # Return version for use by other scripts

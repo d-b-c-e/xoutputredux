@@ -3,18 +3,18 @@
     Captures a screenshot of a window by title and saves it as PNG.
 
 .DESCRIPTION
-    This script captures a screenshot of a specific window (default: XOutputRenew)
+    This script captures a screenshot of a specific window (default: XOutputRedux)
     and saves it to the .claude/.screenshots folder with a timestamp.
 
 .PARAMETER WindowTitle
-    Part of the window title to search for. Default is "XOutputRenew"
+    Part of the window title to search for. Default is "XOutputRedux"
 
 .PARAMETER OutputPath
     Path to save the screenshot. Default is the .screenshots folder with timestamp.
 
 .EXAMPLE
     .\capture-window.ps1
-    Captures XOutputRenew window
+    Captures XOutputRedux window
 
 .EXAMPLE
     .\capture-window.ps1 -WindowTitle "Edit Profile"
@@ -22,7 +22,7 @@
 #>
 
 param(
-    [string]$WindowTitle = "XOutputRenew",
+    [string]$WindowTitle = "XOutputRedux",
     [string]$OutputPath = ""
 )
 

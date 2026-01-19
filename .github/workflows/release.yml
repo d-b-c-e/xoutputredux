@@ -33,7 +33,7 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
-          $csprojPath = "src/XOutputRenew.App/XOutputRenew.App.csproj"
+          $csprojPath = "src/XOutputRedux.App/XOutputRedux.App.csproj"
 
           # Update version in csproj
           $content = Get-Content $csprojPath -Raw
@@ -62,14 +62,14 @@ jobs:
 
       - name: Publish
         run: |
-          dotnet publish src/XOutputRenew.App/XOutputRenew.App.csproj -c Release -o publish -p:PublishReadyToRun=true --self-contained false
+          dotnet publish src/XOutputRedux.App/XOutputRedux.App.csproj -c Release -o publish -p:PublishReadyToRun=true --self-contained false
 
       - name: Create portable ZIP
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
           New-Item -ItemType Directory -Path dist -Force | Out-Null
-          Compress-Archive -Path "publish\*" -DestinationPath "dist\XOutputRenew-$version-Portable.zip" -CompressionLevel Optimal
+          Compress-Archive -Path "publish\*" -DestinationPath "dist\XOutputRedux-$version-Portable.zip" -CompressionLevel Optimal
 
       - name: Install Inno Setup
         shell: pwsh
@@ -80,17 +80,17 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=$version installer\XOutputRenew.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=$version installer\XOutputRedux.iss
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          name: XOutputRenew v${{ steps.version.outputs.VERSION }}
+          name: XOutputRedux v${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: ${{ contains(steps.version.outputs.VERSION, 'alpha') || contains(steps.version.outputs.VERSION, 'beta') || contains(steps.version.outputs.VERSION, 'rc') }}
           generate_release_notes: true
           files: |
-            dist/XOutputRenew-${{ steps.version.outputs.VERSION }}-Portable.zip
-            dist/XOutputRenew-${{ steps.version.outputs.VERSION }}-Setup.exe
+            dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-Portable.zip
+            dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-Setup.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

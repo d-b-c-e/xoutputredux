@@ -60,7 +60,7 @@ Code signing is needed to avoid Windows Defender SmartScreen warnings ("Windows 
 
 From https://signpath.org/terms:
 
-| Requirement | XOutputRenew Status |
+| Requirement | XOutputRedux Status |
 |-------------|---------------------|
 | OSI-approved open source license | ✓ MIT License |
 | No malware/PUPs | ✓ |
@@ -82,9 +82,9 @@ From https://signpath.org/terms:
 The terms state:
 > "Software must not include features designed to identify or exploit security vulnerabilities or circumvent security measures of their execution environment."
 
-**Assessment for XOutputRenew: NOT A CONCERN**
+**Assessment for XOutputRedux: NOT A CONCERN**
 
-| Concern | XOutputRenew Reality |
+| Concern | XOutputRedux Reality |
 |---------|---------------------|
 | "Circumvent security measures" | Creates virtual Xbox controller via ViGEmBus - a legitimate, Microsoft-signed driver. Not bypassing anything. |
 | HidHide integration | Hides physical devices to prevent double-input. This is UX, not security circumvention. HidHide itself is a signed driver. |
@@ -123,13 +123,13 @@ Once approved, integrate with your release workflow:
 
 | Field | Value |
 |-------|-------|
-| Project Name | XOutputRenew |
-| Project Short Name | xoutputrenew |
-| Project Homepage | https://github.com/d-b-c-e/xoutputrenew |
+| Project Name | XOutputRedux |
+| Project Short Name | xoutputredux |
+| Project Homepage | https://github.com/d-b-c-e/xoutputredux |
 | Brief Description | Xbox controller emulator for Windows that maps inputs from multiple gaming devices to a single emulated Xbox 360 controller |
-| Detailed Description | XOutputRenew is a streamlined Windows application that converts DirectInput/RawInput device inputs (steering wheels, joysticks, gamepads) into Xbox 360 controller format via ViGEmBus. It enables legacy and non-standard controllers to work with modern games. Features include multi-input OR-logic mapping, force feedback routing, HidHide integration for device hiding, game auto-profiles, CLI/IPC control, and Stream Deck integration. |
+| Detailed Description | XOutputRedux is a streamlined Windows application that converts DirectInput/RawInput device inputs (steering wheels, joysticks, gamepads) into Xbox 360 controller format via ViGEmBus. It enables legacy and non-standard controllers to work with modern games. Features include multi-input OR-logic mapping, force feedback routing, HidHide integration for device hiding, game auto-profiles, CLI/IPC control, and Stream Deck integration. |
 | License | MIT |
-| License URL | https://github.com/d-b-c-e/xoutputrenew/blob/main/LICENSE |
+| License URL | https://github.com/d-b-c-e/xoutputredux/blob/main/LICENSE |
 | Programming Languages | C#, .NET 8, WPF |
 
 ### Section 2: Repository Information
@@ -137,7 +137,7 @@ Once approved, integrate with your release workflow:
 | Field | Value |
 |-------|-------|
 | Repository Type | GitHub |
-| Repository URL | https://github.com/d-b-c-e/xoutputrenew |
+| Repository URL | https://github.com/d-b-c-e/xoutputredux |
 | Contributors | [fill in] |
 | Commits | [fill in] |
 | Age of Project | [fill in] |
@@ -147,7 +147,7 @@ Once approved, integrate with your release workflow:
 
 | Field | Value |
 |-------|-------|
-| Download Page URL | https://github.com/d-b-c-e/xoutputrenew/releases |
+| Download Page URL | https://github.com/d-b-c-e/xoutputredux/releases |
 | Package Formats | Windows Installer (.exe), Portable ZIP |
 | Distribution Method | GitHub Releases |
 | Total Downloads | [check GitHub release stats] |

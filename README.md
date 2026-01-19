@@ -1,4 +1,4 @@
-# XOutputRenew
+# XOutputRedux
 
 Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gaming devices (steering wheels, joysticks, gamepads) to a single emulated Xbox 360 controller.
 
@@ -28,19 +28,19 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 ## Installation
 
 ### Download
-Download the latest release from the [Releases page](https://github.com/d-b-c-e/xoutputrenew/releases):
-- **Setup installer** (`XOutputRenew-x.x.x-Setup.exe`) - Recommended, includes options for PATH and startup
-- **Portable ZIP** (`XOutputRenew-x.x.x-Portable.zip`) - Extract and run, no installation needed
+Download the latest release from the [Releases page](https://github.com/d-b-c-e/xoutputredux/releases):
+- **Setup installer** (`XOutputRedux-x.x.x-Setup.exe`) - Recommended, includes options for PATH and startup
+- **Portable ZIP** (`XOutputRedux-x.x.x-Portable.zip`) - Extract and run, no installation needed
 
 ### Prerequisites
 1. Install the [ViGEmBus driver](https://github.com/nefarius/ViGEmBus/releases) (required)
-2. Optionally install [HidHide](https://github.com/nefarius/HidHide/releases) for device hiding (XOutputRenew will prompt to install if missing)
+2. Optionally install [HidHide](https://github.com/nefarius/HidHide/releases) for device hiding (XOutputRedux will prompt to install if missing)
 
 ## Usage
 
 ### GUI Mode
 
-Simply run `XOutputRenew.exe` to open the graphical interface.
+Simply run `XOutputRedux.exe` to open the graphical interface.
 
 1. **Devices tab** - View all detected input devices with "Listen for Input" highlighting
 2. **Profiles tab** - Create and manage mapping profiles
@@ -75,43 +75,43 @@ Simply run `XOutputRenew.exe` to open the graphical interface.
 
 ```bash
 # Start the default profile (launches GUI if not running)
-XOutputRenew start
+XOutputRedux start
 
 # Start a specific profile
-XOutputRenew start "My Profile"
+XOutputRedux start "My Profile"
 
 # Stop the running profile
-XOutputRenew stop
+XOutputRedux stop
 
 # Check status of running instance
-XOutputRenew status [--json]
+XOutputRedux status [--json]
 
 # Enable/disable game monitoring
-XOutputRenew monitor on
-XOutputRenew monitor off
+XOutputRedux monitor on
+XOutputRedux monitor off
 
 # List detected input devices
-XOutputRenew list-devices [--json]
+XOutputRedux list-devices [--json]
 
 # List available profiles
-XOutputRenew list-profiles [--json]
+XOutputRedux list-profiles [--json]
 
 # Show help
-XOutputRenew help
+XOutputRedux help
 ```
 
 ### Stream Deck Integration
 
-XOutputRenew includes a native Stream Deck plugin for controlling profiles directly from your Stream Deck.
+XOutputRedux includes a native Stream Deck plugin for controlling profiles directly from your Stream Deck.
 
 **Installation:**
-1. Download `com.xoutputrenew.streamDeckPlugin` from the [Releases page](https://github.com/d-b-c-e/xoutputrenew/releases)
+1. Download `com.xoutputredux.streamDeckPlugin` from the [Releases page](https://github.com/d-b-c-e/xoutputredux/releases)
 2. Double-click to install
 
 **Available Actions:**
 - **Start/Stop Profile** - Toggle a specific profile on/off (select from dropdown)
 - **Game Monitor** - Toggle game auto-profile monitoring on/off
-- **Launch App** - Open the XOutputRenew GUI
+- **Launch App** - Open the XOutputRedux GUI
 
 The plugin communicates directly with the running GUI via IPC. If the GUI isn't running when you press an action, it will start automatically (minimized to tray).
 
@@ -119,27 +119,27 @@ The plugin communicates directly with the running GUI via IPC. If the GUI isn't 
 
 ```bash
 # Start with a specific profile
-XOutputRenew --start-profile "MyProfile"
+XOutputRedux --start-profile "MyProfile"
 
 # Start minimized to system tray
-XOutputRenew --minimized
+XOutputRedux --minimized
 
 # Combine options
-XOutputRenew --start-profile "MyProfile" --minimized
+XOutputRedux --start-profile "MyProfile" --minimized
 ```
 
 ## Building from Source
 
 ```powershell
 # Clone the repository
-git clone https://github.com/d-b-c-e/xoutputrenew.git
-cd xoutputrenew
+git clone https://github.com/d-b-c-e/xoutputredux.git
+cd xoutputredux
 
 # Build
 dotnet build -c Release
 
 # Run
-dotnet run --project src/XOutputRenew.App
+dotnet run --project src/XOutputRedux.App
 
 # Run tests
 dotnet test
@@ -151,17 +151,17 @@ dotnet test
 ## Project Structure
 
 ```
-XOutputRenew/
+XOutputRedux/
 ├── src/
-│   ├── XOutputRenew.Core/           # Core abstractions, config, interfaces
-│   ├── XOutputRenew.Input/          # DirectInput, RawInput device handling
-│   ├── XOutputRenew.Emulation/      # ViGEm Xbox controller emulation
-│   ├── XOutputRenew.HidHide/        # HidHide integration
-│   ├── XOutputRenew.App/            # WPF GUI + CLI application
+│   ├── XOutputRedux.Core/           # Core abstractions, config, interfaces
+│   ├── XOutputRedux.Input/          # DirectInput, RawInput device handling
+│   ├── XOutputRedux.Emulation/      # ViGEm Xbox controller emulation
+│   ├── XOutputRedux.HidHide/        # HidHide integration
+│   ├── XOutputRedux.App/            # WPF GUI + CLI application
 │   │   └── Assets/                  # Icons, banners, branding assets
-│   └── XOutputRenew.StreamDeck/     # Stream Deck plugin
+│   └── XOutputRedux.StreamDeck/     # Stream Deck plugin
 └── tests/
-    └── XOutputRenew.Tests/
+    └── XOutputRedux.Tests/
 ```
 
 ## Current Status
@@ -191,7 +191,7 @@ XOutputRenew/
 - **Toast notifications** - Windows notifications when profiles start/stop
 - **CLI/IPC** - Control running instance from command line (`start`, `stop`, `status`, `monitor on/off`)
 - **Default profile** - Set a profile as default for quick CLI start
-- **Add to System PATH** - Option to add XOutputRenew to PATH for CLI access from anywhere
+- **Add to System PATH** - Option to add XOutputRedux to PATH for CLI access from anywhere
 - **Game auto-profile** - Automatically start/stop profiles when games launch/exit
 - **Steam game browser** - Browse installed Steam games with smart executable detection
 - **Stream Deck plugin** - Native plugin with profile toggle, monitoring toggle, and launch actions
@@ -208,11 +208,11 @@ XOutputRenew/
 - X-Arcade dual joystick (RawInput)
 
 ### Coming Soon
-- **Chocolatey package** - Easy install/update via `choco install xoutputrenew`
+- **Chocolatey package** - Easy install/update via `choco install xoutputredux`
 
 ## Background
 
-XOutputRenew is a modernized reimplementation inspired by the archived [XOutput](https://github.com/csutorasa/XOutput) project. It focuses on:
+XOutputRedux is a modernized reimplementation inspired by the archived [XOutput](https://github.com/csutorasa/XOutput) project. It focuses on:
 
 - Simplified architecture (no web server, no DS4 support)
 - Modern .NET 8.0 codebase

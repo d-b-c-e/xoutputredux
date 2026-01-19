@@ -1,4 +1,4 @@
-# XOutputRenew
+# XOutputRedux
 
 Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gaming devices (steering wheels, joysticks, gamepads) to a single emulated Xbox 360 controller.
 
@@ -18,18 +18,18 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 
 ### Project Structure
 ```
-XOutputRenew/
-├── XOutputRenew.sln
+XOutputRedux/
+├── XOutputRedux.sln
 ├── src/
-│   ├── XOutputRenew.Core/           # Core abstractions, config, interfaces
-│   ├── XOutputRenew.Input/          # DirectInput, RawInput device handling
-│   ├── XOutputRenew.Emulation/      # ViGEm Xbox controller emulation
-│   ├── XOutputRenew.HidHide/        # HidHide integration
-│   ├── XOutputRenew.App/            # WPF GUI + CLI application
+│   ├── XOutputRedux.Core/           # Core abstractions, config, interfaces
+│   ├── XOutputRedux.Input/          # DirectInput, RawInput device handling
+│   ├── XOutputRedux.Emulation/      # ViGEm Xbox controller emulation
+│   ├── XOutputRedux.HidHide/        # HidHide integration
+│   ├── XOutputRedux.App/            # WPF GUI + CLI application
 │   │   └── Assets/                  # Icons, banners, branding assets
-│   └── XOutputRenew.StreamDeck/     # Stream Deck plugin
+│   └── XOutputRedux.StreamDeck/     # Stream Deck plugin
 └── tests/
-    └── XOutputRenew.Tests/
+    └── XOutputRedux.Tests/
 ```
 
 ### Key Dependencies
@@ -50,7 +50,7 @@ XOutputRenew/
 
 ## Reference: XOutput Analysis
 
-XOutputRenew is based on principles from the archived XOutput project. Key code to adapt:
+XOutputRedux is based on principles from the archived XOutput project. Key code to adapt:
 
 ### Extract and Adapt
 - DirectInput device polling (SharpDX) - `XOutput.App/Devices/Input/DirectInput/`
@@ -107,7 +107,8 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 | 14: Backup/Restore Settings | ✓ Complete | Export/import to `.xorbackup` file (ZIP containing all settings, profiles, games.json) |
 | 15: Portable Mode | ✓ Complete | True portable support - detect `portable.txt` and store settings in `data\` subfolder |
 | 16: Code Signing | Planned | Sign installer/exe to avoid Windows Defender/SmartScreen warnings |
-| 17: Rebrand to XOutput Redux | Planned | New name, icons, and color themes |
+| 17: Rebrand to XOutput Redux | ✓ Complete | Codebase renamed; repo rename pending |
+| 18: Rename GitHub Repository | Planned | Rename repo from `xoutputrenew` to `xoutputredux`, update all URLs |
 
 ### Completed Dependency Upgrades
 
@@ -129,9 +130,9 @@ XOutputRenew is based on principles from the archived XOutput project. Key code 
 ## CLI Interface
 
 ```
-XOutputRenew - Xbox Controller Emulator
+XOutputRedux - Xbox Controller Emulator
 
-Usage: XOutputRenew [command] [options]
+Usage: XOutputRedux [command] [options]
 
 Commands:
   (no command)            Launch the GUI application
@@ -157,16 +158,16 @@ Exit Codes:
   3  No running instance (for remote commands)
 
 Examples:
-  XOutputRenew                                    # Open GUI
-  XOutputRenew headless                           # Run headless with default profile
-  XOutputRenew headless "My Wheel"                # Run headless with specific profile
-  XOutputRenew headless --monitor                 # Run headless with game monitoring only
-  XOutputRenew headless "My Wheel" --monitor      # Run headless with profile + monitoring
-  XOutputRenew start                              # Start default profile
-  XOutputRenew start "My Wheel"                   # Start specific profile
-  XOutputRenew --start-profile "My Wheel" --minimized
-  XOutputRenew stop                               # Stop running profile
-  XOutputRenew status --json                      # Get status as JSON
+  XOutputRedux                                    # Open GUI
+  XOutputRedux headless                           # Run headless with default profile
+  XOutputRedux headless "My Wheel"                # Run headless with specific profile
+  XOutputRedux headless --monitor                 # Run headless with game monitoring only
+  XOutputRedux headless "My Wheel" --monitor      # Run headless with profile + monitoring
+  XOutputRedux start                              # Start default profile
+  XOutputRedux start "My Wheel"                   # Start specific profile
+  XOutputRedux --start-profile "My Wheel" --minimized
+  XOutputRedux stop                               # Stop running profile
+  XOutputRedux status --json                      # Get status as JSON
 ```
 
 ---
@@ -256,7 +257,7 @@ Examples:
 dotnet build -c Release
 
 # Run
-dotnet run --project src/XOutputRenew.App
+dotnet run --project src/XOutputRedux.App
 
 # Run tests
 dotnet test
@@ -384,7 +385,7 @@ public bool HideDevice(string deviceInstancePath)
 
 ## Key Source Files
 
-### Input System (`XOutputRenew.Input`)
+### Input System (`XOutputRedux.Input`)
 - `IInputDevice.cs`, `IInputSource.cs` - Core interfaces
 - `InputSource.cs` - Base class with deadzone handling
 - `InputDeviceManager.cs` - Device discovery and lifecycle
@@ -392,7 +393,7 @@ public bool HideDevice(string deviceInstancePath)
 - `DirectInput/` - DirectInput device/source/provider
 - `RawInput/` - RawInput device/source/provider (HidSharp)
 
-### Mapping System (`XOutputRenew.Core/Mapping`)
+### Mapping System (`XOutputRedux.Core/Mapping`)
 - `XboxOutput.cs` - Xbox controller output enum
 - `InputBinding.cs` - Single input binding with transform settings
 - `OutputMapping.cs` - Multiple inputs → one output with OR logic
@@ -400,14 +401,14 @@ public bool HideDevice(string deviceInstancePath)
 - `MappingEngine.cs` - Real-time input evaluation
 - `ProfileManager.cs` - Profile load/save/manage
 
-### Emulation (`XOutputRenew.Emulation`)
+### Emulation (`XOutputRedux.Emulation`)
 - `ViGEmService.cs` - ViGEm client wrapper
 - `XboxController.cs` - Emulated Xbox 360 controller
 
-### Device Hiding (`XOutputRenew.HidHide`)
+### Device Hiding (`XOutputRedux.HidHide`)
 - `HidHideService.cs` - CLI wrapper for HidHide operations
 
-### Application (`XOutputRenew.App`)
+### Application (`XOutputRedux.App`)
 - `Program.cs` - CLI entry point with System.CommandLine
 - `MainWindow.xaml/.cs` - Main GUI with Devices/Profiles/Status/Options/Test tabs
 - `ProfileEditorWindow.xaml/.cs` - Interactive mapping editor with output highlighting
@@ -422,17 +423,17 @@ public bool HideDevice(string deviceInstancePath)
 ## Logging & Debugging
 
 ### Log Files
-- **Location**: `%AppData%\XOutputRenew\logs\xoutputrenew-YYYY-MM-DD.log`
+- **Location**: `%AppData%\XOutputRedux\logs\xoutputredux-YYYY-MM-DD.log`
 - **Format**: `timestamp [LEVEL] [CallerMethod] message`
 - **Levels**: INFO, WARN, ERROR
 
 ### Reading Logs
 ```powershell
 # View today's log
-Get-Content "$env:APPDATA\XOutputRenew\logs\xoutputrenew-$(Get-Date -Format 'yyyy-MM-dd').log" -Tail 50
+Get-Content "$env:APPDATA\XOutputRedux\logs\xoutputredux-$(Get-Date -Format 'yyyy-MM-dd').log" -Tail 50
 
 # Or from bash
-cat "$APPDATA/XOutputRenew/logs/xoutputrenew-$(date +%Y-%m-%d).log"
+cat "$APPDATA/XOutputRedux/logs/xoutputredux-$(date +%Y-%m-%d).log"
 ```
 
 ### Using the Logger
@@ -449,10 +450,10 @@ AppLogger.Error("Something failed", exception);
 
 | Data | Location |
 |------|----------|
-| Profiles | `%AppData%\XOutputRenew\Profiles\*.json` |
-| Device Settings | `%AppData%\XOutputRenew\device-settings.json` |
-| App Settings | `%AppData%\XOutputRenew\app-settings.json` |
-| Logs | `%AppData%\XOutputRenew\logs\` |
+| Profiles | `%AppData%\XOutputRedux\Profiles\*.json` |
+| Device Settings | `%AppData%\XOutputRedux\device-settings.json` |
+| App Settings | `%AppData%\XOutputRedux\app-settings.json` |
+| Logs | `%AppData%\XOutputRedux\logs\` |
 
 ---
 
@@ -481,9 +482,9 @@ AppLogger.Error("Something failed", exception);
 ## Workspace Reference
 
 Additional source repositories in workspace for reference:
-- `E:\Source\XOutputRenew\XOutput` - Original XOutput (archived)
-- `E:\Source\XOutputRenew\ViGEmBus` - ViGEmBus driver source
-- `E:\Source\XOutputRenew\HidHide` - HidHide driver source
+- `E:\Source\XOutputRedux\XOutput` - Original XOutput (archived)
+- `E:\Source\XOutputRedux\ViGEmBus` - ViGEmBus driver source
+- `E:\Source\XOutputRedux\HidHide` - HidHide driver source
 
 ---
 

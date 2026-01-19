@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+    <AssemblyName>XOutputRedux</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>XOutputRedux.App</RootNamespace>
+    <StartupObject>XOutputRedux.App.Program</StartupObject>
+    <ApplicationIcon>Assets\Icons\favicon.ico</ApplicationIcon>
+
+    <!-- Versioning -->
+    <Version>0.7.0-alpha</Version>
+    <AssemblyVersion>0.7.0.0</AssemblyVersion>
+    <FileVersion>0.7.0.0</FileVersion>
+    <InformationalVersion>0.7.0-alpha</InformationalVersion>
+
+    <!-- Assembly Info -->
+    <Product>XOutputRedux</Product>
+    <Company>XOutputRedux</Company>
+    <Copyright>Copyright (c) 2026</Copyright>
+    <Description>Xbox controller emulator - maps multiple input devices to a virtual Xbox 360 controller</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="console-controller.png" />
+    <Resource Include="Assets\Icons\favicon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XOutputRedux.Core\XOutputRedux.Core.csproj" />
+    <ProjectReference Include="..\XOutputRedux.Input\XOutputRedux.Input.csproj" />
+    <ProjectReference Include="..\XOutputRedux.Emulation\XOutputRedux.Emulation.csproj" />
+    <ProjectReference Include="..\XOutputRedux.HidHide\XOutputRedux.HidHide.csproj" />
+  </ItemGroup>
+
+</Project>

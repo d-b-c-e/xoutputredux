@@ -1,4 +1,4 @@
-# XOutputRenew Development Changelog
+# XOutputRedux Development Changelog
 
 Development session notes moved from CLAUDE.md for historical reference.
 
@@ -11,7 +11,7 @@ Development session notes moved from CLAUDE.md for historical reference.
 Replaced abandoned SharpDX.DirectInput (last updated 2019) with actively maintained Vortice.DirectInput 3.8.2.
 
 **Changes:**
-- Updated `XOutputRenew.Input.csproj` package reference
+- Updated `XOutputRedux.Input.csproj` package reference
 - Migrated `DirectInputDeviceProvider.cs`:
   - `DirectInput` class → `IDirectInput8` interface
   - `new DirectInput()` → `DInput.DirectInput8Create()`
@@ -68,7 +68,7 @@ Implemented automatic ViGEmBus driver detection and installation, following the 
 
 **Features Added:**
 - Startup check for ViGEmBus driver with warning dialog if not installed
-- Clear messaging: "This driver is REQUIRED for XOutputRenew"
+- Clear messaging: "This driver is REQUIRED for XOutputRedux"
 - "Install" button in Status tab for manual installation
 - Auto-download from GitHub releases (latest release API, with fallback)
 - Installer runs with admin elevation (UAC prompt)
@@ -87,15 +87,15 @@ Implemented headless mode for running without GUI window - useful for scripting,
 
 **Usage:**
 ```bash
-XOutputRenew headless "My Profile"    # Run without GUI
-XOutputRenew stop                      # Stop from another terminal
+XOutputRedux headless "My Profile"    # Run without GUI
+XOutputRedux stop                      # Stop from another terminal
 # Or press Ctrl+C to stop
 ```
 
 **Features Added:**
 - `headless <profile>` CLI command runs the emulation without any window
 - Initializes ViGEm, HidHide, input devices, and IPC server
-- Graceful shutdown via Ctrl+C or `XOutputRenew stop`
+- Graceful shutdown via Ctrl+C or `XOutputRedux stop`
 - Toast notifications still work (visible after exiting fullscreen games)
 - Full force feedback support
 - Device hiding via HidHide (if configured in profile)
@@ -130,7 +130,7 @@ Tested with "SP Grand Prix" game - working correctly after bug fix.
 **Release Infrastructure Added**
 - `build.ps1` - PowerShell build script
 - `release.ps1` - Creates portable ZIP + Inno Setup installer
-- `installer/XOutputRenew.iss` - Inno Setup script with PATH and startup options
+- `installer/XOutputRedux.iss` - Inno Setup script with PATH and startup options
 - `.github/workflows/ci.yml` - CI on push/PR
 - `.github/workflows/release.yml` - Auto-release on `v*` tags
 - `LICENSE` - MIT license
@@ -163,7 +163,7 @@ Tested with "SP Grand Prix" game - working correctly after bug fix.
 **Default Profile Feature**
 - Checkbox in profile editor to mark a profile as default
 - Only one profile can be default at a time
-- `XOutputRenew start` (no args) uses the default profile
+- `XOutputRedux start` (no args) uses the default profile
 - Appropriate error message if no default is set
 
 **Dark Mode Improvements**
@@ -173,12 +173,12 @@ Tested with "SP Grand Prix" game - working correctly after bug fix.
 - Lighter blue (#64B5F6) for "?" help icons
 
 **Executable Rename**
-- Changed AssemblyName from `XOutputRenew.App` to `XOutputRenew`
-- Executable is now `XOutputRenew.exe` instead of `XOutputRenew.App.exe`
+- Changed AssemblyName from `XOutputRedux.App` to `XOutputRedux`
+- Executable is now `XOutputRedux.exe` instead of `XOutputRedux.App.exe`
 - Updated all help text and documentation
 
 **Add to System PATH**
-- New checkbox in Options tab to add XOutputRenew to system PATH
+- New checkbox in Options tab to add XOutputRedux to system PATH
 - Requires admin privileges
 - Enables running CLI commands from any directory
 
@@ -195,7 +195,7 @@ Tested with "SP Grand Prix" game - working correctly after bug fix.
 - `App/App.xaml` - Dark ToolTip style
 - `Core/Mapping/MappingProfile.cs` - IsDefault property
 - `Core/Mapping/ProfileManager.cs` - GetDefaultProfile(), SetDefaultProfile()
-- `XOutputRenew.App.csproj` - AssemblyName, TFM update, toast package
+- `XOutputRedux.App.csproj` - AssemblyName, TFM update, toast package
 
 **HidHide Whitelist Management UI - Complete**
 - Added Application Whitelist section to Device Hiding tab in Profile Editor
@@ -246,7 +246,7 @@ Tested with "SP Grand Prix" game - working correctly after bug fix.
 - HidHide auto-install: prompts user on startup if not installed, downloads from GitHub
 - Device hiding settings saved per-profile
 - Auto-hide devices when profile starts, auto-unhide when stopped
-- XOutputRenew automatically whitelisted in HidHide
+- XOutputRedux automatically whitelisted in HidHide
 - "Open Windows Game Controllers" button to verify hiding is working
 - Friendly names from DeviceSettings shown in HidHide device list
 

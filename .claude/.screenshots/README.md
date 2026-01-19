@@ -1,13 +1,13 @@
 # Screenshot Capture for Claude Code
 
-This folder contains tools for capturing screenshots of the XOutputRenew application during development sessions.
+This folder contains tools for capturing screenshots of the XOutputRedux application during development sessions.
 
 ## Usage
 
 ### PowerShell Script
 
 ```powershell
-# Capture XOutputRenew main window
+# Capture XOutputRedux main window
 .\.claude\.screenshots\capture-window.ps1
 
 # Capture a specific window (e.g., profile editor)

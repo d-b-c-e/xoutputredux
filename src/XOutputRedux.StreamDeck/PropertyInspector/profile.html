@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>XOutputRedux Profile Settings</title>
+    <link rel="stylesheet" href="sdpi.css">
+</head>
+<body>
+    <div class="sdpi-wrapper">
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Profile</div>
+            <select class="sdpi-item-value" id="profileName" onchange="onProfileChanged()">
+                <option value="">Loading...</option>
+            </select>
+        </div>
+
+        <div class="sdpi-item" style="margin-top: 8px;">
+            <div class="sdpi-item-label"></div>
+            <button onclick="refreshProfiles()">Refresh</button>
+        </div>
+
+        <div class="info">
+            Select a profile to toggle on/off. The button shows "On" when running, "Off" when stopped.
+        </div>
+    </div>
+
+    <script src="pi.js"></script>
+    <script>
+        function onSettingsLoaded(settings) {
+            const select = document.getElementById('profileName');
+
+            // If we have a saved profile, add it as an option for now
+            if (settings.profileName) {
+                let found = false;
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].value === settings.profileName) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    const option = document.createElement('option');
+                    option.value = settings.profileName;
+                    option.textContent = settings.profileName;
+                    select.appendChild(option);
+                }
+                select.value = settings.profileName;
+            }
+
+            // Request fresh profile list from plugin
+            requestProfiles();
+        }
+
+        function onProfileChanged() {
+            const select = document.getElementById('profileName');
+            setSetting('profileName', select.value);
+        }
+
+        function refreshProfiles() {
+            const select = document.getElementById('profileName');
+            // Show loading state
+            if (select.options.length > 0) {
+                select.options[0].textContent = 'Loading...';
+            }
+            requestProfiles();
+        }
+
+        function requestProfiles() {
+            sendToPlugin({ action: 'getProfiles' });
+        }
+
+        function onProfilesReceived(profiles) {
+            const select = document.getElementById('profileName');
+            const currentValue = getSetting('profileName', '');
+
+            // Clear all options
+            select.innerHTML = '';
+
+            // Add placeholder
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = '-- Select Profile --';
+            select.appendChild(placeholder);
+
+            // Add profiles
+            profiles.forEach(function(profile) {
+                const option = document.createElement('option');
+                option.value = profile.name;
+                option.textContent = profile.name + (profile.isDefault ? ' (Default)' : '');
+                select.appendChild(option);
+            });
+
+            // Restore selection
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+    </script>
+</body>
+</html>

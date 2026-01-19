@@ -4,7 +4,7 @@ Audit conducted 2026-01-18 to understand what parts of HidSharp are used before 
 
 ## Summary
 
-HidSharp is used **only** in the `XOutputRenew.Input/RawInput/` folder (3 files). It provides HID device enumeration, report descriptor parsing, and asynchronous input reading.
+HidSharp is used **only** in the `XOutputRedux.Input/RawInput/` folder (3 files). It provides HID device enumeration, report descriptor parsing, and asynchronous input reading.
 
 ---
 
@@ -173,7 +173,7 @@ Based on the audit, we'd need approximately these HidSharp source files:
 
 1. Clone HidSharp source from https://github.com/IntergatedCircuits/HidSharp
 2. Identify exact files needed
-3. Create `XOutputRenew.Hid` project with extracted code
-4. Update namespace from `HidSharp` to `XOutputRenew.Hid`
+3. Create `XOutputRedux.Hid` project with extracted code
+4. Update namespace from `HidSharp` to `XOutputRedux.Hid`
 5. Remove unused code
 6. Test with existing devices (MOZA, VelocityOne, X-Arcade)

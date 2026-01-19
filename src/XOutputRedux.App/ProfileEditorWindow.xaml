@@ -1,0 +1,608 @@
+<Window x:Class="XOutputRedux.App.ProfileEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Edit Profile"
+        Height="850" Width="1000"
+        MinHeight="750" MinWidth="800"
+        WindowStartupLocation="CenterOwner"
+        Background="#1E1E1E"
+        Icon="pack://application:,,,/console-controller.png">
+
+    <Window.Resources>
+        <!-- Dark Theme Colors -->
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="#252526"/>
+        <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#2D2D30"/>
+        <SolidColorBrush x:Key="ControlHoverBrush" Color="#3E3E42"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#3F3F46"/>
+        <SolidColorBrush x:Key="ForegroundBrush" Color="#E0E0E0"/>
+        <SolidColorBrush x:Key="ForegroundDimBrush" Color="#9E9E9E"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#0078D4"/>
+        <SolidColorBrush x:Key="AccentGreenBrush" Color="#4CAF50"/>
+
+        <!-- Button Style -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource ControlHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ListView Style -->
+        <Style TargetType="ListView">
+            <Setter Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+
+        <!-- ListViewItem Style -->
+        <Style TargetType="ListViewItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="Padding" Value="5,3"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource ControlHoverBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- GridViewColumnHeader Style -->
+        <Style TargetType="GridViewColumnHeader">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="8,4"/>
+        </Style>
+
+        <!-- GroupBox Style -->
+        <Style TargetType="GroupBox">
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        </Style>
+
+        <!-- CheckBox Style -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        </Style>
+
+        <!-- TextBlock default style -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        </Style>
+
+        <!-- TextBox Style -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource ForegroundBrush}"/>
+        </Style>
+
+        <!-- ContextMenu Style -->
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+
+        <!-- MenuItem Style -->
+        <Style TargetType="MenuItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        </Style>
+
+        <!-- ComboBox Style with Dark Popup -->
+        <SolidColorBrush x:Key="SelectionBrush" Color="#3E3E42"/>
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Background="{StaticResource ControlBackgroundBrush}"
+                                          BorderBrush="{StaticResource BorderBrush}"
+                                          BorderThickness="1"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition Width="20"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.Column="1" Background="{StaticResource ControlBackgroundBrush}">
+                                                    <Path x:Name="Arrow" Fill="{StaticResource ForegroundBrush}"
+                                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                          Data="M 0 0 L 4 4 L 8 0 Z"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite"
+                                              IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              Margin="6,3,23,3"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Left">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                            <Popup x:Name="Popup" Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Grid x:Name="DropDown"
+                                      SnapsToDevicePixels="True"
+                                      MinWidth="{TemplateBinding ActualWidth}"
+                                      MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder"
+                                            Background="{StaticResource ControlBackgroundBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1"/>
+                                    <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ComboBoxItem Style -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Bd"
+                                Background="{StaticResource ControlBackgroundBrush}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectionBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- TabControl Style -->
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+
+        <!-- TabItem Style -->
+        <Style TargetType="TabItem">
+            <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Border"
+                                Background="{StaticResource ControlBackgroundBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1,1,1,0"
+                                CornerRadius="3,3,0,0"
+                                Padding="{TemplateBinding Padding}"
+                                Margin="0,0,2,0">
+                            <ContentPresenter x:Name="ContentSite"
+                                              ContentSource="Header"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+                                <Setter TargetName="Border" Property="BorderThickness" Value="1,1,1,0"/>
+                                <Setter TargetName="Border" Property="Margin" Value="0,0,2,-1"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource ControlHoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ListBox Style -->
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10" Background="{StaticResource BackgroundBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="480"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,10">
+            <!-- Read-only banner (hidden by default) -->
+            <Border x:Name="ReadOnlyBanner" Background="#FF6B00" Visibility="Collapsed"
+                    Padding="10,5" Margin="0,0,0,10" CornerRadius="3">
+                <TextBlock Text="View Only - Profile is currently running. Stop the profile to make changes."
+                           Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            </Border>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Profile: " FontSize="18"/>
+                <TextBlock x:Name="ProfileNameText" Text="ProfileName" FontSize="18" FontWeight="Bold"/>
+            </StackPanel>
+            <TextBlock x:Name="ProfileDescText" Text="" Foreground="Gray" Margin="0,5,0,0"/>
+            <CheckBox x:Name="DefaultProfileCheckBox" Content="Default Profile" Margin="0,8,0,0"
+                      Checked="DefaultProfile_Changed" Unchecked="DefaultProfile_Changed"
+                      ToolTip="When set, 'XOutputRedux.App start' will use this profile without needing to specify a name"/>
+        </StackPanel>
+
+        <!-- Xbox Outputs List -->
+        <GroupBox Grid.Row="1" Grid.Column="0" Header="Xbox Controller Outputs" Margin="0,0,10,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Select an output, then press a button/move an axis to map it."
+                           Foreground="Gray" Margin="5,5,5,10" TextWrapping="Wrap"/>
+
+                <ListView x:Name="OutputListView" Grid.Row="1"
+                          SelectionChanged="OutputListView_SelectionChanged"
+                          MouseDoubleClick="OutputListView_DoubleClick">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                    <Setter Property="Background" Value="#FF8C00"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Clear Bindings" Click="ClearBindings_Click"/>
+                        </ContextMenu>
+                    </ListView.ContextMenu>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Output" Width="120" DisplayMemberBinding="{Binding OutputName}"/>
+                            <GridViewColumn Header="Type" Width="70" DisplayMemberBinding="{Binding OutputType}"/>
+                            <GridViewColumn Header="Bindings" Width="250" DisplayMemberBinding="{Binding BindingsSummary}"/>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
+        </GroupBox>
+
+        <!-- Right Panel - Tabbed Settings -->
+        <TabControl Grid.Row="1" Grid.Column="1"
+                    Background="{StaticResource BackgroundSecondaryBrush}"
+                    BorderBrush="{StaticResource BorderBrush}">
+
+            <!-- Mapping Tab -->
+            <TabItem Header="Mapping">
+                <Grid Background="{StaticResource BackgroundSecondaryBrush}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Input Monitor -->
+                    <GroupBox Grid.Row="0" Header="Input Monitor" Margin="5">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Margin="5">
+                                <CheckBox x:Name="ListenForInputCheckBox" Content="Listen for Input"
+                                          Checked="ListenForInput_Changed" Unchecked="ListenForInput_Changed"
+                                          ToolTip="Highlight Xbox outputs when mapped inputs are triggered"/>
+                                <CheckBox x:Name="VerboseLoggingCheckBox" Content="Verbose Logging"
+                                          Margin="0,5,0,0" Checked="VerboseLogging_Changed" Unchecked="VerboseLogging_Changed"
+                                          ToolTip="Enable detailed logging to diagnose devices that don't register input"/>
+                            </StackPanel>
+
+                            <ListBox x:Name="InputMonitorList" Grid.Row="1"
+                                     FontFamily="Consolas" FontSize="11" Margin="5,5,5,5">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </GroupBox>
+
+                    <!-- Capture Panel -->
+                    <GroupBox Grid.Row="1" Header="Capture Binding" Margin="5,0,5,5">
+                        <StackPanel Margin="5">
+                            <TextBlock x:Name="CaptureStatusText" Text="Select an output from the list"
+                                       TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                            <Button x:Name="CaptureButton" Content="Capture Input"
+                                    Padding="10,8" Click="CaptureInput_Click"
+                                    IsEnabled="False" FontWeight="Bold"
+                                    Background="#2196F3" Foreground="White"/>
+
+                            <TextBlock x:Name="CaptureHintText" Text="" Foreground="Gray"
+                                       Margin="0,10,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Selected Binding Details -->
+                    <GroupBox Grid.Row="2" Header="Binding Settings" Margin="5,0,5,5">
+                        <StackPanel Margin="5">
+                            <ListView x:Name="BindingListView" Height="100"
+                                      SelectionChanged="BindingListView_SelectionChanged">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Source" Width="180" DisplayMemberBinding="{Binding DisplayName}"/>
+                                        <GridViewColumn Header="" Width="40">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="X" Padding="5,2"
+                                                            Click="RemoveBinding_Click"
+                                                            Tag="{Binding}"
+                                                            ToolTip="Remove binding"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <CheckBox x:Name="InvertCheckBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                                          Content="Invert" Margin="0,0,0,5"
+                                          IsEnabled="False" Checked="InvertCheckBox_Changed" Unchecked="InvertCheckBox_Changed"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="#64B5F6"
+                                           Cursor="Hand" Margin="5,0,0,5" VerticalAlignment="Center"
+                                           MouseLeftButtonUp="InvertHelp_Click"
+                                           ToolTip="Click for help"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Threshold:"
+                                           VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <Slider x:Name="ThresholdSlider" Grid.Row="1" Grid.Column="1"
+                                        Minimum="0" Maximum="1" Value="0.5"
+                                        IsEnabled="False" ValueChanged="ThresholdSlider_Changed"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Text="?" FontWeight="Bold" Foreground="#64B5F6"
+                                           Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
+                                           MouseLeftButtonUp="ThresholdHelp_Click"
+                                           ToolTip="Click for help"/>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+            <!-- Force Feedback Tab -->
+            <TabItem Header="Force Feedback">
+                <Grid Background="{StaticResource BackgroundSecondaryBrush}">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Force Feedback Settings" FontSize="14" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Route rumble/vibration signals from games to your physical device (steering wheel, gamepad with FFB)."
+                                   TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,0,0,15"/>
+
+                        <CheckBox x:Name="FfbEnabledCheckBox" Content="Enable Force Feedback"
+                                  Checked="FfbEnabled_Changed" Unchecked="FfbEnabled_Changed"
+                                  ToolTip="Route rumble from games to a physical device"
+                                  Margin="0,0,0,15"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Target Device:"
+                                       VerticalAlignment="Center" Margin="0,0,10,10"/>
+                            <ComboBox x:Name="FfbDeviceComboBox" Grid.Row="0" Grid.Column="1"
+                                      Margin="0,0,0,10" IsEnabled="False"
+                                      SelectionChanged="FfbDevice_Changed"/>
+
+                            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,10,10">
+                                <TextBlock Text="Motor Mode:" VerticalAlignment="Center"/>
+                                <TextBlock Text="?" FontWeight="Bold" Foreground="#0078D4"
+                                           Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
+                                           MouseLeftButtonUp="MotorModeHelp_Click"
+                                           ToolTip="Click for help"/>
+                            </StackPanel>
+                            <ComboBox x:Name="FfbModeComboBox" Grid.Row="1" Grid.Column="1"
+                                      Margin="0,0,0,10" IsEnabled="False"
+                                      SelectionChanged="FfbMode_Changed">
+                                <ComboBoxItem Content="Large Motor" Tag="Large"/>
+                                <ComboBoxItem Content="Small Motor" Tag="Small"/>
+                                <ComboBoxItem Content="Combined (Max)" Tag="Combined"/>
+                                <ComboBoxItem Content="Swap (Small as Primary)" Tag="Swap"/>
+                            </ComboBox>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Gain:"
+                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                                <Slider x:Name="FfbGainSlider" Width="150"
+                                        Minimum="0" Maximum="2" Value="1"
+                                        IsEnabled="False" ValueChanged="FfbGain_Changed"
+                                        ToolTip="Intensity multiplier (0-200%)"/>
+                                <TextBlock x:Name="FfbGainText" Text="100%" VerticalAlignment="Center"
+                                           Margin="10,0,0,0" Width="40"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="Note: Your device must support force feedback. Not all devices are compatible."
+                                   TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,20,0,0" FontStyle="Italic"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Device Hiding Tab -->
+            <TabItem Header="Device Hiding">
+                <Grid Background="{StaticResource BackgroundSecondaryBrush}">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="HidHide Device Hiding" FontSize="14" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Hide your physical controllers from games so they only see the emulated Xbox controller. This prevents 'double input' issues."
+                                   TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,0,0,15"/>
+
+                        <TextBlock x:Name="HidHideStatusText" Text="" Foreground="#9E9E9E"
+                                   Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <CheckBox x:Name="HidHideEnabledCheckBox" Content="Hide devices when profile starts"
+                                      Checked="HidHideEnabled_Changed" Unchecked="HidHideEnabled_Changed"
+                                      ToolTip="Automatically hide selected devices to prevent double input"/>
+                            <TextBlock Text="?" FontWeight="Bold" Foreground="#0078D4"
+                                       Cursor="Hand" Margin="5,0,0,0" VerticalAlignment="Center"
+                                       MouseLeftButtonUp="HidHideHelp_Click"
+                                       ToolTip="Click for help"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Select devices to hide:" Margin="0,0,0,5"/>
+
+                        <ListBox x:Name="HidHideDeviceListBox" Height="100"
+                                 SelectionMode="Multiple"
+                                 IsEnabled="False">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding DisplayName}"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              Foreground="{StaticResource ForegroundBrush}"
+                                              Checked="HidHideDevice_CheckChanged"
+                                              Unchecked="HidHideDevice_CheckChanged"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <TextBlock Text="Devices will be automatically unhidden when the profile stops."
+                                   TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,15,0,0" FontStyle="Italic"/>
+
+                        <Button Content="Open Windows Game Controllers" Margin="0,15,0,0"
+                                Click="OpenGameControllers_Click"
+                                ToolTip="Test if hiding is working by checking which devices Windows sees"/>
+
+                        <!-- Application Whitelist Section -->
+                        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Margin="0,20,0,0" Padding="0,15,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Application Whitelist (Global)" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                <TextBlock Text="Whitelisted apps can still see hidden devices. Add apps like Moza Pit House or Fanatec drivers here. Hover to see full path."
+                                           TextWrapping="Wrap" Foreground="#9E9E9E" Margin="0,0,0,10" FontSize="11"/>
+
+                                <ListBox x:Name="WhitelistListBox" Height="120" Margin="0,0,0,10">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}" ToolTip="{Binding FullPath}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Browse..." Click="AddWhitelistApp_Click" Padding="8,4" ToolTip="Browse for an executable file"/>
+                                    <Button Content="Add Process..." Click="AddWhitelistProcess_Click" Padding="8,4" Margin="10,0,0,0" ToolTip="Select from running processes"/>
+                                    <Button Content="Remove" Click="RemoveWhitelistApp_Click" Padding="8,4" Margin="10,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!-- Footer Buttons -->
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="SaveButton" Content="Save" Padding="20,8" Click="Save_Click"
+                    Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
+            <Button Content="Cancel" Padding="20,8" Margin="10,0,0,0" Click="Cancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

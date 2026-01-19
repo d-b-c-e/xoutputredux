@@ -1,4 +1,4 @@
-# XOutputRenew Dependency Analysis
+# XOutputRedux Dependency Analysis
 
 Detailed analysis of project dependencies, maintenance status, and upgrade/migration plans.
 
@@ -76,7 +76,7 @@ var joystick = _directInput.CreateDevice(instance.InstanceGuid);
 
 ### Performance Impact
 
-**None meaningful.** XOutputRenew is I/O-bound (waiting on DirectInput API and drivers). The .NET wrapper overhead is microseconds per poll cycle - imperceptible regardless of which library is used.
+**None meaningful.** XOutputRedux is I/O-bound (waiting on DirectInput API and drivers). The .NET wrapper overhead is microseconds per poll cycle - imperceptible regardless of which library is used.
 
 ---
 
@@ -90,7 +90,7 @@ var joystick = _directInput.CreateDevice(instance.InstanceGuid);
 
 ### Current Usage
 
-HidSharp is used in `XOutputRenew.Input/RawInput/` for:
+HidSharp is used in `XOutputRedux.Input/RawInput/` for:
 - HID device enumeration
 - Reading HID reports via event-driven model
 - Parsing HID report descriptors
@@ -98,7 +98,7 @@ HidSharp is used in `XOutputRenew.Input/RawInput/` for:
 ### Fork Strategy
 
 **Option A: Slim Fork (Recommended)**
-- Extract only the ~500 lines needed for XOutputRenew
+- Extract only the ~500 lines needed for XOutputRedux
 - Remove unused features (serial ports, other platforms, etc.)
 - Inline into project or separate minimal package
 
@@ -175,7 +175,7 @@ HidSharp is used in `XOutputRenew.Input/RawInput/` for:
 
 ### Performance Impact
 
-**None meaningful for XOutputRenew.** The app is I/O-bound:
+**None meaningful for XOutputRedux.** The app is I/O-bound:
 
 ```
 1ms polling loop breakdown:
@@ -190,7 +190,7 @@ HidSharp is used in `XOutputRenew.Input/RawInput/` for:
 
 ### Where .NET 10 Improvements Apply (Not Here)
 
-| Improvement Area | Typical Gain | XOutputRenew Relevance |
+| Improvement Area | Typical Gain | XOutputRedux Relevance |
 |------------------|--------------|------------------------|
 | Tight computational loops | 5-15% | None in hot paths |
 | JSON serialization | 10-20% | Profile load/save - already instant |

@@ -1,4 +1,4 @@
-# XOutputRenew Release Script
+# XOutputRedux Release Script
 # Creates installer, portable ZIP, and Stream Deck plugin for distribution
 # Usage: .\release.ps1 [-SkipBuild] [-SkipStreamDeck] [-InnoSetupPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"]
 
@@ -12,8 +12,8 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = $PSScriptRoot
 $PublishDir = Join-Path $ProjectRoot "publish"
 $DistDir = Join-Path $ProjectRoot "dist"
-$InstallerScript = Join-Path $ProjectRoot "installer\XOutputRenew.iss"
-$AppProject = Join-Path $ProjectRoot "src\XOutputRenew.App\XOutputRenew.App.csproj"
+$InstallerScript = Join-Path $ProjectRoot "installer\XOutputRedux.iss"
+$AppProject = Join-Path $ProjectRoot "src\XOutputRedux.App\XOutputRedux.App.csproj"
 
 # Extract version from csproj
 function Get-Version {
@@ -25,7 +25,7 @@ function Get-Version {
 
 $Version = Get-Version
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "XOutputRenew Release v$Version" -ForegroundColor Cyan
+Write-Host "XOutputRedux Release v$Version" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
 # Create dist directory
@@ -63,7 +63,7 @@ if (-not $SkipStreamDeck) {
                 Write-Host "Stream Deck plugin build failed (non-fatal)" -ForegroundColor Yellow
             } else {
                 # Copy to publish directory so it's included in the portable ZIP
-                $PluginFile = Get-ChildItem "$DistDir\XOutputRenew.streamDeckPlugin" -ErrorAction SilentlyContinue
+                $PluginFile = Get-ChildItem "$DistDir\XOutputRedux.streamDeckPlugin" -ErrorAction SilentlyContinue
                 if ($PluginFile) {
                     Copy-Item $PluginFile.FullName -Destination $PublishDir
                     Write-Host "Stream Deck plugin bundled with application" -ForegroundColor Green
@@ -80,7 +80,7 @@ if (-not $SkipStreamDeck) {
 # Create portable ZIP
 $currentStep++
 Write-Host "`n[$currentStep/$totalSteps] Creating portable ZIP..." -ForegroundColor Yellow
-$ZipName = "XOutputRenew-$Version-Portable.zip"
+$ZipName = "XOutputRedux-$Version-Portable.zip"
 $ZipPath = Join-Path $DistDir $ZipName
 
 if (Test-Path $ZipPath) {
@@ -106,7 +106,7 @@ if (-not (Test-Path $InnoSetupPath)) {
     & $InnoSetupPath @InnoArgs
     if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
 
-    $InstallerName = "XOutputRenew-$Version-Setup.exe"
+    $InstallerName = "XOutputRedux-$Version-Setup.exe"
     Write-Host "Created: $InstallerName" -ForegroundColor Green
 }
 
@@ -119,7 +119,7 @@ Write-Host "Output:  $DistDir"
 Write-Host ""
 Write-Host "Files created:"
 
-Get-ChildItem $DistDir -Filter "XOutputRenew-$Version*" | ForEach-Object {
+Get-ChildItem $DistDir -Filter "XOutputRedux-$Version*" | ForEach-Object {
     $sizeMB = [math]::Round($_.Length / 1MB, 2)
     Write-Host "  - $($_.Name) ($sizeMB MB)"
 }
