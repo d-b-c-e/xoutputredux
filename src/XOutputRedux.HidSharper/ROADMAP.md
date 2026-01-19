@@ -29,29 +29,27 @@ The library is functional but shows signs of its origins as a multi-platform lib
 
 ---
 
-## Priority 2: Dead Code Removal (2-3 hours total)
+## Priority 2: ~~Dead Code Removal~~ DONE
 
-### 2.1 Remove Unused Platform GUIDs
-- **File**: `Platform/Windows/NativeMethods.cs` (lines 34-40)
-- **Remove**:
-  - `GuidForBluetoothLEDevice`
-  - `GuidForBluetoothHciEvent`
-  - `GuidForBluetoothRadioInRange`
-  - `GuidForBluetoothRadioOutOfRange`
-  - `GuidForComPort`
+### 2.1 ~~Remove Unused Platform GUIDs~~ DONE
+- **Removed from**: `Platform/Windows/NativeMethods.cs`
+- **Completed**: 2026-01-18
 
-### 2.2 Remove Bluetooth P/Invoke Declarations
-- **File**: `Platform/Windows/NativeMethods.cs` (lines 1434-1599)
-- **Impact**: ~150 lines of dead code
-- Includes: `BTH_LE_*` structs, Bluetooth discovery functions
+### 2.2 ~~Remove Bluetooth P/Invoke Declarations~~ DONE
+- **Removed from**: `Platform/Windows/NativeMethods.cs`
+- **Impact**: ~350 lines of dead code removed (structs, enums, P/Invoke)
+- **Completed**: 2026-01-18
 
-### 2.3 Remove BLE/Serial Implementation Details
-- **File**: `ImplementationDetail.cs` (lines 45, 55, 68, 70)
-- **Remove**: `BleDevice`, `SerialDevice` GUIDs
+### 2.3 ~~Remove BLE/Serial Implementation Details~~ DONE
+- **Removed from**: `ImplementationDetail.cs`
+- Removed: `MacOS`, `Linux`, `BleDevice`, `SerialDevice`, `HidrawApi` GUIDs
+- **Completed**: 2026-01-18
 
-### 2.4 Clean Up Disabled Code
-- **File**: `WinHidDevice.cs` - Remove commented `GetDevicePathHierarchy()`
-- **File**: `FilteredDeviceList.cs` - Remove or implement `NotImplementedException`
+### 2.4 ~~Clean Up Disabled Code~~ DONE
+- **Removed from**: `WinHidDevice.cs`
+- Removed commented `GetDevicePathHierarchy()`, `GetDevicePaths()`, `TryGetDeviceUsbRoot()`
+- Removed `GetSerialPorts()` from both `WinHidDevice.cs` and `HidDevice.cs`
+- **Completed**: 2026-01-18
 
 ---
 
@@ -167,12 +165,12 @@ finally { ArrayPool<byte>.Shared.Return(buffer); }
 | Priority | Description | Effort | Status |
 |----------|-------------|--------|--------|
 | P1 | Quick wins (SHA256, CA2014) | 30 min | **DONE** |
-| P2 | Dead code removal | 2-3 hrs | Pending |
+| P2 | Dead code removal | 2-3 hrs | **DONE** |
 | P3 | Code quality fixes | 3-4 hrs | Pending |
 | P4 | Performance improvements | 4-6 hrs | Pending |
 | P5 | Modernization | 6-8 hrs | Pending |
 
-**Total**: ~16-22 hours for all improvements (P1 complete)
+**Total**: ~14-19 hours remaining (P1-P2 complete)
 
 ---
 

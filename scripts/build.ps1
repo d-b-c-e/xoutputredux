@@ -1,5 +1,5 @@
 # XOutputRedux Build Script
-# Usage: .\build.ps1 [-Configuration Release|Debug] [-SelfContained] [-Clean]
+# Usage: .\scripts\build.ps1 [-Configuration Release|Debug] [-SelfContained] [-Clean]
 
 param(
     [ValidateSet("Release", "Debug")]
@@ -9,7 +9,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ProjectRoot = $PSScriptRoot
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
 $AppProject = Join-Path $ProjectRoot "src\XOutputRedux.App\XOutputRedux.App.csproj"
 $PublishDir = Join-Path $ProjectRoot "publish"
 

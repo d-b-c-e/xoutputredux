@@ -115,16 +115,6 @@ namespace XOutputRedux.HidSharper
         }
         */
 
-        /// <summary>
-        /// Returns the serial ports of the composite USB device.
-        /// Currently this is only supported on Windows.
-        /// </summary>
-        /// <returns>Serial ports of the USB device.</returns>
-        public virtual string[] GetSerialPorts()
-        {
-            throw new NotSupportedException();
-        }
-
         /// <inheritdoc/>
         public override string ToString()
         {

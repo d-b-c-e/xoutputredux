@@ -1,6 +1,6 @@
 # XOutputRedux Release Script
 # Creates installer, portable ZIP, and Stream Deck plugin for distribution
-# Usage: .\release.ps1 [-SkipBuild] [-SkipStreamDeck] [-InnoSetupPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"]
+# Usage: .\scripts\release.ps1 [-SkipBuild] [-SkipStreamDeck] [-InnoSetupPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"]
 
 param(
     [switch]$SkipBuild,
@@ -9,7 +9,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ProjectRoot = $PSScriptRoot
+$ScriptsDir = $PSScriptRoot
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
 $PublishDir = Join-Path $ProjectRoot "publish"
 $DistDir = Join-Path $ProjectRoot "dist"
 $InstallerScript = Join-Path $ProjectRoot "installer\XOutputRedux.iss"
@@ -42,7 +43,7 @@ $currentStep = 0
 $currentStep++
 if (-not $SkipBuild) {
     Write-Host "`n[$currentStep/$totalSteps] Building application..." -ForegroundColor Yellow
-    & "$ProjectRoot\build.ps1" -Configuration Release -Clean
+    & "$ScriptsDir\build.ps1" -Configuration Release -Clean
     if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 } else {
     Write-Host "`n[$currentStep/$totalSteps] Skipping build (using existing publish folder)" -ForegroundColor Gray
