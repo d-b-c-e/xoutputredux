@@ -24,7 +24,7 @@ namespace XOutputRedux.HidSharper.Reports
     {
         static readonly IList<DescriptorItem> _noChildren = new ReadOnlyCollection<DescriptorItem>(new DescriptorItem[0]);
 
-        Indexes _designator, _string, _usage;
+        Indexes? _designator, _string, _usage;
 
         public DescriptorItem()
         {
@@ -36,7 +36,7 @@ namespace XOutputRedux.HidSharper.Reports
             get { return _noChildren; }
         }
 
-        public DescriptorCollectionItem ParentItem
+        public DescriptorCollectionItem? ParentItem
         {
             get;
             internal set;

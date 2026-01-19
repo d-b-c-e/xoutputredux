@@ -47,7 +47,7 @@ namespace XOutputRedux.HidSharper
             AsyncCallback? callback, object? state)
         {
             var ar = new AsyncResult<T>(callback, state);
-            ThreadPool.QueueUserWorkItem(delegate(object self)
+            ThreadPool.QueueUserWorkItem(delegate(object? self)
             {
                 try { ar.Result = operation(); }
                 catch (Exception e) { ar.Exception = e; }
@@ -123,6 +123,6 @@ namespace XOutputRedux.HidSharper
         {
             get;
             set;
-        }
+        } = default!;
     }
 }

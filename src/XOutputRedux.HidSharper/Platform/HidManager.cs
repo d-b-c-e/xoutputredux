@@ -64,9 +64,9 @@ namespace XOutputRedux.HidSharper.Platform
             readyCallback();
         }
 
-        internal void RunImpl(object readyEvent)
+        internal void RunImpl(object? readyEvent)
         {
-            Run(() => ((ManualResetEvent)readyEvent).Set());
+            Run(() => ((ManualResetEvent)readyEvent!).Set());
         }
 
         protected static void RunAssert(bool condition, string error)
@@ -97,15 +97,15 @@ namespace XOutputRedux.HidSharper.Platform
                     {
                         ThreadPool.QueueUserWorkItem(new WaitCallback(key =>
                         {
-                            bool created = tryCreateDeviceCallback(key, out Device? device);
+                            bool created = tryCreateDeviceCallback(key!, out Device? device);
 
                             if (created && device != null)
                             {
                                 // By not adding on failure, we'll end up retrying every time.
                                 lock (_deviceList)
                                 {
-                                    _deviceList.Add(key, device);
-                                    HidSharpDiagnostics.Trace("Detected a new device: {0}", key);
+                                    _deviceList.Add(key!, device);
+                                    HidSharpDiagnostics.Trace("Detected a new device: {0}", key!);
                                 }
                             }
 

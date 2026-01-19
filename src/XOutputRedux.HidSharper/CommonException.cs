@@ -23,7 +23,7 @@ namespace XOutputRedux.HidSharper
     {
         public static ObjectDisposedException CreateClosedException()
         {
-            return new ObjectDisposedException("Closed.", (Exception)null);
+            return new ObjectDisposedException("Closed.", (Exception?)null);
         }
     }
 }

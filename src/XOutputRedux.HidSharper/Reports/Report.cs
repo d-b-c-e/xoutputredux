@@ -134,7 +134,7 @@ namespace XOutputRedux.HidSharper.Reports
             return buffer;
         }
 
-        public DeviceItem DeviceItem
+        public DeviceItem? DeviceItem
         {
             get;
             internal set;

@@ -32,7 +32,7 @@ namespace XOutputRedux.HidSharper.Platform
 
         internal class CommonOutputReport
         {
-            public byte[] Bytes;
+            public byte[] Bytes = Array.Empty<byte>();
             public bool DoneOK, Feature;
             public volatile bool Done;
         }
@@ -42,7 +42,7 @@ namespace XOutputRedux.HidSharper.Platform
             return Math.Min(timeout, Math.Max(0, startTime + timeout - Environment.TickCount));
         }
 
-        internal void CommonDisconnected(Queue<byte[]> readQueue)
+        internal void CommonDisconnected(Queue<byte[]?> readQueue)
         {
             lock (readQueue)
             {

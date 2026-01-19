@@ -37,7 +37,7 @@ namespace XOutputRedux.HidSharper.Utility
                 // This works with .NET 4.0 as well as later versions. Also, it does not change any state.
                 return (int)exception.GetType().InvokeMember("HResult",
                     BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                    null, exception, new object[0]);
+                    null, exception, Array.Empty<object>())!;
             }
             catch
             {

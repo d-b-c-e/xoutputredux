@@ -34,7 +34,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
             List<ushort> _currentNodes;
             NativeMethods.HIDP_LINK_COLLECTION_NODE[] _nodes;
             sealed class ItemCaps { public bool Button; public int BitOffset, ReportCount, ReportSize; public NativeMethods.HIDP_DATA_CAPS Item; }
-            sealed class ReportCaps { public ItemCaps[] Items; public int ReportLength; }
+            sealed class ReportCaps { public ItemCaps[] Items = Array.Empty<ItemCaps>(); public int ReportLength; }
             ReportCaps[] _types;
 
             static void InitData(byte[] report, byte reportID)

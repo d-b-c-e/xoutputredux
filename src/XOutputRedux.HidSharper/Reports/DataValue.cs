@@ -41,15 +41,15 @@ namespace XOutputRedux.HidSharper.Reports
 
         public double GetScaledValue(double minimum, double maximum)
         {
-            return DataConvert.CustomFromLogical(DataItem, GetLogicalValue(), minimum, maximum);
+            return DataConvert.CustomFromLogical(DataItem!, GetLogicalValue(), minimum, maximum);
         }
 
         public double GetPhysicalValue()
         {
-            return DataConvert.PhysicalFromLogical(DataItem, GetLogicalValue());
+            return DataConvert.PhysicalFromLogical(DataItem!, GetLogicalValue());
         }
 
-        public DataItem DataItem
+        public DataItem? DataItem
         {
             get;
             set;
@@ -63,7 +63,7 @@ namespace XOutputRedux.HidSharper.Reports
 
         public bool IsNull
         {
-            get { return !IsValid || (DataItem.IsVariable && DataConvert.IsLogicalOutOfRange(DataItem, GetLogicalValue())); }
+            get { return !IsValid || (DataItem!.IsVariable && DataConvert.IsLogicalOutOfRange(DataItem, GetLogicalValue())); }
         }
 
         public bool IsValid
@@ -71,24 +71,24 @@ namespace XOutputRedux.HidSharper.Reports
             get { return DataItem != null; }
         }
 
-        public Report Report
+        public Report? Report
         {
-            get { return IsValid ? DataItem.Report : null; }
+            get { return IsValid ? DataItem!.Report : null; }
         }
 
         public IEnumerable<uint> Designators
         {
-            get { return IsValid ? DataItem.Designators.GetValuesFromIndex(DataIndex) : Enumerable.Empty<uint>(); }
+            get { return IsValid ? DataItem!.Designators.GetValuesFromIndex(DataIndex) : Enumerable.Empty<uint>(); }
         }
 
         public IEnumerable<uint> Strings
         {
-            get { return IsValid ? DataItem.Strings.GetValuesFromIndex(DataIndex) : Enumerable.Empty<uint>(); }
+            get { return IsValid ? DataItem!.Strings.GetValuesFromIndex(DataIndex) : Enumerable.Empty<uint>(); }
         }
 
         public IEnumerable<uint> Usages
         {
-            get { return IsValid ? DataItem.Usages.GetValuesFromIndex(DataIndex) : Enumerable.Empty<uint>(); }
+            get { return IsValid ? DataItem!.Usages.GetValuesFromIndex(DataIndex) : Enumerable.Empty<uint>(); }
         }
     }
 }

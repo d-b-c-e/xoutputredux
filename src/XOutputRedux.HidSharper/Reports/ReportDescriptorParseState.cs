@@ -43,16 +43,15 @@ namespace XOutputRedux.HidSharper.Reports
             LocalItemState.Clear();
         }
 
-        public EncodedItem GetGlobalItem(GlobalItemTag tag)
+        public EncodedItem? GetGlobalItem(GlobalItemTag tag)
         {
-            EncodedItem value;
-            GlobalItemState.TryGetValue(tag, out value);
+            GlobalItemState.TryGetValue(tag, out var value);
             return value;
         }
 
         public uint GetGlobalItemValue(GlobalItemTag tag)
         {
-            EncodedItem item = GetGlobalItem(tag);
+            EncodedItem? item = GetGlobalItem(tag);
             return item != null ? item.DataValue : 0;
         }
 
@@ -65,7 +64,7 @@ namespace XOutputRedux.HidSharper.Reports
         {
             get;
             set;
-        }
+        } = null!; // Set in Reset() called from constructor
 
         public DescriptorCollectionItem RootItem
         {

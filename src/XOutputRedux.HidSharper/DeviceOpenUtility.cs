@@ -53,11 +53,11 @@ namespace XOutputRedux.HidSharper
             _syncRoot = new object();
             _resourcePrefix = GetResourcePrefix(streamPath);
 
-            _priority = (OpenPriority)openConfig.GetOption(OpenOption.Priority);
-            _interruptible = (bool)openConfig.GetOption(OpenOption.Interruptible);
-            _transient = (bool)openConfig.GetOption(OpenOption.Transient);
-            _timeoutIfInterruptible = (int)openConfig.GetOption(OpenOption.TimeoutIfInterruptible);
-            _timeoutIfTransient = (int)openConfig.GetOption(OpenOption.TimeoutIfTransient);
+            _priority = (OpenPriority)openConfig.GetOption(OpenOption.Priority)!;
+            _interruptible = (bool)openConfig.GetOption(OpenOption.Interruptible)!;
+            _transient = (bool)openConfig.GetOption(OpenOption.Transient)!;
+            _timeoutIfInterruptible = (int)openConfig.GetOption(OpenOption.TimeoutIfInterruptible)!;
+            _timeoutIfTransient = (int)openConfig.GetOption(OpenOption.TimeoutIfTransient)!;
 
             HidSharpDiagnostics.Trace("Opening a device. Our priority is {0}, our interruptible state is {1}, and our transient state is {2}.",
                                       _priority, _interruptible, _transient);

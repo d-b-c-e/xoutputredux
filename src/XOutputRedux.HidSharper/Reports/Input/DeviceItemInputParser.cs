@@ -93,7 +93,7 @@ namespace XOutputRedux.HidSharper.Reports.Input
         void SetDefaultValue(ref DataValue dataValue)
         {
             // TODO: The Variable case, if all 32-bit values are OK, this won't work. Add a way to force IsNull.
-            dataValue.SetLogicalValue(dataValue.DataItem.IsArray ? 0 : dataValue.DataItem.LogicalMaximum + 1);
+            dataValue.SetLogicalValue(dataValue.DataItem!.IsArray ? 0 : dataValue.DataItem.LogicalMaximum + 1);
         }
 
         /// <summary>

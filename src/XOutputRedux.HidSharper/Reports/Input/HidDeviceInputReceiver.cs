@@ -22,17 +22,17 @@ namespace XOutputRedux.HidSharper.Reports.Input
 {
     public class HidDeviceInputReceiver
     {
-        public event EventHandler Started;
-        public event EventHandler Received;
-        public event EventHandler Stopped;
+        public event EventHandler? Started;
+        public event EventHandler? Received;
+        public event EventHandler? Stopped;
 
         byte[] _buffer; int _bufferOffset, _bufferCount;
-        int _maxInputReportLength;
-        ReportDescriptor _reportDescriptor;
+        readonly int _maxInputReportLength;
+        readonly ReportDescriptor _reportDescriptor;
         volatile bool _running;
-        HidStream _stream;
-        object _syncRoot;
-        ManualResetEvent _waitHandle;
+        HidStream? _stream;
+        readonly object _syncRoot;
+        readonly ManualResetEvent _waitHandle;
 
         public HidDeviceInputReceiver(ReportDescriptor reportDescriptor)
         {
@@ -64,7 +64,7 @@ namespace XOutputRedux.HidSharper.Reports.Input
                 _running = true; _stream = stream;
 
                 byte[] buffer = new byte[length * 16];
-                Action beginRead = null; AsyncCallback endRead = null;
+                Action? beginRead = null; AsyncCallback? endRead = null;
                 beginRead = () =>
                 {
                     try { stream.BeginRead(buffer, 0, buffer.Length, endRead, null); }
@@ -142,7 +142,7 @@ namespace XOutputRedux.HidSharper.Reports.Input
         /// <param name="offset">The offset to begin writing the report at.</param>
         /// <param name="report">The <see cref="HidSharper.Reports.Report"/> the buffer conforms to.</param>
         /// <returns><c>true</c> if there was a pending report.</returns>
-        public bool TryRead(byte[] buffer, int offset, out Report report)
+        public bool TryRead(byte[] buffer, int offset, out Report? report)
         {
             Throw.If.Null(buffer).OutOfRange(buffer, offset, _maxInputReportLength);
 
@@ -166,7 +166,7 @@ namespace XOutputRedux.HidSharper.Reports.Input
                     report = null; return false;
                 }
 
-                int reportLength = report.Length;
+                int reportLength = report!.Length;
                 int finalBufferOffset = _bufferOffset + reportLength;
                 if (finalBufferOffset > _bufferCount)
                 {
@@ -210,9 +210,8 @@ namespace XOutputRedux.HidSharper.Reports.Input
 
         /// <summary>
         /// The stream associated with this receiver.
-        /// 
         /// </summary>
-        public HidStream Stream
+        public HidStream? Stream
         {
             get { return _stream; }
         }

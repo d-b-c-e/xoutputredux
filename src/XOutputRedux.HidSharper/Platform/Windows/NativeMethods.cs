@@ -537,7 +537,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
         [DllImport("cfgmgr32.dll")]
         public static extern int CM_Get_Child(out uint childDevInst, uint devInst, int flags = 0);
 
-        public static int CM_Get_Device_ID(uint devInst, out string deviceID)
+        public static int CM_Get_Device_ID(uint devInst, out string? deviceID)
         {
             int ret; deviceID = null;
             
@@ -706,11 +706,11 @@ namespace XOutputRedux.HidSharper.Platform.Windows
 
         [DllImport("setupapi.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern HDEVINFO SetupDiGetClassDevs
-            (IntPtr classGuid, string enumerator, IntPtr hwndParent, DIGCF flags);
+            (IntPtr classGuid, string? enumerator, IntPtr hwndParent, DIGCF flags);
 
         [DllImport("setupapi.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern HDEVINFO SetupDiGetClassDevs
-            ([MarshalAs(UnmanagedType.LPStruct)] Guid classGuid, string enumerator, IntPtr hwndParent, DIGCF flags);
+            ([MarshalAs(UnmanagedType.LPStruct)] Guid classGuid, string? enumerator, IntPtr hwndParent, DIGCF flags);
 
         [DllImport("setupapi.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -762,7 +762,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
 
         public static bool SetupDiGetDeviceInterfaceDevicePath(HDEVINFO deviceInfoSet,
             ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData,
-            out string devicePath)
+            out string? devicePath)
         {
             NativeMethods.SP_DEVICE_INTERFACE_DETAIL_DATA didetail;
 
@@ -781,7 +781,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
             uint property, out uint propertyDataType,
             char[] buffer, int lengthInBytes, IntPtr lengthInBytesRequired);
 
-        public static bool TryGetDeviceRegistryProperty(HDEVINFO deviceInfoSet, ref SP_DEVINFO_DATA deviceInfoData, uint property, out string value)
+        public static bool TryGetDeviceRegistryProperty(HDEVINFO deviceInfoSet, ref SP_DEVINFO_DATA deviceInfoData, uint property, out string? value)
         {
             value = null;
 
@@ -801,13 +801,13 @@ namespace XOutputRedux.HidSharper.Platform.Windows
         public delegate void EnumerateDeviceInterfacesCallback(NativeMethods.HDEVINFO deviceInfoSet,
                                                NativeMethods.SP_DEVINFO_DATA deviceInfoData,
                                                NativeMethods.SP_DEVICE_INTERFACE_DATA deviceInterfaceData,
-                                               string deviceID, string devicePath);
+                                               string? deviceID, string? devicePath);
         public static void EnumerateDeviceInterfaces(Guid guid, EnumerateDeviceInterfacesCallback callback)
         {
             EnumerateDeviceInterfaces(guid, null, callback);
         }
 
-        public static void EnumerateDeviceInterfaces(Guid guid, string deviceIDToFilterTo, EnumerateDeviceInterfacesCallback callback)
+        public static void EnumerateDeviceInterfaces(Guid guid, string? deviceIDToFilterTo, EnumerateDeviceInterfacesCallback callback)
         {
             EnumerateDevicesCore(NativeMethods.SetupDiGetClassDevs(guid, deviceIDToFilterTo, IntPtr.Zero, NativeMethods.DIGCF.DeviceInterface | NativeMethods.DIGCF.Present),
                 (devInfo, dvi, deviceID) =>
@@ -817,8 +817,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
 
                     for (int i = 0; NativeMethods.SetupDiEnumDeviceInterfaces(devInfo, ref dvi, guid, i, ref did); i++)
                     {
-                        string devicePath;
-                        if (NativeMethods.SetupDiGetDeviceInterfaceDevicePath(devInfo, ref did, out devicePath))
+                        if (NativeMethods.SetupDiGetDeviceInterfaceDevicePath(devInfo, ref did, out var devicePath))
                         {
                             callback(devInfo, dvi, did, deviceID, devicePath);
                         }
@@ -829,10 +828,10 @@ namespace XOutputRedux.HidSharper.Platform.Windows
 
         public delegate void EnumerateDevicesCallback(NativeMethods.HDEVINFO deviceInfoSet,
                                                NativeMethods.SP_DEVINFO_DATA deviceInfoData,
-                                               string deviceID);
+                                               string? deviceID);
         public static void EnumerateDevices(Guid guid, EnumerateDevicesCallback callback)
         {
-            EnumerateDevicesCore(NativeMethods.SetupDiGetClassDevs(guid, null, IntPtr.Zero, NativeMethods.DIGCF.Present), callback);
+            EnumerateDevicesCore(NativeMethods.SetupDiGetClassDevs(guid, null!, IntPtr.Zero, NativeMethods.DIGCF.Present), callback);
         }
 
         static void EnumerateDevicesCore(NativeMethods.HDEVINFO devInfo, EnumerateDevicesCallback callback)
@@ -846,8 +845,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
 
                     for (int j = 0; NativeMethods.SetupDiEnumDeviceInfo(devInfo, j, ref dvi); j++)
                     {
-                        string deviceID;
-                        if (0 != NativeMethods.CM_Get_Device_ID(dvi.DevInst, out deviceID)) { continue; }
+                        if (0 != NativeMethods.CM_Get_Device_ID(dvi.DevInst, out var deviceID)) { continue; }
 
                         callback(devInfo, dvi, deviceID);
                     }

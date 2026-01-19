@@ -61,10 +61,10 @@ namespace XOutputRedux.HidSharper
         /// </summary>
         /// <param name="exception">The exception to get the associated <see cref="Device"/> for.</param>
         /// <returns>The associated <see cref="Device"/>, or null if none is associated with it.</returns>
-        public static Device GetDevice(Exception exception)
+        public static Device? GetDevice(Exception exception)
         {
             var hidException = exception as Exceptions.IDeviceException;
-            return hidException != null ? hidException.Device : null;
+            return hidException?.Device;
         }
     }
 }

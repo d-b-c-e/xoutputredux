@@ -35,7 +35,7 @@ namespace XOutputRedux.HidSharper.Reports.Units
             _rawValue = rawValue;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is Unit && Equals((Unit)obj);
         }

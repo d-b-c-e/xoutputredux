@@ -288,7 +288,7 @@ namespace XOutputRedux.HidSharper.Reports
             get { return _rawPhysicalRange; }
         }
 
-        public Report Report
+        public Report? Report
         {
             get;
             internal set;

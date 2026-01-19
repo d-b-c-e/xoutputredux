@@ -26,11 +26,11 @@ namespace XOutputRedux.HidSharper.Platform
     sealed class Utf8Marshaler : ICustomMarshaler
     {
         [ThreadStatic]
-        static HashSet<IntPtr> _allocations; // Workaround for Mono bug 4722.
+        static HashSet<IntPtr>? _allocations; // Workaround for Mono bug 4722.
 
         static HashSet<IntPtr> GetAllocations()
         {
-            if (_allocations == null) { _allocations = new HashSet<IntPtr>(); }
+            _allocations ??= new HashSet<IntPtr>();
             return _allocations;
         }
 
@@ -53,8 +53,7 @@ namespace XOutputRedux.HidSharper.Platform
 
         public IntPtr MarshalManagedToNative(object obj)
         {
-            string str = obj as string;
-            if (str == null) { return IntPtr.Zero; }
+            if (obj is not string str) { return IntPtr.Zero; }
 
             byte[] bytes = Encoding.UTF8.GetBytes(str);
             IntPtr ptr = Marshal.AllocHGlobal(bytes.Length + 1);
@@ -67,7 +66,7 @@ namespace XOutputRedux.HidSharper.Platform
 
         public object MarshalNativeToManaged(IntPtr ptr)
         {
-            if (ptr == IntPtr.Zero) { return null; }
+            if (ptr == IntPtr.Zero) { return null!; }
 
             int length;
             for (length = 0; Marshal.ReadByte(ptr, length) != 0; length++) ;

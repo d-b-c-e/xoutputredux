@@ -24,8 +24,8 @@ namespace XOutputRedux.HidSharper.Platform.Windows
 {
     sealed class WinHidStream : SysHidStream
     {
-        object _readSync = new object(), _writeSync = new object();
-        byte[] _readBuffer, _writeBuffer;
+        readonly object _readSync = new object(), _writeSync = new object();
+        byte[] _readBuffer = Array.Empty<byte>(), _writeBuffer = Array.Empty<byte>();
         IntPtr _handle, _closeEventHandle;
 
         internal WinHidStream(WinHidDevice device)

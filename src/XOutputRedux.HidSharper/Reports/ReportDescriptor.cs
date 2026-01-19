@@ -32,6 +32,8 @@ namespace XOutputRedux.HidSharper.Reports
         /// </summary>
         ReportDescriptor()
         {
+            Reports = new List<Report>();
+            DeviceItems = Array.AsReadOnly(Array.Empty<DeviceItem>());
             State = new ReportDescriptorParseState();
             StartParsing();
         }
@@ -85,12 +87,11 @@ namespace XOutputRedux.HidSharper.Reports
 
         public Report GetReport(ReportType type, byte id)
         {
-            Report report;
-            if (!TryGetReport(type, id, out report)) { throw new ArgumentException("Report not found."); }
-            return report;
+            if (!TryGetReport(type, id, out var report)) { throw new ArgumentException("Report not found."); }
+            return report!;
         }
 
-        public bool TryGetReport(ReportType type, byte id, out Report report)
+        public bool TryGetReport(ReportType type, byte id, out Report? report)
         {
             for (int i = 0; i < Reports.Count; i++)
             {
@@ -209,7 +210,7 @@ namespace XOutputRedux.HidSharper.Reports
 
         void ParseMainCollectionEnd()
         {
-            State.CurrentCollectionItem = State.CurrentCollectionItem.ParentItem;
+            State.CurrentCollectionItem = State.CurrentCollectionItem.ParentItem!;
         }
 
         static void AddIndex(List<KeyValuePair<int, uint>> list, int action, uint value)
@@ -304,14 +305,14 @@ namespace XOutputRedux.HidSharper.Reports
             dataItem.Unit = new Units.Unit(State.GetGlobalItemValue(GlobalItemTag.Unit));
             dataItem.UnitExponent = Units.Unit.DecodeExponent(State.GetGlobalItemValue(GlobalItemTag.UnitExponent));
 
-            EncodedItem logicalMinItem = State.GetGlobalItem(GlobalItemTag.LogicalMinimum);
-            EncodedItem logicalMaxItem = State.GetGlobalItem(GlobalItemTag.LogicalMaximum);
+            EncodedItem? logicalMinItem = State.GetGlobalItem(GlobalItemTag.LogicalMinimum);
+            EncodedItem? logicalMaxItem = State.GetGlobalItem(GlobalItemTag.LogicalMaximum);
             dataItem.IsLogicalSigned = !dataItem.IsArray && ((logicalMinItem != null ? logicalMinItem.DataValue : 0) > (logicalMaxItem != null ? logicalMaxItem.DataValue : 0));
             int logicalMinimum = logicalMinItem == null ? 0 : dataItem.IsLogicalSigned ? logicalMinItem.DataValueSigned : (int)logicalMinItem.DataValue;
             int logicalMaximum = logicalMaxItem == null ? 0 : dataItem.IsLogicalSigned ? logicalMaxItem.DataValueSigned : (int)logicalMaxItem.DataValue;
 
-            EncodedItem physicalMinItem = State.GetGlobalItem(GlobalItemTag.PhysicalMinimum);
-            EncodedItem physicalMaxItem = State.GetGlobalItem(GlobalItemTag.PhysicalMaximum);
+            EncodedItem? physicalMinItem = State.GetGlobalItem(GlobalItemTag.PhysicalMinimum);
+            EncodedItem? physicalMaxItem = State.GetGlobalItem(GlobalItemTag.PhysicalMaximum);
             bool isPhysicalSigned = !dataItem.IsArray && ((physicalMinItem != null ? physicalMinItem.DataValue : 0) > (physicalMaxItem != null ? physicalMaxItem.DataValue : 0));
             int physicalMinimum = physicalMinItem == null ? 0 : isPhysicalSigned ? physicalMinItem.DataValueSigned : (int)physicalMinItem.DataValue;
             int physicalMaximum = physicalMaxItem == null ? 0 : isPhysicalSigned ? physicalMaxItem.DataValueSigned : (int)physicalMaxItem.DataValue;
@@ -324,7 +325,7 @@ namespace XOutputRedux.HidSharper.Reports
             dataItem.LogicalMinimum = logicalMinimum; dataItem.LogicalMaximum = logicalMaximum;
             dataItem.RawPhysicalMinimum = physicalMinimum; dataItem.RawPhysicalMaximum = physicalMaximum;
 
-            Report report;
+            Report? report;
             ReportType reportType
                 = tag == MainItemTag.Output ? ReportType.Output
                 : tag == MainItemTag.Feature ? ReportType.Feature
@@ -335,11 +336,11 @@ namespace XOutputRedux.HidSharper.Reports
                 report = new Report() { ReportID = (byte)reportID, ReportType = reportType };
                 Reports.Add(report);
 
-                var collection = State.CurrentCollectionItem;
+                DescriptorCollectionItem? collection = State.CurrentCollectionItem;
                 while (collection != null && !(collection is DeviceItem)) { collection = collection.ParentItem; }
                 if (collection is DeviceItem) { ((DeviceItem)collection).Reports.Add(report); }
             }
-            report.DataItems.Add(dataItem);
+            report!.DataItems.Add(dataItem);
 
             ParseMainIndexes(dataItem);
         }

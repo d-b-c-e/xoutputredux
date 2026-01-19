@@ -82,7 +82,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
     {
         public override int GetTickCount()
         {
-            timespec timespec;
+            Timespec timespec;
             if (clock_gettime(CLOCK_MONOTONIC, out timespec) < 0) { throw new InvalidOperationException(); }
             return (int)(uint)(ulong)((long)timespec.seconds * 1000 + (long)timespec.nanoseconds / 1000000);
         }
@@ -113,14 +113,14 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct timespec
+        public struct Timespec
         {
             public IntPtr seconds;
             public IntPtr nanoseconds;
         }
 
         [DllImport(libc, SetLastError = true)]
-        static extern int clock_gettime(int clockid, out timespec timespec);
+        static extern int clock_gettime(int clockid, out Timespec timespec);
 
         public override int shm_open(string filename, int oflag, int mode)
         {
@@ -282,7 +282,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct pollfd
+        public struct Pollfd
         {
             public int fd;
             public short events;
@@ -323,7 +323,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
         public static extern uint notify_cancel(int token);
 
         [DllImport(libc)]
-        public static extern int poll(ref pollfd fd, uint nfds, int timeout = -1); // < 0 if failed
+        public static extern int poll(ref Pollfd fd, uint nfds, int timeout = -1); // < 0 if failed
 
         [DllImport(libc)]
         public static extern IntPtr read(int filedes, byte[] buffer, UIntPtr nbyte);
@@ -422,7 +422,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
     internal abstract class SystemMutex : IDisposable
     {
         static HashSet<string> _antirecursionList = new HashSet<string>();
-        Thread _lockThread; // Mostly for debugging. Mutexes must be released by the threads that locked them.
+        Thread? _lockThread; // Mostly for debugging. Mutexes must be released by the threads that locked them.
 
         protected SystemMutex(string name)
         {
@@ -438,7 +438,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
         {
             int _disposed;
 
-            internal SystemMutex M;
+            internal SystemMutex M = null!;
 
             public void Dispose()
             {
@@ -455,12 +455,12 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
             }
         }
 
-        public bool TryLock(out IDisposable @lock)
+        public bool TryLock(out IDisposable? @lock)
         {
             return TryLock(Timeout.Infinite, out @lock);
         }
 
-        public bool TryLock(int timeout, out IDisposable @lock)
+        public bool TryLock(int timeout, out IDisposable? @lock)
         {
             @lock = null;
 
@@ -565,9 +565,9 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
             }
 
             bool _createdNew;
-            ManualResetEvent _event;
+            ManualResetEvent? _event;
             PosixEventManager _manager;
-            object _refreshHandle;
+            object? _refreshHandle;
 
             public PosixEvent(PosixEventManager manager, string name)
                 : base(name)
@@ -692,7 +692,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
 
             void UpdateEvent(bool set)
             {
-                if (set) { _event.Set(); } else { _event.Reset(); }
+                if (set) { _event?.Set(); } else { _event?.Reset(); }
             }
 
             public override bool CreatedNew
@@ -702,7 +702,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
 
             public override WaitHandle WaitHandle
             {
-                get { return _event; }
+                get { return _event!; }
             }
         }
 
@@ -720,7 +720,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
             bool _createdNew;
             Guid _guid;
             PosixEventManager _manager;
-            object _refreshHandle;
+            object? _refreshHandle;
 
             public PosixMutex(PosixEventManager manager, string name)
                 : base(name)
@@ -738,7 +738,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
                     return outL;
                 });
 
-                _manager.RegisterRefreshCallback(Refresh, out _refreshHandle, null, null);
+                _manager.RegisterRefreshCallback(Refresh, out _refreshHandle, null!, null!);
             }
 
             public override void Dispose()
@@ -877,9 +877,9 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
             }
         }
 
-        Dictionary<object, Action> _jobs;
-        ManualResetEvent _jobThreadReady;
-        Thread _jobThread;
+        Dictionary<object, Action>? _jobs;
+        ManualResetEvent? _jobThreadReady;
+        Thread? _jobThread;
 
         public PosixEventManager()
         {
@@ -984,8 +984,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
 
         protected void RunJobObject(object jobObject)
         {
-            Action job;
-            if (_jobs.TryGetValue(jobObject, out job))
+            if (_jobs != null && _jobs.TryGetValue(jobObject, out var job))
             {
                 job();
             }
@@ -993,38 +992,38 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
 
         protected abstract void RunNotify(FileStream eventStream, string eventName, string shmName);
 
-        void RegisterRefreshCallback(Action callback, out object jobObject, string eventName, string shmName)
+        void RegisterRefreshCallback(Action callback, out object? jobObject, string eventName, string shmName)
         {
             jobObject = CreateJobObject();
 
             lock (SyncRoot)
             {
-                _jobs.Add(jobObject, callback);
+                _jobs!.Add(jobObject, callback);
                 RegisterJobObjectNotify(jobObject, eventName, shmName);
                 Monitor.Pulse(SyncRoot);
             }
         }
 
-        void UnregisterRefreshCallback(ref object jobObject)
+        void UnregisterRefreshCallback(ref object? jobObject)
         {
             lock (SyncRoot)
             {
                 if (jobObject == null) { return; }
                 UnregisterJobObjectNotify(jobObject);
-                _jobs.Remove(jobObject); Monitor.Pulse(SyncRoot);
+                _jobs?.Remove(jobObject); Monitor.Pulse(SyncRoot);
                 jobObject = null;
             }
         }
 
         void RunJobThread()
         {
-            _jobThreadReady.Set();
+            _jobThreadReady!.Set();
 
             lock (SyncRoot)
             {
                 while (true)
                 {
-                    if (_jobs.Count == 0)
+                    if (_jobs!.Count == 0)
                     {
                         Monitor.Wait(SyncRoot);
                     }
@@ -1102,8 +1101,8 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
         }
 
         int _notifyFD;
-        Dictionary<int, JobHandle> _watchDescriptors;
-        Thread _notifyThread;
+        Dictionary<int, JobHandle>? _watchDescriptors;
+        Thread? _notifyThread;
 
         internal override void Start()
         {
@@ -1138,7 +1137,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
                     throw new InvalidOperationException("Failed to add inotify watch descriptor: " + NativeMethods.GetLastError().ToString());
                 }
 
-                _watchDescriptors.Add(wd, jobHandle); jobHandle.WatchDescriptor = wd;
+                _watchDescriptors!.Add(wd, jobHandle); jobHandle.WatchDescriptor = wd;
                 if (!hasThread)
                 {
                     _notifyThread = new Thread(RunNotifyThread) { IsBackground = true, Name = "HID System Events Notification Monitor" };
@@ -1159,7 +1158,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
                 }
 
                 jobHandle.WatchDescriptor = null;
-                _watchDescriptors.Remove(wd);
+                _watchDescriptors?.Remove(wd);
             }
         }
 
@@ -1184,15 +1183,14 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
                 int offset = 0;
                 while (offset <= bytes - inotifySize)
                 {
-                    var ev = (LinuxNativeMethods.inotify_event)Marshal.PtrToStructure((IntPtr)(&buffer[offset]), typeof(LinuxNativeMethods.inotify_event));
+                    var ev = (LinuxNativeMethods.inotify_event)Marshal.PtrToStructure((IntPtr)(&buffer[offset]), typeof(LinuxNativeMethods.inotify_event))!;
                     offset += inotifySize + checked((int)ev.len);
 
                     if (0 != (ev.mask & LinuxNativeMethods.IN_ATTRIB))
                     {
                         lock (SyncRoot)
                         {
-                            JobHandle jobHandle;
-                            if (_watchDescriptors.TryGetValue(ev.wd, out jobHandle))
+                            if (_watchDescriptors != null && _watchDescriptors.TryGetValue(ev.wd, out var jobHandle))
                             {
                                 RunJobObject(jobHandle);
                             }
@@ -1218,8 +1216,8 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
         }
 
         uint _notifyFD;
-        Dictionary<int, JobHandle> _notifyTokens;
-        Thread _notifyThread;
+        Dictionary<int, JobHandle>? _notifyTokens;
+        Thread? _notifyThread;
 
         internal override void Start()
         {
@@ -1261,7 +1259,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
                     throw new InvalidOperationException("Failed to register notify file descriptor! " + ret.ToString());
                 }
 
-                _notifyTokens.Add(token, jobHandle); jobHandle.NotifyToken = token;
+                _notifyTokens!.Add(token, jobHandle); jobHandle.NotifyToken = token;
                 if (!hasThread)
                 {
                     _notifyThread = new Thread(RunNotifyThread) { IsBackground = true, Name = "HID System Events Notification Monitor" };
@@ -1282,7 +1280,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
                 }
 
                 jobHandle.NotifyToken = null;
-                _notifyTokens.Remove(token);
+                _notifyTokens?.Remove(token);
             }
         }
 
@@ -1310,8 +1308,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
                 int token = msg.header.msgh_id;
                 lock (SyncRoot)
                 {
-                    JobHandle jobHandle;
-                    if (_notifyTokens.TryGetValue(token, out jobHandle))
+                    if (_notifyTokens != null && _notifyTokens.TryGetValue(token, out var jobHandle))
                     {
                         RunJobObject(jobHandle);
                     }
@@ -1327,7 +1324,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
         sealed class DefaultEvent : SystemEvent
         {
             bool _createdNew;
-            EventWaitHandle _event;
+            EventWaitHandle? _event;
 
             public DefaultEvent(string name)
                 : base(name)
@@ -1353,13 +1350,13 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
 
             public override void Reset()
             {
-                try { _event.Reset(); }
+                try { _event?.Reset(); }
                 catch { }
             }
 
             public override void Set()
             {
-                try { _event.Set(); }
+                try { _event?.Set(); }
                 catch { }
             }
 
@@ -1370,14 +1367,14 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
 
             public override WaitHandle WaitHandle
             {
-                get { return _event; }
+                get { return _event!; }
             }
         }
 
         sealed class DefaultMutex : SystemMutex
         {
             bool _createdNew;
-            Mutex _mutex;
+            Mutex? _mutex;
 
             public DefaultMutex(string name)
                 : base(name)
@@ -1403,7 +1400,7 @@ namespace XOutputRedux.HidSharper.Platform.SystemEvents
 
             protected override bool WaitOne(int timeout)
             {
-                if (!_mutex.WaitOne(timeout)) { return false; }
+                if (!_mutex!.WaitOne(timeout)) { return false; }
                 return true;
             }
 

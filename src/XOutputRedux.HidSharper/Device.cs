@@ -39,7 +39,7 @@ namespace XOutputRedux.HidSharper
 
         protected virtual DeviceStream OpenDeviceAndRestrictAccess(OpenConfiguration openConfig)
         {
-            bool exclusive = (bool)openConfig.GetOption(OpenOption.Exclusive);
+            bool exclusive = (bool)openConfig.GetOption(OpenOption.Exclusive)!;
 
             DeviceOpenUtility? openUtility = null;
             if (exclusive)

@@ -237,8 +237,8 @@ namespace XOutputRedux.HidSharper.Platform.Windows
                 {
                     paths.Add(new HidDevicePath()
                     {
-                        DeviceID = deviceID,
-                        DevicePath = devicePath
+                        DeviceID = deviceID!,
+                        DevicePath = devicePath!
                     });
                 });
 
