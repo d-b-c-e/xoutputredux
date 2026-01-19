@@ -19,7 +19,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -31,10 +30,6 @@ namespace XOutputRedux.HidSharper
     [ComVisible(true), Guid("80614F94-0742-4DE4-8AE9-DF9D55F870F2")]
     public abstract class DeviceList
     {
-        /// <exclude />
-        [Obsolete, EditorBrowsable(EditorBrowsableState.Never)]
-        public static event EventHandler<DeviceListChangedEventArgs>? DeviceListChanged;
-
         /// <summary>
         /// Occurs when a device is connected or disconnected.
         /// </summary>
@@ -117,7 +112,6 @@ namespace XOutputRedux.HidSharper
         public void RaiseChanged()
         {
             Changed?.Invoke(this, new DeviceListChangedEventArgs());
-            DeviceListChanged?.Invoke(this, new DeviceListChangedEventArgs());
         }
 
         /// <summary>

@@ -56,28 +56,31 @@ The library is functional but shows signs of its origins as a multi-platform lib
 ## Priority 3: Code Quality (3-4 hours)
 
 ### 3.1 Enable Nullable Reference Types
-- Already enabled in csproj, but many warnings exist
+- Already enabled in csproj, but many warnings exist (~167 warnings)
 - Key files needing fixes:
   - `AsyncResult.cs` - `_waitHandle` can be null
-  - `WinHidManager.cs` - Static nullable fields (lines 56-62)
+  - `WinHidManager.cs` - Static nullable fields
   - `HidDevice.cs` - Methods returning nullable strings
 
-### 3.2 Remove Obsolete Properties
-- **File**: `HidDevice.cs`
-- Properties marked `[Obsolete]`:
-  - `Manufacturer` (line 204) - use `GetManufacturer()`
-  - `ProductName` (line 225) - use `GetProductName()`
-  - `SerialNumber` (line 246) - use `GetSerialNumber()`
-  - `MaxInputReportLength` (line 267) - use `GetMaxInputReportLength()`
-  - `MaxOutputReportLength` (line 295) - use `GetMaxOutputReportLength()`
-  - `MaxFeatureReportLength` (line 311) - use `GetMaxFeatureReportLength()`
-  - `ProductVersion` (line 189) - use `ReleaseNumberBcd`
-- **Also**: `HidDeviceLoader.cs` (lines 28-60), `DeviceList.cs` (line 35)
+### 3.2 ~~Remove Obsolete Properties~~ DONE
+- **Removed from**: `HidDevice.cs`
+- Removed 7 obsolete properties (~125 lines):
+  - `ProductVersion` → use `ReleaseNumberBcd`
+  - `Manufacturer` → use `GetManufacturer()`
+  - `ProductName` → use `GetProductName()`
+  - `SerialNumber` → use `GetSerialNumber()`
+  - `MaxInputReportLength` → use `GetMaxInputReportLength()`
+  - `MaxOutputReportLength` → use `GetMaxOutputReportLength()`
+  - `MaxFeatureReportLength` → use `GetMaxFeatureReportLength()`
+- **Deleted**: `HidDeviceLoader.cs` (entire obsolete class)
+- **Removed from**: `DeviceList.cs` - obsolete static `DeviceListChanged` event
+- **Completed**: 2026-01-18
 
-### 3.3 Fix Volatile + Lock Anti-Pattern
+### 3.3 ~~Fix Volatile + Lock Anti-Pattern~~ DONE
 - **File**: `WinHidManager.cs` (lines 57-58)
 - **Issue**: `volatile` fields also protected by locks (redundant)
-- **Fix**: Remove `volatile` since locks provide memory barriers
+- **Fix**: Removed `volatile` keyword since locks provide memory barriers
+- **Completed**: 2026-01-18
 
 ---
 
@@ -166,11 +169,13 @@ finally { ArrayPool<byte>.Shared.Return(buffer); }
 |----------|-------------|--------|--------|
 | P1 | Quick wins (SHA256, CA2014) | 30 min | **DONE** |
 | P2 | Dead code removal | 2-3 hrs | **DONE** |
-| P3 | Code quality fixes | 3-4 hrs | Pending |
+| P3.1 | Nullable reference type fixes | 2-3 hrs | Pending |
+| P3.2 | Remove obsolete properties | 30 min | **DONE** |
+| P3.3 | Fix volatile + lock | 10 min | **DONE** |
 | P4 | Performance improvements | 4-6 hrs | Pending |
 | P5 | Modernization | 6-8 hrs | Pending |
 
-**Total**: ~14-19 hours remaining (P1-P2 complete)
+**Total**: ~12-17 hours remaining (P1, P2, P3.2, P3.3 complete)
 
 ---
 

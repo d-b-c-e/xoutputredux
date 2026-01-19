@@ -107,14 +107,6 @@ namespace XOutputRedux.HidSharper
             return ditem.Usages.GetAllValues().FirstOrDefault();
         }
 
-        /*
-        TODO
-        public virtual string[] GetDevicePathHierarchy()
-        {
-            throw new NotSupportedException();
-        }
-        */
-
         /// <inheritdoc/>
         public override string ToString()
         {
@@ -174,145 +166,12 @@ namespace XOutputRedux.HidSharper
             get;
         }
 
-        /// <exclude />
-        [Obsolete("Use ReleaseNumberBcd instead."), EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual int ProductVersion
-        {
-            get { return ReleaseNumberBcd; }
-        }
-
         /// <summary>
         /// The USB vendor ID. These are listed at: http://usb-ids.gowdy.us
         /// </summary>
         public abstract int VendorID
         {
             get;
-        }
-
-        /// <exclude />
-        [Obsolete, EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual string Manufacturer
-        {
-            get
-            {
-                try
-                {
-                    return GetManufacturer() ?? "";
-                }
-                catch (IOException)
-                {
-                    return "";
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    return "";
-                }
-            }
-        }
-
-        /// <exclude />
-        [Obsolete, EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual string ProductName
-        {
-            get
-            {
-                try
-                {
-                    return GetProductName() ?? "";
-                }
-                catch (IOException)
-                {
-                    return "";
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    return "";
-                }
-            }
-        }
-
-        /// <exclude />
-        [Obsolete, EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual string SerialNumber
-        {
-            get
-            {
-                try
-                {
-                    return GetSerialNumber() ?? "";
-                }
-                catch (IOException)
-                {
-                    return "";
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    return "";
-                }
-            }
-        }
-
-        /// <exclude />
-        [Obsolete, EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual int MaxInputReportLength
-        {
-            get
-            {
-                try
-                {
-                    return GetMaxInputReportLength();
-                }
-                catch (IOException)
-                {
-                    return 0;
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    return 0;
-                }
-            }
-        }
-
-        /// <exclude />
-        [Obsolete, EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual int MaxOutputReportLength
-        {
-            get
-            {
-                try
-                {
-                    return GetMaxOutputReportLength();
-                }
-                catch (IOException)
-                {
-                    return 0;
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    return 0;
-                }
-            }
-        }
-
-        /// <exclude />
-        [Obsolete, EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual int MaxFeatureReportLength
-        {
-            get
-            {
-                try
-                {
-                    return GetMaxFeatureReportLength();
-                }
-                catch (IOException)
-                {
-                    return 0;
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    return 0;
-                }
-            }
         }
     }
 }

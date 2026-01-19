@@ -54,8 +54,8 @@ namespace XOutputRedux.HidSharper.Platform.Windows
         bool _isSupported;
 
         static Thread? _notifyThread;
-        static volatile bool _notifyThreadShouldNotify;
-        static volatile bool _notifyThreadShuttingDown;
+        static bool _notifyThreadShouldNotify;
+        static bool _notifyThreadShuttingDown;
 
         static object? _hidNotifyObject;
 
