@@ -1,9 +1,9 @@
-using HidSharp;
+using XOutputRedux.HidSharper;
 
 namespace XOutputRedux.Input.RawInput;
 
 /// <summary>
-/// Provider for RawInput/HID devices using HidSharp.
+/// Provider for RawInput/HID devices using HidSharper.
 /// Adapted from XOutput.App.Devices.Input.RawInput.RawInputDeviceProvider
 /// </summary>
 public class RawInputDeviceProvider : IDisposable

@@ -1,4 +1,4 @@
-using HidSharp.Reports;
+using XOutputRedux.HidSharper.Reports;
 using XOutputRedux.Input.DirectInput;
 
 namespace XOutputRedux.Input.RawInput;

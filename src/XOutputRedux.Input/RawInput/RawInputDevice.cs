@@ -1,11 +1,11 @@
-using HidSharp;
-using HidSharp.Reports;
-using HidSharp.Reports.Input;
+using XOutputRedux.HidSharper;
+using XOutputRedux.HidSharper.Reports;
+using XOutputRedux.HidSharper.Reports.Input;
 
 namespace XOutputRedux.Input.RawInput;
 
 /// <summary>
-/// RawInput/HID device implementation using HidSharp.
+/// RawInput/HID device implementation using HidSharper.
 /// Adapted from XOutput.App.Devices.Input.RawInput.RawInputDevice
 /// </summary>
 public class RawInputDevice : IInputDevice
@@ -23,7 +23,7 @@ public class RawInputDevice : IInputDevice
     public IReadOnlyList<IInputSource> Sources => _sources;
 
     public event EventHandler<InputChangedEventArgs>? InputChanged;
-#pragma warning disable CS0067 // Event is required by IInputDevice interface but HidSharp doesn't provide disconnect notifications
+#pragma warning disable CS0067 // Event is required by IInputDevice interface but HidSharper doesn't provide disconnect notifications
     public event EventHandler? Disconnected;
 #pragma warning restore CS0067
 

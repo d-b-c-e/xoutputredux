@@ -9,11 +9,11 @@
 
   <ItemGroup>
     <PackageReference Include="Vortice.DirectInput" Version="3.8.2" />
-    <PackageReference Include="HidSharp" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\XOutputRedux.Core\XOutputRedux.Core.csproj" />
+    <ProjectReference Include="..\XOutputRedux.HidSharper\XOutputRedux.HidSharper.csproj" />
   </ItemGroup>
 
 </Project>

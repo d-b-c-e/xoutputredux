@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>XOutputRedux.HidSharper</RootNamespace>
+    <AssemblyName>XOutputRedux.HidSharper</AssemblyName>
+
+    <!-- Package metadata -->
+    <PackageId>XOutputRedux.HidSharper</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>XOutputRedux Contributors, HidSharp Contributors</Authors>
+    <Description>A slimmed-down, Windows-focused fork of HidSharp for HID device enumeration, report descriptor parsing, and input handling.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/d-b-c-e/xoutputredux</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/d-b-c-e/xoutputredux</RepositoryUrl>
+    <PackageTags>HID;USB;Input;GameController;Windows</PackageTags>
+
+    <!-- Based on HidSharp by IntegratedCircuits -->
+    <Copyright>Based on HidSharp (MIT License) - https://github.com/IntergatedCircuits/HidSharp</Copyright>
+  </PropertyGroup>
+
+</Project>

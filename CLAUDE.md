@@ -27,7 +27,8 @@ XOutputRedux/
 │   ├── XOutputRedux.HidHide/        # HidHide integration
 │   ├── XOutputRedux.App/            # WPF GUI + CLI application
 │   │   └── Assets/                  # Icons, banners, branding assets
-│   └── XOutputRedux.StreamDeck/     # Stream Deck plugin
+│   ├── XOutputRedux.StreamDeck/     # Stream Deck plugin
+│   └── XOutputRedux.HidSharper/     # Forked/slimmed HidSharp library (Windows-only HID)
 └── tests/
     └── XOutputRedux.Tests/
 ```
@@ -38,7 +39,7 @@ XOutputRedux/
 |---------|---------|---------|
 | Nefarius.ViGEm.Client | 1.21.256 | Virtual Xbox controller |
 | Vortice.DirectInput | 3.8.2 | DirectInput device access |
-| HidSharp | 2.1.0 | RawInput/HID device access |
+| XOutputRedux.HidSharper | 1.0.0 | RawInput/HID device access (forked from HidSharp, Windows-only) |
 | System.CommandLine | 2.0.0-beta4 | CLI parsing |
 | Hardcodet.NotifyIcon.Wpf | 1.1.0 | System tray |
 
@@ -115,13 +116,13 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | Item | Status | Notes |
 |------|--------|-------|
 | **Migrate SharpDX → Vortice.DirectInput** | ✓ Complete | Migrated 2026-01-18. Vortice 3.8.2 actively maintained. |
+| **Fork HidSharp → XOutputRedux.HidSharper** | ✓ Complete | Forked 2026-01-18. Windows-only, removed BLE/Serial support, 73 files. |
 
 ### Future Roadmap (Late 2026)
 
 | Item | Rationale | Effort |
 |------|-----------|--------|
 | **Upgrade to .NET 10** | .NET 8 LTS ends Nov 2026; .NET 10 is next LTS | ~1 day |
-| **Fork/slim HidSharp** | HidSharp abandoned (2020); slim to ~500 lines for our needs | ~2-3 days |
 
 *Note: These are maintenance/future-proofing upgrades, not performance improvements. See [CLAUDE_DEPENDENCY_ANALYSIS.md](CLAUDE_DEPENDENCY_ANALYSIS.md) for detailed analysis.*
 
