@@ -130,26 +130,23 @@ The library is functional but shows signs of its origins as a multi-platform lib
 
 ---
 
-## Priority 5: Modernization (6-8 hours)
+## Priority 5: Modernization - DEFERRED
 
-### 5.1 Span<T> and Memory<T> Usage
-- **Candidates**:
-  - `DataItem.ReadRaw()` / `ReadLogical()` - parameter could be `ReadOnlySpan<byte>`
-  - `NativeMethods.NTString()` - could use stack-allocated Span
-  - Report parsing hot paths
+Analysis performed 2026-01-20. Items deferred due to limited benefit vs risk.
 
-### 5.2 Modernize Async Pattern
+### 5.1 Span<T> and Memory<T> Usage - NOT WORTH IT
+- **Analysis**: `Array.IndexOf` already SIMD-optimized in .NET 8. Buffer operations don't benefit since no slicing is needed and inner loops read byte-by-byte.
+- **Status**: Skipped (marginal benefit)
+
+### 5.2 Modernize Async Pattern - BREAKING CHANGE
 - **File**: `AsyncResult.cs`
-- **Current**: Legacy `IAsyncResult` with ThreadPool callbacks
-- **Target**: Replace with `Task<T>` and async/await
-- **Note**: Breaking change to public API
+- **Issue**: Replacing `IAsyncResult` with `Task<T>` would break public API (`BeginRead`/`EndRead`)
+- **Status**: Skipped (too risky for a forked library)
 
-### 5.3 Flatten Abstraction Hierarchy
-- **Current**: 3-4 levels of inheritance for single platform
-  - `Device` → `HidDevice` → `WinHidDevice`
-  - `DeviceStream` → `HidStream` → `SysHidStream` → `WinHidStream`
-- **Target**: Collapse to 2 levels since Windows-only
-- **Impact**: ~200 lines removed, simpler code
+### 5.3 Flatten Abstraction Hierarchy - HIGH RISK
+- **Current**: `Device` → `HidDevice` → `WinHidDevice` (3 levels)
+- **Issue**: Structural refactoring of working code with risk of introducing bugs
+- **Status**: Skipped (not worth the risk)
 
 ---
 
@@ -186,9 +183,9 @@ The library is functional but shows signs of its origins as a multi-platform lib
 | P3.4 | Remove dead POSIX/Linux/macOS code | 30 min | **DONE** |
 | P4.1 | Cache event handles in WinHidStream | 30 min | **DONE** |
 | P4.2-4.4 | Other perf improvements | N/A | Skipped (not applicable) |
-| P5 | Modernization | 6-8 hrs | Pending |
+| P5 | Modernization | N/A | **DEFERRED** (low benefit, high risk) |
 
-**Total**: ~6-8 hours remaining (only P5 pending)
+**Total**: All practical improvements complete. HidSharper tech debt cleanup finished.
 
 ---
 
