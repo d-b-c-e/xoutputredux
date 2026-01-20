@@ -277,7 +277,8 @@
         <tb:TaskbarIcon x:Name="TrayIcon"
                         ToolTipText="XOutputRedux"
                         IconSource="pack://application:,,,/Assets/Icons/favicon.ico"
-                        Visibility="Visible">
+                        Visibility="Visible"
+                        TrayMouseDoubleClick="TrayIcon_DoubleClick">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Show" Click="TrayIcon_Show_Click"/>

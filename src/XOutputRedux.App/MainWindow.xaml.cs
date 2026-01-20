@@ -986,6 +986,13 @@ public partial class MainWindow : Window
         Activate();
     }
 
+    private void TrayIcon_DoubleClick(object sender, RoutedEventArgs e)
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+    }
+
     private void TrayIcon_Exit_Click(object sender, RoutedEventArgs e)
     {
         _isExiting = true;
