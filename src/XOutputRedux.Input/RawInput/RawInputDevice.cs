@@ -133,7 +133,7 @@ public class RawInputDevice : IInputDevice
             reportsRead++;
             _reportCount++;
 
-            InputLogger.Verbose($"[{Name}] Report #{_reportCount}: {report.ReportID}, {_inputBuffer.Length} bytes: {BitConverter.ToString(_inputBuffer, 0, Math.Min(16, _inputBuffer.Length))}");
+            InputLogger.Verbose($"[{Name}] Report #{_reportCount}: {report!.ReportID}, {_inputBuffer.Length} bytes: {BitConverter.ToString(_inputBuffer, 0, Math.Min(16, _inputBuffer.Length))}");
 
             try
             {

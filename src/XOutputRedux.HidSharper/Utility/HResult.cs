@@ -21,7 +21,6 @@ using System.Runtime.InteropServices;
 
 namespace XOutputRedux.HidSharper.Utility
 {
-    [Obsolete("This class is experimental and its functionality may be moved elsewhere in the future. Please do not rely on it.")]
     public static class HResult
     {
         public const int FileNotFound = unchecked((int)0x80070002);     // ERROR_FILE_NOT_FOUND

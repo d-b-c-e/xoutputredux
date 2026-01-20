@@ -55,8 +55,8 @@ The library is functional but shows signs of its origins as a multi-platform lib
 
 ## Priority 3: Code Quality (3-4 hours)
 
-### 3.1 Fix Nullable Reference Type Warnings - IN PROGRESS
-- Started with ~163 unique warnings, reduced to ~80 (51% fixed)
+### 3.1 ~~Fix Nullable Reference Type Warnings~~ DONE
+- Started with ~163 unique warnings, now **0 warnings**
 - **Fixed files**:
   - `Throw.cs` - Made return types nullable for fluent API
   - `AsyncResult.cs` - Made `_waitHandle`, callbacks, state nullable
@@ -68,12 +68,18 @@ The library is functional but shows signs of its origins as a multi-platform lib
   - `DeviceOpenUtility.cs` - Made fields and local variables nullable
   - `HidManager.cs` - Made EventManager and delegate fields nullable
   - `WinHidDevice.cs` - Made fields nullable, fixed TryCreate return type
-- **Remaining** (~80 warnings in 15 files):
-  - `SystemEvents.cs` (23) - Complex Windows event system
-  - `HidDeviceInputReceiver.cs` (11) - Report input handling
-  - `NativeMethods.cs` (5) - P/Invoke declarations
-  - Various Reports/* files
-- **Completed**: 2026-01-18 (partial)
+  - `HidDeviceInputReceiver.cs` - Fixed nullable annotations
+  - `NativeMethods.cs` - Fixed nullable annotations
+- **Completed**: 2026-01-18 (partial), 2026-01-20 (complete)
+
+### 3.4 ~~Remove Dead POSIX/Linux/macOS Code from SystemEvents.cs~~ DONE
+- **File**: `Platform/SystemEvents.cs`
+- **Removed**: ~1140 lines of dead code (file reduced from 1442 to 302 lines)
+  - `PosixNativeMethods`, `LinuxNativeMethods`, `MacOSNativeMethods` classes
+  - `PosixEventManager`, `LinuxEventManager`, `MacOSEventManager` classes
+  - All POSIX shared memory, file locking, and inotify/kqueue implementations
+- **Kept**: `SystemEvent`, `SystemMutex`, `EventManager` (abstract bases) and `DefaultEventManager` (Windows implementation)
+- **Completed**: 2026-01-20
 
 ### 3.2 ~~Remove Obsolete Properties~~ DONE
 - **Removed from**: `HidDevice.cs`
@@ -182,13 +188,14 @@ finally { ArrayPool<byte>.Shared.Return(buffer); }
 |----------|-------------|--------|--------|
 | P1 | Quick wins (SHA256, CA2014) | 30 min | **DONE** |
 | P2 | Dead code removal | 2-3 hrs | **DONE** |
-| P3.1 | Nullable reference type fixes | 2-3 hrs | **51% DONE** (~80 warnings remain) |
+| P3.1 | Nullable reference type fixes | 2-3 hrs | **DONE** |
 | P3.2 | Remove obsolete properties | 30 min | **DONE** |
 | P3.3 | Fix volatile + lock | 10 min | **DONE** |
+| P3.4 | Remove dead POSIX/Linux/macOS code | 30 min | **DONE** |
 | P4 | Performance improvements | 4-6 hrs | Pending |
 | P5 | Modernization | 6-8 hrs | Pending |
 
-**Total**: ~11-15 hours remaining (P1, P2, P3.2, P3.3, ~50% of P3.1 complete)
+**Total**: ~10-14 hours remaining (P4, P5 pending)
 
 ---
 

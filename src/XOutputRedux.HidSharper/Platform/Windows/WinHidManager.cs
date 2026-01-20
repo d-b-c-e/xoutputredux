@@ -254,7 +254,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
         protected override bool TryCreateHidDevice(object key, out Device? device)
         {
             var path = (HidDevicePath)key;
-            device = WinHidDevice.TryCreate(path.DevicePath, path.DeviceID);
+            device = WinHidDevice.TryCreate(path.DevicePath);
             return device != null;
         }
 

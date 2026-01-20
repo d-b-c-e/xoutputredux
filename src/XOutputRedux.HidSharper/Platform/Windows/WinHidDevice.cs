@@ -36,7 +36,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
         }
         GetInfoFlags _getInfoFlags;
         readonly object _getInfoLock = new object();
-        string _path = null!, _id = null!;
+        string _path = null!;
         string _manufacturer = string.Empty;
         string _productName = string.Empty;
         string _serialNumber = string.Empty;
@@ -49,9 +49,9 @@ namespace XOutputRedux.HidSharper.Platform.Windows
 
         }
 
-        internal static WinHidDevice? TryCreate(string path, string id)
+        internal static WinHidDevice? TryCreate(string path)
         {
-            var d = new WinHidDevice() { _path = path, _id = id };
+            var d = new WinHidDevice() { _path = path };
 
             return d.TryOpenToGetInfo(handle =>
                 {

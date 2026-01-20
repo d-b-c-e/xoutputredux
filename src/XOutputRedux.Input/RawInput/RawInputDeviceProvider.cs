@@ -154,13 +154,13 @@ public class RawInputDeviceProvider : IDisposable
 
             if (deviceItem == null)
             {
-                hidStream.Dispose();
+                hidStream!.Dispose();
                 return null;
             }
 
             var device = new RawInputDevice(
                 hidDevice,
-                hidStream,
+                hidStream!,
                 reportDescriptor,
                 deviceItem,
                 uniqueId,
@@ -174,7 +174,7 @@ public class RawInputDeviceProvider : IDisposable
         }
         catch
         {
-            hidStream.Dispose();
+            hidStream!.Dispose();
             throw;
         }
     }

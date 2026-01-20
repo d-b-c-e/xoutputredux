@@ -108,7 +108,8 @@ public class RawInputSource : InputSource
     private static DPadDirection GetDirection(DataValue dataValue)
     {
         // HID hat switch uses logical values 0-8 (relative to minimum)
-        int value = dataValue.GetLogicalValue() - dataValue.DataItem.LogicalMinimum;
+        int logicalMinimum = dataValue.DataItem?.LogicalMinimum ?? 0;
+        int value = dataValue.GetLogicalValue() - logicalMinimum;
 
         return value switch
         {
