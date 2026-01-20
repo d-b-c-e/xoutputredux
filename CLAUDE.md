@@ -108,8 +108,8 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 14: Backup/Restore Settings | ✓ Complete | Export/import to `.xorbackup` file (ZIP containing all settings, profiles, games.json) |
 | 15: Portable Mode | ✓ Complete | True portable support - detect `portable.txt` and store settings in `data\` subfolder |
 | 16: Code Signing | Planned | Sign installer/exe to avoid Windows Defender/SmartScreen warnings |
-| 17: Rebrand to XOutput Redux | ✓ Complete | Codebase renamed; repo rename pending |
-| 18: Rename GitHub Repository | Planned | Rename repo from `xoutputrenew` to `xoutputredux`, update all URLs |
+| 17: Rebrand to XOutput Redux | ✓ Complete | Codebase renamed to XOutput Redux |
+| 18: Rename GitHub Repository | ✓ Complete | Renamed repo to `xoutputredux`, URLs already pointed to new name |
 
 ### Completed Dependency Upgrades
 
