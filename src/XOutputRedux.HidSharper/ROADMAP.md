@@ -105,36 +105,28 @@ The library is functional but shows signs of its origins as a multi-platform lib
 
 ## Priority 4: Performance Improvements (4-6 hours)
 
-### 4.1 Use ArrayPool for Buffers
-- **Files**: `HidStream.cs`, `WinHidStream.cs`, `SysHidStream.cs`
-- **Current**: Allocates `new byte[]` for every read/write
-- **Fix**: Use `ArrayPool<byte>.Shared.Rent()` / `Return()`
-- **Impact**: Reduces GC pressure in hot I/O paths
+### 4.1 ~~Cache Event Handles in WinHidStream~~ DONE
+- **File**: `Platform/Windows/WinHidStream.cs`
+- **Issue**: Created new kernel event handle for every Read() and Write() call
+- **Fix**: Cache `_readEventHandle` and `_writeEventHandle` as instance fields, reset before reuse
+- **Impact**: Eliminates 2 kernel calls (CreateEvent + CloseHandle) per I/O operation
+- **Completed**: 2026-01-20
 
-```csharp
-// Before
-byte[] buffer = new byte[Device.GetMaxInputReportLength()];
+### 4.2 ArrayPool for Buffers - NOT APPLICABLE
+- **Analysis**:
+  - `HidStream.Read()` returns buffer to caller, so pooling isn't possible
+  - `WinHidStream` already caches `_readBuffer` and `_writeBuffer` per-instance
+  - No hot allocation paths remain that would benefit from ArrayPool
+- **Status**: Skipped (no benefit)
 
-// After
-byte[] buffer = ArrayPool<byte>.Shared.Rent(Device.GetMaxInputReportLength());
-try { /* use buffer */ }
-finally { ArrayPool<byte>.Shared.Return(buffer); }
-```
-
-### 4.2 Reduce Lock Contention in Device Enumeration
+### 4.3 Lock Contention in Device Enumeration - MINIMAL
 - **File**: `WinHidManager.cs`
-- **Issue**: Heavy locking in `GetHidDeviceKeys()` and notification paths
-- **Options**:
-  - Use `ReaderWriterLockSlim` (many readers, few writers)
-  - Cache device list with longer TTL
-  - Use `ConcurrentDictionary` for device cache
+- **Analysis**: Already has effective caching with `_hidDeviceKeysCache` invalidated only on device changes
+- **Status**: Skipped (already optimized)
 
-### 4.3 Optimize SysHidStream Synchronization
-- **File**: `Platform/SysHidStream.cs`
-- **Issue**: Queue + Monitor.Wait for every I/O operation
-- **Options**:
-  - Replace Queue with `Channel<T>` for better async
-  - Reduce locking granularity
+### 4.4 Optimize SysHidStream Synchronization - REMOVED
+- **Analysis**: SysHidStream is just a thin abstraction layer, no Queue/Monitor patterns found
+- **Status**: Skipped (not applicable)
 
 ---
 
@@ -192,10 +184,11 @@ finally { ArrayPool<byte>.Shared.Return(buffer); }
 | P3.2 | Remove obsolete properties | 30 min | **DONE** |
 | P3.3 | Fix volatile + lock | 10 min | **DONE** |
 | P3.4 | Remove dead POSIX/Linux/macOS code | 30 min | **DONE** |
-| P4 | Performance improvements | 4-6 hrs | Pending |
+| P4.1 | Cache event handles in WinHidStream | 30 min | **DONE** |
+| P4.2-4.4 | Other perf improvements | N/A | Skipped (not applicable) |
 | P5 | Modernization | 6-8 hrs | Pending |
 
-**Total**: ~10-14 hours remaining (P4, P5 pending)
+**Total**: ~6-8 hours remaining (only P5 pending)
 
 ---
 

@@ -27,6 +27,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
         readonly object _readSync = new object(), _writeSync = new object();
         byte[] _readBuffer = Array.Empty<byte>(), _writeBuffer = Array.Empty<byte>();
         IntPtr _handle, _closeEventHandle;
+        IntPtr _readEventHandle, _writeEventHandle; // Cached to avoid kernel calls per I/O
 
         internal WinHidStream(WinHidDevice device)
             : base(device)
@@ -56,6 +57,8 @@ namespace XOutputRedux.HidSharper.Platform.Windows
             }
 
 			_handle = handle;
+            _readEventHandle = NativeMethods.CreateManualResetEventOrThrow();
+            _writeEventHandle = NativeMethods.CreateManualResetEventOrThrow();
 			HandleInitAndOpen();
         }
 		
@@ -73,6 +76,8 @@ namespace XOutputRedux.HidSharper.Platform.Windows
 		{
 			NativeMethods.CloseHandle(ref _handle);
 			NativeMethods.CloseHandle(ref _closeEventHandle);
+            NativeMethods.CloseHandle(ref _readEventHandle);
+            NativeMethods.CloseHandle(ref _writeEventHandle);
 		}
 
         public unsafe override void GetFeature(byte[] buffer, int offset, int count)
@@ -99,8 +104,7 @@ namespace XOutputRedux.HidSharper.Platform.Windows
         public unsafe override int Read(byte[] buffer, int offset, int count)
         {
             Throw.If.OutOfRange(buffer, offset, count); uint bytesTransferred;
-            IntPtr @event = NativeMethods.CreateManualResetEventOrThrow();
-			
+
 			HandleAcquireIfOpenOrFail();
             try
             {
@@ -109,13 +113,14 @@ namespace XOutputRedux.HidSharper.Platform.Windows
 	                int minIn = Device.GetMaxInputReportLength();
                     if (minIn <= 0) { throw new IOException("Can't read from this device."); }
                     if (_readBuffer == null || _readBuffer.Length < Math.Max(count, minIn)) { Array.Resize(ref _readBuffer, Math.Max(count, minIn)); }
-	
+
 	                fixed (byte* ptr = _readBuffer)
 	                {
+                        NativeMethods.ResetEvent(_readEventHandle);
                         var overlapped = stackalloc NativeOverlapped[1];
-                        overlapped[0].EventHandle = @event;
-                        
-                        NativeMethods.OverlappedOperation(_handle, @event, ReadTimeout, _closeEventHandle,
+                        overlapped[0].EventHandle = _readEventHandle;
+
+                        NativeMethods.OverlappedOperation(_handle, _readEventHandle, ReadTimeout, _closeEventHandle,
                             NativeMethods.ReadFile(_handle, ptr, Math.Max(count, minIn), IntPtr.Zero, overlapped),
                             overlapped, out bytesTransferred);
 
@@ -128,7 +133,6 @@ namespace XOutputRedux.HidSharper.Platform.Windows
             finally
             {
 				HandleRelease();
-                NativeMethods.CloseHandle(@event);
             }
         }
 
@@ -154,7 +158,6 @@ namespace XOutputRedux.HidSharper.Platform.Windows
         public unsafe override void Write(byte[] buffer, int offset, int count)
         {
             Throw.If.OutOfRange(buffer, offset, count); uint bytesTransferred;
-            IntPtr @event = NativeMethods.CreateManualResetEventOrThrow();
 
 			HandleAcquireIfOpenOrFail();
             try
@@ -171,17 +174,18 @@ namespace XOutputRedux.HidSharper.Platform.Windows
                         Array.Clear(_writeBuffer, count, minOut - count);
                         count = minOut;
                     }
-	
+
 	                fixed (byte* ptr = _writeBuffer)
 	                {
 	                    int offset0 = 0;
 	                    var overlapped = stackalloc NativeOverlapped[1];
 	                    while (count > 0)
 	                    {
+                            NativeMethods.ResetEvent(_writeEventHandle);
                             overlapped[0] = default; // Reset for each iteration
-                            overlapped[0].EventHandle = @event;
+                            overlapped[0].EventHandle = _writeEventHandle;
 
-                            NativeMethods.OverlappedOperation(_handle, @event, WriteTimeout, _closeEventHandle,
+                            NativeMethods.OverlappedOperation(_handle, _writeEventHandle, WriteTimeout, _closeEventHandle,
 	                            NativeMethods.WriteFile(_handle, ptr + offset0, Math.Min(minOut, count), IntPtr.Zero, overlapped),
 	                            overlapped, out bytesTransferred);
 	                        count -= (int)bytesTransferred; offset0 += (int)bytesTransferred;
@@ -192,7 +196,6 @@ namespace XOutputRedux.HidSharper.Platform.Windows
             finally
             {
 				HandleRelease();
-                NativeMethods.CloseHandle(@event);
             }
         }
     }
