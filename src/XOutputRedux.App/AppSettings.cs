@@ -13,7 +13,7 @@ public class AppSettings
     /// <summary>
     /// Current schema version. Increment when making breaking changes.
     /// </summary>
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     private static string SettingsPath => AppPaths.AppSettings;
 
@@ -76,6 +76,21 @@ public class AppSettings
     public bool IncludeProfileInCrashReport { get; set; } = true;
 
     /// <summary>
+    /// Whether the global hotkey to add games is enabled.
+    /// </summary>
+    public bool AddGameHotkeyEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Virtual key code for the add game hotkey (default: 'G' = 0x47).
+    /// </summary>
+    public uint AddGameHotkeyKey { get; set; } = 0x47;
+
+    /// <summary>
+    /// Modifier keys for the add game hotkey (default: Ctrl+Shift = 0x06).
+    /// </summary>
+    public uint AddGameHotkeyModifiers { get; set; } = 0x06;
+
+    /// <summary>
     /// Checks if enough time has passed to check for updates again.
     /// </summary>
     public bool ShouldCheckForUpdates()
@@ -122,6 +137,15 @@ public class AppSettings
             CrashReportingEnabled = true;
             IncludeProfileInCrashReport = true;
             SchemaVersion = 2;
+        }
+
+        // Migration from version 2 to version 3: add global hotkey settings
+        if (SchemaVersion < 3)
+        {
+            AddGameHotkeyEnabled = true;
+            AddGameHotkeyKey = 0x47; // 'G'
+            AddGameHotkeyModifiers = 0x06; // Ctrl+Shift
+            SchemaVersion = 3;
         }
 
         SchemaVersion = CurrentSchemaVersion;

@@ -181,6 +181,47 @@ public static class ToastNotificationService
     }
 
     /// <summary>
+    /// Shows a toast notification when a game is added via hotkey.
+    /// </summary>
+    public static void ShowGameAddedViaHotkey(string gameName, string profileName)
+    {
+        if (!Enabled) return;
+
+        try
+        {
+            new ToastContentBuilder()
+                .AddText($"{AppName}")
+                .AddText($"Added: {gameName}")
+                .AddAttributionText($"Associated with profile: {profileName}")
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to show toast notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Shows a toast notification for hotkey-related errors or info.
+    /// </summary>
+    public static void ShowHotkeyError(string message)
+    {
+        if (!Enabled) return;
+
+        try
+        {
+            new ToastContentBuilder()
+                .AddText($"{AppName}")
+                .AddText(message)
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warning($"Failed to show toast notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Cleans up toast notification resources on app exit.
     /// Call this when the application is closing.
     /// </summary>

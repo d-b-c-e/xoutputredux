@@ -43,6 +43,7 @@ public partial class MainWindow : Window
     private readonly IpcService _ipcService;
     private readonly GameAssociationManager _gameManager;
     private readonly GameMonitorService _gameMonitorService;
+    private GlobalHotkeyService? _hotkeyService;
 
     // Test tab brushes
     private static readonly SolidColorBrush ReleasedBrush = new(Color.FromRgb(0xCC, 0xCC, 0xCC));
@@ -120,6 +121,7 @@ public partial class MainWindow : Window
         RefreshProfiles();
         CheckDriverStatus();
         InitializeOptions();
+        InitializeGlobalHotkey();
 
         // Show portable mode indicators if applicable
         if (AppPaths.IsPortable)
@@ -1030,6 +1032,7 @@ public partial class MainWindow : Window
         _inputHighlightTimer.Stop();
 
         _ffbService?.Dispose();
+        _hotkeyService?.Dispose();
         _gameMonitorService.Dispose();
         _ipcService.Dispose();
         AppLogger.Shutdown();
@@ -1352,6 +1355,11 @@ public partial class MainWindow : Window
 
         // Updates checkbox
         CheckForUpdatesCheckBox.IsChecked = _appSettings.CheckForUpdatesOnStartup;
+
+        // Hotkey settings
+        AddGameHotkeyEnabledCheckBox.IsChecked = _appSettings.AddGameHotkeyEnabled;
+        UpdateHotkeyDisplayText();
+        UpdateHotkeyStatus(_hotkeyService?.IsEnabled ?? false);
     }
 
     private void RefreshStartupProfileComboBox()
@@ -1592,6 +1600,148 @@ public partial class MainWindow : Window
             CheckForUpdatesButton.Content = "Check Now";
         }
     }
+
+    #endregion
+
+    #region Global Hotkey
+
+    private void InitializeGlobalHotkey()
+    {
+        if (!_appSettings.AddGameHotkeyEnabled)
+        {
+            UpdateHotkeyStatus(false);
+            return;
+        }
+
+        _hotkeyService = new GlobalHotkeyService();
+        _hotkeyService.AddGameHotkeyPressed += OnAddGameHotkeyPressed;
+        _hotkeyService.Initialize(this, _appSettings.AddGameHotkeyModifiers, _appSettings.AddGameHotkeyKey);
+
+        UpdateHotkeyStatus(_hotkeyService.IsEnabled);
+    }
+
+    private void OnAddGameHotkeyPressed()
+    {
+        Dispatcher.Invoke(() =>
+        {
+            // Skip if XOutputRedux itself is focused
+            if (GlobalHotkeyService.GetForegroundWindowProcessId() == GlobalHotkeyService.GetCurrentProcessId())
+            {
+                return;
+            }
+
+            // Check if profile is running
+            if (_runningProfile == null)
+            {
+                ToastNotificationService.ShowHotkeyError("No profile running - start a profile first");
+                return;
+            }
+
+            // Get foreground window executable path
+            var exePath = GlobalHotkeyService.GetForegroundWindowExecutablePath();
+            if (string.IsNullOrEmpty(exePath))
+            {
+                ToastNotificationService.ShowHotkeyError("Could not detect focused application");
+                AppLogger.Warning("Add game hotkey: failed to get foreground window executable path");
+                return;
+            }
+
+            // Check if game already exists
+            var existingGame = _gameManager.GetByExecutablePath(exePath);
+            if (existingGame != null)
+            {
+                ToastNotificationService.ShowHotkeyError($"'{existingGame.Name}' is already configured");
+                return;
+            }
+
+            // Create new game association
+            var gameName = Path.GetFileNameWithoutExtension(exePath);
+            var game = new GameAssociation
+            {
+                Name = gameName,
+                ExecutablePath = exePath,
+                ProfileName = _runningProfile.Name,
+                LaunchDelayMs = 2000 // Default delay
+            };
+
+            _gameManager.Add(game);
+            RefreshGamesListView();
+
+            ToastNotificationService.ShowGameAddedViaHotkey(gameName, _runningProfile.Name);
+            AppLogger.Info($"Added game via hotkey: {gameName} -> {_runningProfile.Name}");
+            StatusText.Text = $"Added game: {gameName}";
+        });
+    }
+
+    private void AddGameHotkeyEnabled_Changed(object sender, RoutedEventArgs e)
+    {
+        _appSettings.AddGameHotkeyEnabled = AddGameHotkeyEnabledCheckBox.IsChecked == true;
+        _appSettings.Save();
+
+        if (_appSettings.AddGameHotkeyEnabled)
+        {
+            if (_hotkeyService == null)
+            {
+                InitializeGlobalHotkey();
+            }
+            else
+            {
+                _hotkeyService.Register(_appSettings.AddGameHotkeyModifiers, _appSettings.AddGameHotkeyKey);
+                UpdateHotkeyStatus(_hotkeyService.IsEnabled);
+            }
+        }
+        else
+        {
+            _hotkeyService?.Unregister();
+            UpdateHotkeyStatus(false);
+        }
+    }
+
+    private void ChangeHotkey_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new HotkeyInputDialog(_appSettings.AddGameHotkeyModifiers, _appSettings.AddGameHotkeyKey)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            _appSettings.AddGameHotkeyModifiers = dialog.Modifiers;
+            _appSettings.AddGameHotkeyKey = dialog.Key;
+            _appSettings.Save();
+
+            if (_appSettings.AddGameHotkeyEnabled && _hotkeyService != null)
+            {
+                bool success = _hotkeyService.Register(_appSettings.AddGameHotkeyModifiers, _appSettings.AddGameHotkeyKey);
+                UpdateHotkeyStatus(success);
+            }
+
+            UpdateHotkeyDisplayText();
+        }
+    }
+
+    private void UpdateHotkeyDisplayText()
+    {
+        HotkeyText.Text = GlobalHotkeyService.FormatHotkey(_appSettings.AddGameHotkeyModifiers, _appSettings.AddGameHotkeyKey);
+    }
+
+    private void UpdateHotkeyStatus(bool registered)
+    {
+        if (registered)
+        {
+            HotkeyStatusText.Text = "Active";
+            HotkeyStatusText.Foreground = new SolidColorBrush(Colors.Green);
+        }
+        else
+        {
+            HotkeyStatusText.Text = "Inactive";
+            HotkeyStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+        }
+    }
+
+    #endregion
+
+    #region Stream Deck
 
     private void InstallStreamDeckPlugin_Click(object sender, RoutedEventArgs e)
     {

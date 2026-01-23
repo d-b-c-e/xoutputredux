@@ -529,6 +529,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
@@ -560,8 +561,34 @@
                             </StackPanel>
                         </GroupBox>
 
+                        <!-- Quick Add Game Hotkey -->
+                        <GroupBox Grid.Row="1" Header="Quick Add Game Hotkey" Margin="0,0,0,10">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="AddGameHotkeyEnabledCheckBox" Content="Enable global hotkey"
+                                          Checked="AddGameHotkeyEnabled_Changed" Unchecked="AddGameHotkeyEnabled_Changed"/>
+                                <TextBlock Text="Press the hotkey while a game is focused to add it to the running profile."
+                                           Foreground="Gray" Margin="20,5,0,0" FontSize="11" TextWrapping="Wrap"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+                                    <TextBlock Text="Hotkey:" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="HotkeyText" Text="Ctrl + Shift + G" FontWeight="Bold"
+                                               Margin="10,0,0,0" VerticalAlignment="Center"/>
+                                    <Button Content="Change..." Padding="10,3" Margin="15,0,0,0"
+                                            Click="ChangeHotkey_Click"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <TextBlock Text="Status:" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="HotkeyStatusText" Text="Active" FontWeight="Bold"
+                                               Foreground="Green" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="If 'Inactive', the hotkey may be in use by another application."
+                                           Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
+                            </StackPanel>
+                        </GroupBox>
+
                         <!-- Startup -->
-                        <GroupBox Grid.Row="1" Header="Startup" Margin="0,0,0,10">
+                        <GroupBox Grid.Row="2" Header="Startup" Margin="0,0,0,10">
                             <StackPanel Margin="10">
                                 <CheckBox x:Name="StartWithWindowsCheckBox" Content="Start with Windows"
                                           Checked="StartWithWindows_Changed" Unchecked="StartWithWindows_Changed"/>
@@ -579,7 +606,7 @@
                         </GroupBox>
 
                         <!-- Administrator -->
-                        <GroupBox Grid.Row="2" Header="Administrator" Margin="0,0,0,10">
+                        <GroupBox Grid.Row="3" Header="Administrator" Margin="0,0,0,10">
                             <StackPanel Margin="10">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="Running as Administrator: " VerticalAlignment="Center"/>
@@ -594,7 +621,7 @@
                         </GroupBox>
 
                         <!-- Command Line -->
-                        <GroupBox Grid.Row="3" Header="Command Line" Margin="0,0,0,10">
+                        <GroupBox Grid.Row="4" Header="Command Line" Margin="0,0,0,10">
                             <StackPanel Margin="10">
                                 <StackPanel Orientation="Horizontal">
                                     <CheckBox x:Name="AddToPathCheckBox" Content="Add to System PATH"
@@ -610,7 +637,7 @@
                         </GroupBox>
 
                         <!-- Backup & Restore -->
-                        <GroupBox Grid.Row="4" Header="Backup &amp; Restore" Margin="0,0,0,10">
+                        <GroupBox Grid.Row="5" Header="Backup &amp; Restore" Margin="0,0,0,10">
                             <StackPanel Margin="10">
                                 <TextBlock Text="Export or import all settings, profiles, and game associations."
                                            Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
@@ -624,7 +651,7 @@
                         </GroupBox>
 
                         <!-- Stream Deck -->
-                        <GroupBox Grid.Row="5" Header="Stream Deck">
+                        <GroupBox Grid.Row="6" Header="Stream Deck">
                             <StackPanel Margin="10">
                                 <TextBlock Text="Install the Stream Deck plugin to control XOutputRedux from your Elgato Stream Deck."
                                            TextWrapping="Wrap" Margin="0,0,0,10"/>
