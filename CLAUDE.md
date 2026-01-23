@@ -110,6 +110,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 16: Code Signing | Planned | Sign installer/exe to avoid Windows Defender/SmartScreen warnings |
 | 17: Rebrand to XOutput Redux | ✓ Complete | Codebase renamed to XOutput Redux |
 | 18: Rename GitHub Repository | ✓ Complete | Renamed repo to `xoutputredux`, URLs already pointed to new name |
+| 19: Quick Add Game Hotkey | ✓ Complete | Global hotkey (Ctrl+Shift+G) to add focused game to running profile |
 
 ### Completed Dependency Upgrades
 

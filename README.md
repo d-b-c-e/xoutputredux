@@ -11,7 +11,8 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 - **Game Auto-Profile** - Automatically start profiles when specific games launch, stop when they exit
 - **Profile management** - Create, duplicate, and switch profiles easily
 - **Interactive mapping** - "Press button to map" configuration interface
-- **System tray integration** - Minimize to tray, run in background
+- **System tray integration** - Minimize to tray, double-click to restore, run in background
+- **Quick Add Game hotkey** - Press Ctrl+Shift+G while a game is focused to add it to the running profile
 - **CLI support** - Command-line interface for scripting and automation
 - **Toast notifications** - Windows notifications when profiles start/stop or games are detected
 - **Backup/restore** - Export and import all settings via `.xorbackup` files
@@ -166,7 +167,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.8.4-alpha** - Improved update checker error handling.
+**v0.9.1-alpha** - Added global hotkey to quickly add games to running profile.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
@@ -201,6 +202,7 @@ XOutputRedux/
 - **Backup/restore settings** - Export all settings and profiles to `.xorbackup` file for easy migration
 - **Portable mode** - Create `portable.txt` next to exe to store all data in `data\` subfolder
 - **About tab** - Version info, GitHub links, and acknowledgments
+- **Quick Add Game hotkey** - Ctrl+Shift+G adds focused game to running profile (configurable in Options)
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)
