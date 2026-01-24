@@ -57,13 +57,16 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+; shellexec + runasoriginaluser: Launch as the non-elevated user who started the installer
+; Skip auto-launch if "run as admin" was selected (causes elevation conflict)
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent shellexec runasoriginaluser; Check: CanAutoLaunch
 
 [Registry]
 ; Add to PATH if selected
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Tasks: addtopath; Check: NeedsAddPath('{app}')
-; Start with Windows if selected
+; Start with Windows if selected (requires both Run and StartupApproved entries)
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "XOutputRedux"; ValueData: """{app}\{#MyAppExeName}"" --minimized"; Tasks: startwithwindows; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"; ValueType: binary; ValueName: "XOutputRedux"; ValueData: "02 00 00 00 00 00 00 00 00 00 00 00"; Tasks: startwithwindows; Flags: uninsdeletevalue
 ; Always run as administrator if selected (sets Windows compatibility layer)
 Root: HKCU; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"; ValueType: string; ValueName: "{app}\{#MyAppExeName}"; ValueData: "RUNASADMIN"; Tasks: runasadmin; Flags: uninsdeletevalue
 
@@ -72,6 +75,12 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags
 ; Type: filesandordirs; Name: "{userappdata}\XOutputRedux"
 
 [Code]
+// Check if "run as admin" task was NOT selected (for safe auto-launch)
+function CanAutoLaunch(): boolean;
+begin
+  Result := not WizardIsTaskSelected('runasadmin');
+end;
+
 // Check if path already contains the directory
 function NeedsAddPath(Param: string): boolean;
 var
