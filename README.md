@@ -167,7 +167,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.1-alpha** - Added global hotkey to quickly add games to running profile.
+**v0.9.2-alpha** - Fixed "Start with Windows" not working due to missing StartupApproved registry entry.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)

@@ -494,6 +494,19 @@ AppLogger.Error("Something failed", exception);
 
 ---
 
+## Bug Fixes
+
+### v0.9.2-alpha: Start with Windows not working (2026-01-23)
+- **Symptom**: "Start with Windows" checkbox was checked but app didn't start at Windows login
+- **Root Cause**: Windows uses TWO registry keys for startup apps:
+  1. `HKCU\...\Run` - Contains the command to run
+  2. `HKCU\...\StartupApproved\Run` - Binary flag controlling enabled/disabled status
+- **Issue**: Code only wrote to `Run` key but not `StartupApproved`. Windows/Task Manager uses the `StartupApproved` key to determine if an app should actually run.
+- **Fix**: Updated `AppSettings.cs` to write to both registry keys when toggling startup, and check both keys when reading status
+- **Files Changed**: `src/XOutputRedux.App/AppSettings.cs`
+
+---
+
 ## Workspace Reference
 
 Additional source repositories in workspace for reference:

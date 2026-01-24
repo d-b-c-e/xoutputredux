@@ -18,6 +18,7 @@ public class AppSettings
     private static string SettingsPath => AppPaths.AppSettings;
 
     private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string StartupApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
     private const string AppName = "XOutputRedux";
 
     /// <summary>
@@ -204,13 +205,27 @@ public class AppSettings
 
     /// <summary>
     /// Gets whether the app is configured to start with Windows.
+    /// Checks both the Run key and the StartupApproved status.
     /// </summary>
     public static bool GetStartWithWindows()
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey, false);
-            return key?.GetValue(AppName) != null;
+            // First check if we're in the Run key
+            using var runKey = Registry.CurrentUser.OpenSubKey(StartupRegistryKey, false);
+            if (runKey?.GetValue(AppName) == null)
+                return false;
+
+            // Also check if we're approved to run (not disabled in Task Manager)
+            using var approvedKey = Registry.CurrentUser.OpenSubKey(StartupApprovedKey, false);
+            if (approvedKey?.GetValue(AppName) is byte[] data && data.Length >= 4)
+            {
+                // First 4 bytes: 02 = enabled, 03 = disabled
+                return data[0] == 0x02;
+            }
+
+            // If no StartupApproved entry, assume enabled (Windows may not have created it yet)
+            return true;
         }
         catch
         {
@@ -235,7 +250,42 @@ public class AppSettings
                 {
                     // Start minimized when launched at startup
                     key.SetValue(AppName, $"\"{exePath}\" --minimized");
+
+                    // Also enable in StartupApproved (required for Windows to actually run the app)
+                    SetStartupApproved(true);
                 }
+            }
+            else
+            {
+                key.DeleteValue(AppName, false);
+
+                // Also remove from StartupApproved
+                SetStartupApproved(false);
+            }
+        }
+        catch
+        {
+            // Ignore registry errors
+        }
+    }
+
+    /// <summary>
+    /// Enables or disables the startup item in the StartupApproved registry.
+    /// Windows uses this to control whether items in the Run key actually execute.
+    /// </summary>
+    private static void SetStartupApproved(bool enabled)
+    {
+        try
+        {
+            // Create the key if it doesn't exist
+            using var key = Registry.CurrentUser.CreateSubKey(StartupApprovedKey, true);
+            if (key == null) return;
+
+            if (enabled)
+            {
+                // Binary format: first 4 bytes = 02 00 00 00 (enabled), remaining 8 bytes = zeros
+                byte[] enabledValue = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+                key.SetValue(AppName, enabledValue, RegistryValueKind.Binary);
             }
             else
             {
@@ -244,7 +294,7 @@ public class AppSettings
         }
         catch
         {
-            // Ignore registry errors
+            // Ignore errors - startup may still work even if this fails
         }
     }
 
