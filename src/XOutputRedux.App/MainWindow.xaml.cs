@@ -37,6 +37,7 @@ public partial class MainWindow : Window
     private ProfileViewModel? _runningProfile;
     private List<string> _hiddenDevices = new();
     private bool _isExiting;
+    private bool _isCleanedUp;
     private bool _isListeningForInput;
     private readonly Dictionary<string, DateTime> _deviceLastInput = new();
     private readonly DispatcherTimer _inputHighlightTimer;
@@ -1026,24 +1027,65 @@ public partial class MainWindow : Window
 
         // Actually closing - cleanup
         _isExiting = true;
-        StopProfile();
-        ToastNotificationService.Cleanup();
+        CleanupResources();
+    }
 
-        // Stop input listening if active
-        if (_isListeningForInput)
+    /// <summary>
+    /// Safely disposes all resources. Can be called multiple times (idempotent).
+    /// This is public so it can be called from App.xaml.cs on fatal exceptions.
+    /// </summary>
+    public void CleanupResources()
+    {
+        if (_isCleanedUp) return;
+        _isCleanedUp = true;
+
+        AppLogger.Info("CleanupResources: Starting cleanup");
+
+        // Each cleanup step is wrapped in try-catch to ensure all resources get cleaned up
+        // even if one fails
+
+        try { StopProfile(); }
+        catch (Exception ex) { AppLogger.Error("CleanupResources: StopProfile failed", ex); }
+
+        try { ToastNotificationService.Cleanup(); }
+        catch (Exception ex) { AppLogger.Error("CleanupResources: ToastNotificationService.Cleanup failed", ex); }
+
+        try
         {
-            ListenForInputCheckBox.IsChecked = false;
+            if (_isListeningForInput)
+            {
+                _isListeningForInput = false;
+            }
+            _inputHighlightTimer.Stop();
         }
-        _inputHighlightTimer.Stop();
+        catch (Exception ex) { AppLogger.Error("CleanupResources: Timer cleanup failed", ex); }
 
-        _ffbService?.Dispose();
-        _hotkeyService?.Dispose();
-        _gameMonitorService.Dispose();
-        _ipcService.Dispose();
-        AppLogger.Shutdown();
-        TrayIcon.Dispose();
-        _deviceManager.Dispose();
-        _vigemService.Dispose();
+        try { _ffbService?.Dispose(); }
+        catch (Exception ex) { AppLogger.Error("CleanupResources: ForceFeedbackService.Dispose failed", ex); }
+
+        try { _hotkeyService?.Dispose(); }
+        catch (Exception ex) { AppLogger.Error("CleanupResources: GlobalHotkeyService.Dispose failed", ex); }
+
+        try { _gameMonitorService.Dispose(); }
+        catch (Exception ex) { AppLogger.Error("CleanupResources: GameMonitorService.Dispose failed", ex); }
+
+        try { _ipcService.Dispose(); }
+        catch (Exception ex) { AppLogger.Error("CleanupResources: IpcService.Dispose failed", ex); }
+
+        try { TrayIcon.Dispose(); }
+        catch (Exception ex) { AppLogger.Error("CleanupResources: TrayIcon.Dispose failed", ex); }
+
+        try { _deviceManager.Dispose(); }
+        catch (Exception ex) { AppLogger.Error("CleanupResources: DeviceManager.Dispose failed", ex); }
+
+        try { _vigemService.Dispose(); }
+        catch (Exception ex) { AppLogger.Error("CleanupResources: ViGEmService.Dispose failed", ex); }
+
+        // Logger last so we can log errors from other cleanup steps
+        try { AppLogger.Shutdown(); }
+        catch { /* Can't log this one */ }
+
+        AppLogger.Info("CleanupResources: Cleanup complete");
     }
 
     #endregion

@@ -60,6 +60,13 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         AppLogger.Info("Application shutting down");
+
+        // Ensure resources are cleaned up even if window closing was interrupted
+        if (MainWindow is MainWindow mainWindow)
+        {
+            mainWindow.CleanupResources();
+        }
+
         AppLogger.Shutdown();
         base.OnExit(e);
     }
@@ -108,6 +115,19 @@ public partial class App : Application
         if (e.ExceptionObject is Exception ex)
         {
             AppLogger.Error("Unhandled domain exception (fatal)", ex);
+
+            // Ensure cleanup happens on fatal exceptions to prevent stuck processes
+            try
+            {
+                if (MainWindow is MainWindow mainWindow)
+                {
+                    mainWindow.CleanupResources();
+                }
+            }
+            catch
+            {
+                // Don't let cleanup failure prevent crash dialog
+            }
 
             if (_settings?.CrashReportingEnabled == true)
             {
