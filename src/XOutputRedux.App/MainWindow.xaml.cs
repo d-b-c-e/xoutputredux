@@ -983,6 +983,8 @@ public partial class MainWindow : Window
 
     private void TrayIcon_Show_Click(object sender, RoutedEventArgs e)
     {
+        if (_isExiting) return;
+
         Show();
         WindowState = WindowState.Normal;
         Activate();
@@ -990,6 +992,9 @@ public partial class MainWindow : Window
 
     private void TrayIcon_DoubleClick(object sender, RoutedEventArgs e)
     {
+        // Don't try to show if the window is already closing
+        if (_isExiting) return;
+
         Show();
         WindowState = WindowState.Normal;
         Activate();
