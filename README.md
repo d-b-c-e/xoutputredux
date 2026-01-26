@@ -167,7 +167,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.5-alpha** - Fixed Stream Deck plugin filename mismatch.
+**v0.9.262501-alpha** - Switched to calendar-based versioning (Major.Minor.YYDDRR).
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)

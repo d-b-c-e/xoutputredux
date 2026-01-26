@@ -16,12 +16,14 @@ $DistDir = Join-Path $ProjectRoot "dist"
 $InstallerScript = Join-Path $ProjectRoot "installer\XOutputRedux.iss"
 $AppProject = Join-Path $ProjectRoot "src\XOutputRedux.App\XOutputRedux.App.csproj"
 
-# Extract version from csproj
+# Extract version using MSBuild (evaluates computed properties)
 function Get-Version {
-    $csproj = [xml](Get-Content $AppProject)
-    $version = $csproj.Project.PropertyGroup.Version | Where-Object { $_ }
-    if ($version -is [array]) { $version = $version[0] }
-    return $version
+    $version = & dotnet msbuild $AppProject -getProperty:Version -nologo 2>$null
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($version)) {
+        # Fallback
+        $version = "unknown"
+    }
+    return $version.Trim()
 }
 
 $Version = Get-Version
