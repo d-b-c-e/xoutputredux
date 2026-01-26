@@ -34,7 +34,10 @@ public partial class CrashDialog : Window
         ContextText.Text = $"Context: {GetContextDescription(report.Context)}";
         ExceptionTypeText.Text = GetShortExceptionType(report.ExceptionType);
         MessageText.Text = report.Message;
-        StackTraceText.Text = report.StackTrace ?? "(No stack trace available)";
+
+        // Include exception type and message in the text box for easy copy/paste
+        var fullDetails = $"{report.ExceptionType}: {report.Message}\n\n{report.StackTrace ?? "(No stack trace available)"}";
+        StackTraceText.Text = fullDetails;
 
         // Show/hide continue button based on whether error is fatal
         if (!report.IsFatal)
