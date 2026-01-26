@@ -78,7 +78,30 @@ namespace XOutputRedux.HidSharper.Reports.Input
 
                     if (count == 0) { Stop(); return; }
 
-                    ProvideReceivedData(buffer, 0, count);
+                    // Guard against invalid count (can happen on device disconnect)
+                    if (count < 0 || count > buffer.Length)
+                    {
+                        Stop();
+                        return;
+                    }
+
+                    try
+                    {
+                        ProvideReceivedData(buffer, 0, count);
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                        // Device may have disconnected or returned invalid data
+                        Stop();
+                        return;
+                    }
+                    catch (OverflowException)
+                    {
+                        // Buffer size calculation overflowed - likely corrupted data
+                        Stop();
+                        return;
+                    }
+
                     beginRead();
                 };
                 beginRead();
