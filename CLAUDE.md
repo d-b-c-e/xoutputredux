@@ -492,6 +492,7 @@ AppLogger.Error("Something failed", exception);
 - **Mitigation**: Error logging is now throttled (logs once per report ID, with summary on dispose)
 - **Future**: Investigate during HidSharp fork (Phase: Fork/slim HidSharp) - may be able to fix parser or skip non-input reports
 
+
 ---
 
 ## Bug Fixes
@@ -504,6 +505,18 @@ AppLogger.Error("Something failed", exception);
 - **Issue**: Code only wrote to `Run` key but not `StartupApproved`. Windows/Task Manager uses the `StartupApproved` key to determine if an app should actually run.
 - **Fix**: Updated `AppSettings.cs` to write to both registry keys when toggling startup, and check both keys when reading status
 - **Files Changed**: `src/XOutputRedux.App/AppSettings.cs`
+
+### v0.9.3-alpha: HidHide interferes with SDL2 inputs (2026-01-25)
+- **Symptom**: SDL2-based programs (games, emulators) couldn't detect controllers when HidHide was installed, even when XOutputRedux wasn't actively using device hiding
+- **Root Cause**: HidHide is a kernel filter driver that intercepts device inputs. Once started, it stays running and can interfere with other input libraries.
+- **Issue**: XOutputRedux enabled cloaking and left HidHide running even after profiles stopped
+- **Fix**:
+  1. Start HidHide driver only when a profile with device hiding starts
+  2. Disable cloaking when profile stops
+  3. Stop HidHide driver entirely when no longer needed
+- **Files Changed**:
+  - `src/XOutputRedux.HidHide/HidHideService.cs` - Added `StartDriver()`, `StopDriver()`, `IsDriverRunning()` methods
+  - `src/XOutputRedux.App/MainWindow.xaml.cs` - Updated `HideProfileDevices()` and `UnhideProfileDevices()` to manage driver lifecycle
 
 ---
 

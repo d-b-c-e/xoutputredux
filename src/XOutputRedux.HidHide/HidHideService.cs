@@ -107,6 +107,106 @@ public class HidHideService : IDisposable
     }
 
     /// <summary>
+    /// Starts the HidHide kernel driver.
+    /// Requires administrator privileges.
+    /// </summary>
+    public bool StartDriver()
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "sc",
+                    Arguments = "start HidHide",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    Verb = "runas"
+                }
+            };
+
+            process.Start();
+            process.WaitForExit(10000);
+
+            // Exit code 0 = success, 1056 = already running
+            return process.ExitCode == 0 || process.ExitCode == 1056;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Stops the HidHide kernel driver.
+    /// Requires administrator privileges.
+    /// </summary>
+    public bool StopDriver()
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "sc",
+                    Arguments = "stop HidHide",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    Verb = "runas"
+                }
+            };
+
+            process.Start();
+            process.WaitForExit(10000);
+
+            // Exit code 0 = success, 1062 = already stopped
+            return process.ExitCode == 0 || process.ExitCode == 1062;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets whether the HidHide driver is currently running.
+    /// </summary>
+    public bool IsDriverRunning()
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "sc",
+                    Arguments = "query HidHide",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(5000);
+
+            return output.Contains("RUNNING", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Gets whether cloaking is currently enabled.
     /// </summary>
     public bool? IsCloakingEnabled()

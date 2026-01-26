@@ -167,7 +167,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.2-alpha** - Fixed "Start with Windows" not working due to missing StartupApproved registry entry.
+**v0.9.3-alpha** - HidHide driver now stops completely when not in use, preventing interference with SDL2 and other input libraries.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)

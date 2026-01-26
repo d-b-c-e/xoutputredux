@@ -848,6 +848,20 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Ensure the HidHide driver is running
+        if (!_hidHideService.IsDriverRunning())
+        {
+            AppLogger.Info("Starting HidHide driver...");
+            if (_hidHideService.StartDriver())
+            {
+                AppLogger.Info("HidHide driver started");
+            }
+            else
+            {
+                AppLogger.Warning("Failed to start HidHide driver - device hiding may not work");
+            }
+        }
+
         // Enable cloaking if not already enabled
         _hidHideService.EnableCloaking();
 
@@ -891,6 +905,26 @@ public partial class MainWindow : Window
         }
 
         _hiddenDevices.Clear();
+
+        // Disable cloaking since we're not hiding anything anymore
+        if (_hidHideService.DisableCloaking())
+        {
+            AppLogger.Info("Disabled HidHide cloaking");
+        }
+
+        // Stop the HidHide driver entirely to prevent interference with other apps (e.g., SDL2)
+        if (_hidHideService.IsDriverRunning())
+        {
+            AppLogger.Info("Stopping HidHide driver...");
+            if (_hidHideService.StopDriver())
+            {
+                AppLogger.Info("HidHide driver stopped");
+            }
+            else
+            {
+                AppLogger.Warning("Failed to stop HidHide driver");
+            }
+        }
     }
 
     private void StopProfile()
