@@ -260,22 +260,30 @@ Examples:
 
 ## Versioning
 
-Format: `Major.Minor.YYDDD.Rev[-suffix]`
+Format: `Major.Minor.Patch.BuildNumber[-suffix]`
 
 | Component | Description | Example |
 |-----------|-------------|---------|
-| Major | Major version | 0 |
-| Minor | Minor version | 9 |
-| YYDDD | Year (2 digits) + Day of year (3 digits) | 26025 = Jan 25, 2026 |
-| Rev | Daily revision | 1 |
-| suffix | Optional prerelease tag | alpha, beta, rc |
+| VersionPrefix | Manual major.minor.patch | 0.9.0 |
+| BuildNumber | Auto-generated: YYDDDHHmm | 260260925 |
+| VersionSuffix | Optional prerelease tag | alpha, beta, rc |
 
-Example: `0.9.26025.1-alpha` = Version 0.9, day 25 of 2026, revision 1, alpha prerelease.
+**BuildNumber format: YYDDDHHmm**
+- YY = Year (26 = 2026)
+- DDD = Day of year (026 = Jan 26)
+- HHmm = Time (0925 = 09:25)
+
+Example: `0.9.0.260260925-alpha` = Version 0.9.0, built Jan 26 2026 at 09:25, alpha prerelease.
 
 **To change version:**
-- Edit `VersionMajor`, `VersionMinor` in `src/XOutputRedux.App/XOutputRedux.App.csproj`
-- `DailyRevision` - increment (1, 2, 3...) if releasing multiple times per day
-- `VersionSuffix` - set to `alpha`, `beta`, `rc`, or leave empty for stable release
+- `VersionPrefix` - bump for releases (0.9.0 → 0.9.1 or 1.0.0)
+- `VersionSuffix` - set to `alpha`, `beta`, `rc`, or leave empty for stable
+- BuildNumber auto-increments on every build
+
+**Override in CI/CD:**
+```bash
+dotnet build -p:BuildNumber=12345
+```
 
 ---
 

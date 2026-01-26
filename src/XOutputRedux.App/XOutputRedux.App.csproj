@@ -11,24 +11,20 @@
     <StartupObject>XOutputRedux.App.Program</StartupObject>
     <ApplicationIcon>Assets\Icons\favicon.ico</ApplicationIcon>
 
-    <!-- Versioning: Major.Minor.YYDDD.Rev[-suffix] -->
-    <!-- YYDDD = 2-digit year + 3-digit day of year (001-366) -->
-    <!-- Example: 0.9.26025.1 = year 26, day 025 (Jan 25), revision 1 -->
-    <VersionMajor>0</VersionMajor>
-    <VersionMinor>9</VersionMinor>
+    <!-- Versioning: Major.Minor.Patch.BuildNumber[-suffix] -->
+    <!-- BuildNumber auto-generated: YYDDDHHmm (year, day-of-year, hour, minute) -->
+    <VersionPrefix>0.9.0</VersionPrefix>
     <VersionSuffix>alpha</VersionSuffix>
-    <DailyRevision>1</DailyRevision>
 
-    <!-- Auto-calculated: YYDDD (year + day of year) -->
-    <BuildYear>$([System.DateTime]::Now.ToString('yy'))</BuildYear>
-    <BuildDayOfYear>$([System.DateTime]::Now.DayOfYear.ToString('000'))</BuildDayOfYear>
-    <VersionBuild>$(BuildYear)$(BuildDayOfYear)</VersionBuild>
+    <!-- Auto-generate build number if not provided: YYDDDHHmm -->
+    <_AutoBuildNumber>$([System.DateTime]::Now.ToString('yy'))$([System.DateTime]::Now.DayOfYear.ToString('000'))$([System.DateTime]::Now.ToString('HHmm'))</_AutoBuildNumber>
+    <BuildNumber Condition="'$(BuildNumber)' == ''">$(_AutoBuildNumber)</BuildNumber>
 
-    <!-- Composed versions: Major.Minor.YYDDD.Rev -->
-    <Version>$(VersionMajor).$(VersionMinor).$(VersionBuild).$(DailyRevision)</Version>
-    <Version Condition="'$(VersionSuffix)' != ''">$(VersionMajor).$(VersionMinor).$(VersionBuild).$(DailyRevision)-$(VersionSuffix)</Version>
-    <AssemblyVersion>$(VersionMajor).$(VersionMinor).$(VersionBuild).$(DailyRevision)</AssemblyVersion>
-    <FileVersion>$(VersionMajor).$(VersionMinor).$(VersionBuild).$(DailyRevision)</FileVersion>
+    <!-- Composed versions -->
+    <Version>$(VersionPrefix).$(BuildNumber)</Version>
+    <Version Condition="'$(VersionSuffix)' != ''">$(VersionPrefix).$(BuildNumber)-$(VersionSuffix)</Version>
+    <FileVersion>$(VersionPrefix).$(BuildNumber)</FileVersion>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <InformationalVersion>$(Version)</InformationalVersion>
 
     <!-- Prevent .NET from appending git commit hash to version -->

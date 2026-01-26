@@ -167,7 +167,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.26025.1-alpha** - Calendar-based versioning (Major.Minor.YYDDD.Rev).
+**v0.9.0-alpha** - Auto-incrementing build numbers (Major.Minor.Patch.YYDDDHHmm).
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
