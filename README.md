@@ -167,7 +167,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.3-alpha** - HidHide driver now stops completely when not in use, preventing interference with SDL2 and other input libraries.
+**v0.9.4-alpha** - Stream Deck plugin now bundled with installer and portable ZIP.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)

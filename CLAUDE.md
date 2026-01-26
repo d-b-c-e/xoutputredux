@@ -518,6 +518,12 @@ AppLogger.Error("Something failed", exception);
   - `src/XOutputRedux.HidHide/HidHideService.cs` - Added `StartDriver()`, `StopDriver()`, `IsDriverRunning()` methods
   - `src/XOutputRedux.App/MainWindow.xaml.cs` - Updated `HideProfileDevices()` and `UnhideProfileDevices()` to manage driver lifecycle
 
+### v0.9.4-alpha: Stream Deck plugin not included in release (2026-01-25)
+- **Symptom**: Stream Deck plugin file not found in installed application
+- **Root Cause**: Release script referenced wrong path for Stream Deck build script (`streamdeck-plugin/` instead of `src/XOutputRedux.StreamDeck/`)
+- **Fix**: Updated `scripts/release.ps1` to use correct paths for Stream Deck project and output file
+- **Files Changed**: `scripts/release.ps1`
+
 ---
 
 ## Workspace Reference

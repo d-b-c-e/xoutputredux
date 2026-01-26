@@ -53,28 +53,34 @@ if (-not $SkipBuild) {
 if (-not $SkipStreamDeck) {
     $currentStep++
     Write-Host "`n[$currentStep/$totalSteps] Building Stream Deck plugin..." -ForegroundColor Yellow
-    $StreamDeckDir = Join-Path $ProjectRoot "streamdeck-plugin"
-    $StreamDeckBuildScript = Join-Path $StreamDeckDir "scripts\build-plugin.ps1"
+    $StreamDeckProject = Join-Path $ProjectRoot "src\XOutputRedux.StreamDeck"
+    $StreamDeckBuildScript = Join-Path $StreamDeckProject "scripts\build-plugin.ps1"
 
     if (Test-Path $StreamDeckBuildScript) {
-        Push-Location $StreamDeckDir
+        Push-Location $StreamDeckProject
         try {
-            & $StreamDeckBuildScript -OutputDir "$DistDir"
+            & $StreamDeckBuildScript
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "Stream Deck plugin build failed (non-fatal)" -ForegroundColor Yellow
             } else {
-                # Copy to publish directory so it's included in the portable ZIP
-                $PluginFile = Get-ChildItem "$DistDir\XOutputRedux.streamDeckPlugin" -ErrorAction SilentlyContinue
-                if ($PluginFile) {
-                    Copy-Item $PluginFile.FullName -Destination $PublishDir
+                # Plugin is output to release\streamdeck\com.xoutputredux.streamDeckPlugin
+                $PluginOutputDir = Join-Path $ProjectRoot "release\streamdeck"
+                $PluginFile = Join-Path $PluginOutputDir "com.xoutputredux.streamDeckPlugin"
+                if (Test-Path $PluginFile) {
+                    # Copy to publish directory so it's included in the installer/portable ZIP
+                    Copy-Item $PluginFile -Destination $PublishDir
+                    # Also copy to dist for standalone download
+                    Copy-Item $PluginFile -Destination $DistDir
                     Write-Host "Stream Deck plugin bundled with application" -ForegroundColor Green
+                } else {
+                    Write-Host "Stream Deck plugin file not found at expected location" -ForegroundColor Yellow
                 }
             }
         } finally {
             Pop-Location
         }
     } else {
-        Write-Host "Stream Deck build script not found, skipping" -ForegroundColor Yellow
+        Write-Host "Stream Deck build script not found at: $StreamDeckBuildScript" -ForegroundColor Yellow
     }
 }
 
