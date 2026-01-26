@@ -1830,7 +1830,7 @@ public partial class MainWindow : Window
         {
             // Look for the bundled plugin file next to the executable
             var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-            var pluginPath = Path.Combine(exeDir, "XOutputRedux.streamDeckPlugin");
+            var pluginPath = Path.Combine(exeDir, "com.xoutputredux.streamDeckPlugin");
 
             if (!File.Exists(pluginPath))
             {

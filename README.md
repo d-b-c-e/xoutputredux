@@ -167,7 +167,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.4-alpha** - Stream Deck plugin now bundled with installer and portable ZIP.
+**v0.9.5-alpha** - Fixed Stream Deck plugin filename mismatch.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)

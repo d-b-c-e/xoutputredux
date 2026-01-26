@@ -524,6 +524,12 @@ AppLogger.Error("Something failed", exception);
 - **Fix**: Updated `scripts/release.ps1` to use correct paths for Stream Deck project and output file
 - **Files Changed**: `scripts/release.ps1`
 
+### v0.9.5-alpha: Stream Deck plugin filename mismatch (2026-01-25)
+- **Symptom**: "Plugin Not Found" error when clicking Install Stream Deck Plugin button
+- **Root Cause**: Code looked for `XOutputRedux.streamDeckPlugin` but actual file is `com.xoutputredux.streamDeckPlugin`
+- **Fix**: Updated code to use correct filename
+- **Files Changed**: `src/XOutputRedux.App/MainWindow.xaml.cs`
+
 ---
 
 ## Workspace Reference
