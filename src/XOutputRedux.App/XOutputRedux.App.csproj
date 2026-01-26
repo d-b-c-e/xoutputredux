@@ -11,27 +11,25 @@
     <StartupObject>XOutputRedux.App.Program</StartupObject>
     <ApplicationIcon>Assets\Icons\favicon.ico</ApplicationIcon>
 
-    <!-- Versioning: Major.Minor.YYDDRR[-suffix] -->
-    <!-- YYDDRR = 2-digit year + 2-digit day of month + 2-digit revision -->
-    <!-- Example: 262501 = year 26, day 25, revision 01 -->
+    <!-- Versioning: Major.Minor.YYDDD.Rev[-suffix] -->
+    <!-- YYDDD = 2-digit year + 3-digit day of year (001-366) -->
+    <!-- Example: 0.9.26025.1 = year 26, day 025 (Jan 25), revision 1 -->
     <VersionMajor>0</VersionMajor>
     <VersionMinor>9</VersionMinor>
     <VersionSuffix>alpha</VersionSuffix>
-    <DailyRevision>01</DailyRevision>
+    <DailyRevision>1</DailyRevision>
 
-    <!-- Auto-calculated: YYDD (year + day of month) -->
+    <!-- Auto-calculated: YYDDD (year + day of year) -->
     <BuildYear>$([System.DateTime]::Now.ToString('yy'))</BuildYear>
-    <BuildDay>$([System.DateTime]::Now.ToString('dd'))</BuildDay>
-    <!-- Combined revision: YYDDRR (6-digit number) -->
-    <VersionRevision>$(BuildYear)$(BuildDay)$(DailyRevision)</VersionRevision>
+    <BuildDayOfYear>$([System.DateTime]::Now.DayOfYear.ToString('000'))</BuildDayOfYear>
+    <VersionBuild>$(BuildYear)$(BuildDayOfYear)</VersionBuild>
 
-    <!-- Display versions: Major.Minor.YYDDRR (3-part) -->
-    <Version>$(VersionMajor).$(VersionMinor).$(VersionRevision)</Version>
-    <Version Condition="'$(VersionSuffix)' != ''">$(VersionMajor).$(VersionMinor).$(VersionRevision)-$(VersionSuffix)</Version>
+    <!-- Composed versions: Major.Minor.YYDDD.Rev -->
+    <Version>$(VersionMajor).$(VersionMinor).$(VersionBuild).$(DailyRevision)</Version>
+    <Version Condition="'$(VersionSuffix)' != ''">$(VersionMajor).$(VersionMinor).$(VersionBuild).$(DailyRevision)-$(VersionSuffix)</Version>
+    <AssemblyVersion>$(VersionMajor).$(VersionMinor).$(VersionBuild).$(DailyRevision)</AssemblyVersion>
+    <FileVersion>$(VersionMajor).$(VersionMinor).$(VersionBuild).$(DailyRevision)</FileVersion>
     <InformationalVersion>$(Version)</InformationalVersion>
-    <!-- Windows versions: Major.Minor.YYDD.RR (4-part for compatibility) -->
-    <AssemblyVersion>$(VersionMajor).$(VersionMinor).$(BuildYear)$(BuildDay).$(DailyRevision)</AssemblyVersion>
-    <FileVersion>$(VersionMajor).$(VersionMinor).$(BuildYear)$(BuildDay).$(DailyRevision)</FileVersion>
 
     <!-- Prevent .NET from appending git commit hash to version -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>

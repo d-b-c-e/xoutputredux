@@ -167,7 +167,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.262501-alpha** - Switched to calendar-based versioning (Major.Minor.YYDDRR).
+**v0.9.26025.1-alpha** - Calendar-based versioning (Major.Minor.YYDDD.Rev).
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)

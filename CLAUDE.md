@@ -260,22 +260,21 @@ Examples:
 
 ## Versioning
 
-Format: `Major.Minor.YYDDRR[-suffix]`
+Format: `Major.Minor.YYDDD.Rev[-suffix]`
 
 | Component | Description | Example |
 |-----------|-------------|---------|
 | Major | Major version | 0 |
 | Minor | Minor version | 9 |
-| YY | Year (2 digits) | 26 = 2026 |
-| DD | Day of month (2 digits) | 25 |
-| RR | Daily revision (2 digits) | 01 |
+| YYDDD | Year (2 digits) + Day of year (3 digits) | 26025 = Jan 25, 2026 |
+| Rev | Daily revision | 1 |
 | suffix | Optional prerelease tag | alpha, beta, rc |
 
-Example: `0.9.262501-alpha` = Version 0.9, year 26, day 25, revision 01, alpha prerelease.
+Example: `0.9.26025.1-alpha` = Version 0.9, day 25 of 2026, revision 1, alpha prerelease.
 
 **To change version:**
 - Edit `VersionMajor`, `VersionMinor` in `src/XOutputRedux.App/XOutputRedux.App.csproj`
-- `DailyRevision` - increment (01, 02, etc.) if releasing multiple times per day
+- `DailyRevision` - increment (1, 2, 3...) if releasing multiple times per day
 - `VersionSuffix` - set to `alpha`, `beta`, `rc`, or leave empty for stable release
 
 ---
