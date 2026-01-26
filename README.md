@@ -167,7 +167,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.0-alpha** - Auto-incrementing build numbers (Major.Minor.Patch.YYDDDHHmm).
+**v0.9.1-alpha** - Auto-incrementing build numbers (Major.Minor.Patch.YYDDDHHmm).
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
@@ -214,12 +214,31 @@ XOutputRedux/
 
 ## Background
 
-XOutputRedux is a modernized reimplementation inspired by the archived [XOutput](https://github.com/csutorasa/XOutput) project. It focuses on:
+XOutputRedux is a modernized reimplementation inspired by the archived [XOutput](https://github.com/csutorasa/XOutput) project.
 
-- Simplified architecture (no web server, no DS4 support)
-- Modern .NET 8.0 codebase
-- OR logic for input mapping (multiple inputs can trigger one output)
-- Clean WPF interface with system tray support
+### XOutputRedux vs XOutput
+
+| Feature | XOutputRedux | XOutput |
+|---------|--------------|---------|
+| **Framework** | .NET 8.0 (current LTS) | .NET 5.0 (end of life) |
+| **Mapping Logic** | OR logic (multiple inputs → one output) | One-to-one mapping |
+| **Emulation** | ViGEmBus only | ViGEmBus + SCPToolkit |
+| **Device Hiding** | HidHide (actively maintained) | HidGuardian (deprecated) |
+| **Architecture** | Simple WPF app + CLI | WPF + REST API + WebSockets |
+| **Controller Types** | Xbox 360 only (universal support) | Xbox 360 + DualShock 4 |
+| **Game Integration** | Auto-profile with Steam browser | Manual profile selection |
+| **Automation** | CLI + Stream Deck plugin + IPC | Web API only |
+| **Settings Backup** | One-click export/import | Manual file copy |
+| **Crash Reporting** | One-click GitHub issue creation | None |
+| **Portable Mode** | Built-in support | Not supported |
+
+### Why XOutputRedux?
+
+- **Simpler**: No web server, no REST API, no WebSockets - just a clean WPF app
+- **Focused**: Xbox 360 emulation covers 99% of games; DS4 adds complexity without benefit
+- **Modern**: Built on current .NET with maintained dependencies
+- **Powerful**: OR mapping lets you combine inputs (wheel button + handbrake = same Xbox button)
+- **Scriptable**: Full CLI control for gaming frontends, launchers, and Stream Deck
 
 ## License
 
