@@ -44,6 +44,53 @@ internal class MozaDevice : IDisposable
         ThrowIfError(error, "Failed to set wheel rotation");
     }
 
+    public void SetDamping(int value)
+    {
+        EnsureInitialized();
+        value = Math.Clamp(value, 0, 100);
+        var error = setMotorNaturalDamper(value);
+        ThrowIfError(error, "Failed to set damping");
+    }
+
+    public void SetSpringStrength(int value)
+    {
+        EnsureInitialized();
+        value = Math.Clamp(value, 0, 100);
+        var error = setMotorSpringStrength(value);
+        ThrowIfError(error, "Failed to set spring strength");
+    }
+
+    public void SetNaturalInertia(int value)
+    {
+        EnsureInitialized();
+        value = Math.Clamp(value, 100, 500);
+        var error = setMotorNaturalInertia(value);
+        ThrowIfError(error, "Failed to set natural inertia");
+    }
+
+    public void SetMaxTorque(int value)
+    {
+        EnsureInitialized();
+        value = Math.Clamp(value, 50, 100);
+        var error = setMotorPeakTorque(value);
+        ThrowIfError(error, "Failed to set max torque");
+    }
+
+    public void SetSpeedDamping(int value)
+    {
+        EnsureInitialized();
+        value = Math.Clamp(value, 0, 100);
+        var error = setMotorSpeedDamping(value);
+        ThrowIfError(error, "Failed to set speed damping");
+    }
+
+    public void SetFfbReverse(bool reversed)
+    {
+        EnsureInitialized();
+        var error = setMotorFfbReverse(reversed ? 1 : 0);
+        ThrowIfError(error, "Failed to set FFB reverse");
+    }
+
     private void EnsureInitialized()
     {
         if (!_initialized)

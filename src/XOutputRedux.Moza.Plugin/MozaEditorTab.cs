@@ -10,6 +10,7 @@ internal class MozaEditorTab
     private static readonly SolidColorBrush BackgroundBrush = new(Color.FromRgb(0x25, 0x25, 0x26));
     private static readonly SolidColorBrush ForegroundBrush = new(Color.FromRgb(0xE0, 0xE0, 0xE0));
     private static readonly SolidColorBrush SubtextBrush = new(Color.FromRgb(0x9E, 0x9E, 0x9E));
+    private static readonly SolidColorBrush SeparatorBrush = new(Color.FromRgb(0x40, 0x40, 0x42));
 
     private readonly JsonObject? _data;
     private readonly bool _readOnly;
@@ -17,8 +18,12 @@ internal class MozaEditorTab
     private CheckBox? _enabledCheckBox;
     private Slider? _rotationSlider;
     private Slider? _ffbSlider;
-    private TextBlock? _rotationValueText;
-    private TextBlock? _ffbValueText;
+    private Slider? _dampingSlider;
+    private Slider? _springSlider;
+    private Slider? _inertiaSlider;
+    private Slider? _maxTorqueSlider;
+    private Slider? _speedDampingSlider;
+    private CheckBox? _ffbReverseCheckBox;
 
     public MozaEditorTab(JsonObject? data, bool readOnly)
     {
@@ -67,29 +72,86 @@ internal class MozaEditorTab
             IsChecked = enabled,
             IsEnabled = !_readOnly,
             Foreground = ForegroundBrush,
-            Margin = new Thickness(0, 0, 0, 20)
+            Margin = new Thickness(0, 0, 0, 15)
         };
         panel.Children.Add(_enabledCheckBox);
 
-        // Wheel Rotation
+        // --- Primary Settings ---
+        AddSectionHeader(panel, "Primary");
+
         int rotation = _data?["wheelRotation"]?.GetValue<int>() ?? 900;
         AddSliderRow(panel, "Wheel Rotation", 90, 2700, rotation, 10,
-            v => $"{v}\u00B0",
-            out _rotationSlider, out _rotationValueText);
+            v => $"{v}\u00B0", out _rotationSlider);
 
-        // FFB Strength
         int ffb = _data?["ffbStrength"]?.GetValue<int>() ?? 100;
         AddSliderRow(panel, "FFB Strength", 0, 100, ffb, 1,
-            v => $"{v}%",
-            out _ffbSlider, out _ffbValueText);
+            v => $"{v}%", out _ffbSlider);
 
-        tab.Content = panel;
+        int maxTorque = _data?["maxTorque"]?.GetValue<int>() ?? 100;
+        AddSliderRow(panel, "Max Torque", 50, 100, maxTorque, 1,
+            v => $"{v}%", out _maxTorqueSlider);
+
+        bool ffbReverse = _data?["ffbReverse"]?.GetValue<bool>() ?? false;
+        _ffbReverseCheckBox = new CheckBox
+        {
+            Content = "Reverse FFB Direction",
+            IsChecked = ffbReverse,
+            IsEnabled = !_readOnly,
+            Foreground = ForegroundBrush,
+            Margin = new Thickness(0, 0, 0, 15)
+        };
+        panel.Children.Add(_ffbReverseCheckBox);
+
+        // --- Feel Settings ---
+        AddSectionHeader(panel, "Wheel Feel");
+
+        int damping = _data?["damping"]?.GetValue<int>() ?? 0;
+        AddSliderRow(panel, "Damping", 0, 100, damping, 1,
+            v => $"{v}%", out _dampingSlider);
+
+        int spring = _data?["springStrength"]?.GetValue<int>() ?? 0;
+        AddSliderRow(panel, "Center Spring", 0, 100, spring, 1,
+            v => $"{v}%", out _springSlider);
+
+        int inertia = _data?["naturalInertia"]?.GetValue<int>() ?? 100;
+        AddSliderRow(panel, "Natural Inertia", 100, 500, inertia, 5,
+            v => $"{v}%", out _inertiaSlider);
+
+        int speedDamping = _data?["speedDamping"]?.GetValue<int>() ?? 0;
+        AddSliderRow(panel, "Speed Damping", 0, 100, speedDamping, 1,
+            v => $"{v}%", out _speedDampingSlider);
+
+        // Wrap in ScrollViewer
+        var scrollViewer = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = panel
+        };
+
+        tab.Content = scrollViewer;
         return tab;
     }
 
+    private static void AddSectionHeader(StackPanel parent, string title)
+    {
+        parent.Children.Add(new Border
+        {
+            BorderBrush = SeparatorBrush,
+            BorderThickness = new Thickness(0, 1, 0, 0),
+            Margin = new Thickness(0, 5, 0, 10),
+            Child = new TextBlock
+            {
+                Text = title,
+                Foreground = SubtextBrush,
+                FontSize = 11,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 8, 0, 0)
+            }
+        });
+    }
+
     private void AddSliderRow(StackPanel parent, string label, int min, int max,
-        int value, int tickFrequency, Func<int, string> format,
-        out Slider slider, out TextBlock valueText)
+        int value, int tickFrequency, Func<int, string> format, out Slider slider)
     {
         // Label
         parent.Children.Add(new TextBlock
@@ -116,7 +178,7 @@ internal class MozaEditorTab
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        valueText = new TextBlock
+        var valueText = new TextBlock
         {
             Text = format(value),
             Foreground = ForegroundBrush,
@@ -127,10 +189,9 @@ internal class MozaEditorTab
             TextAlignment = TextAlignment.Right
         };
 
-        var capturedValueText = valueText;
         slider.ValueChanged += (_, e) =>
         {
-            capturedValueText.Text = format((int)e.NewValue);
+            valueText.Text = format((int)e.NewValue);
         };
 
         Grid.SetColumn(slider, 0);
@@ -139,16 +200,14 @@ internal class MozaEditorTab
         grid.Children.Add(valueText);
 
         // Range hint
-        var rangeText = new TextBlock
+        parent.Children.Add(grid);
+        parent.Children.Add(new TextBlock
         {
             Text = $"Range: {format(min)} \u2013 {format(max)}",
             Foreground = SubtextBrush,
             FontSize = 11,
             Margin = new Thickness(0, -10, 0, 10)
-        };
-
-        parent.Children.Add(grid);
-        parent.Children.Add(rangeText);
+        });
     }
 
     public JsonObject? GetData()
@@ -160,7 +219,13 @@ internal class MozaEditorTab
         {
             ["enabled"] = true,
             ["wheelRotation"] = (int)(_rotationSlider?.Value ?? 900),
-            ["ffbStrength"] = (int)(_ffbSlider?.Value ?? 100)
+            ["ffbStrength"] = (int)(_ffbSlider?.Value ?? 100),
+            ["maxTorque"] = (int)(_maxTorqueSlider?.Value ?? 100),
+            ["ffbReverse"] = _ffbReverseCheckBox?.IsChecked ?? false,
+            ["damping"] = (int)(_dampingSlider?.Value ?? 0),
+            ["springStrength"] = (int)(_springSlider?.Value ?? 0),
+            ["naturalInertia"] = (int)(_inertiaSlider?.Value ?? 100),
+            ["speedDamping"] = (int)(_speedDampingSlider?.Value ?? 0)
         };
     }
 }

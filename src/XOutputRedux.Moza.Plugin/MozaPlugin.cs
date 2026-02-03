@@ -38,12 +38,6 @@ public class MozaPlugin : IXOutputPlugin
         if (!enabled)
             return;
 
-        var wheelRotation = pluginData["wheelRotation"]?.GetValue<int>();
-        var ffbStrength = pluginData["ffbStrength"]?.GetValue<int>();
-
-        if (wheelRotation == null && ffbStrength == null)
-            return;
-
         try
         {
             _device = new MozaDevice();
@@ -53,17 +47,33 @@ public class MozaPlugin : IXOutputPlugin
                 return;
             }
 
-            if (wheelRotation.HasValue)
-                _device.SetWheelRotation(wheelRotation.Value);
+            // Primary settings
+            ApplyIntSetting(pluginData, "wheelRotation", _device.SetWheelRotation);
+            ApplyIntSetting(pluginData, "ffbStrength", _device.SetFfbStrength);
+            ApplyIntSetting(pluginData, "maxTorque", _device.SetMaxTorque);
 
-            if (ffbStrength.HasValue)
-                _device.SetFfbStrength(ffbStrength.Value);
+            var ffbReverse = pluginData["ffbReverse"]?.GetValue<bool>();
+            if (ffbReverse.HasValue)
+                _device.SetFfbReverse(ffbReverse.Value);
+
+            // Wheel feel settings
+            ApplyIntSetting(pluginData, "damping", _device.SetDamping);
+            ApplyIntSetting(pluginData, "springStrength", _device.SetSpringStrength);
+            ApplyIntSetting(pluginData, "naturalInertia", _device.SetNaturalInertia);
+            ApplyIntSetting(pluginData, "speedDamping", _device.SetSpeedDamping);
         }
         catch
         {
             _device?.Dispose();
             _device = null;
         }
+    }
+
+    private static void ApplyIntSetting(JsonObject data, string key, Action<int> setter)
+    {
+        var value = data[key]?.GetValue<int>();
+        if (value.HasValue)
+            setter(value.Value);
     }
 
     public void OnProfileStop()
