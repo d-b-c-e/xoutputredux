@@ -81,15 +81,18 @@ internal class MozaEditorTab
 
         int rotation = _data?["wheelRotation"]?.GetValue<int>() ?? 900;
         AddSliderRow(panel, "Wheel Rotation", 90, 2700, rotation, 10,
-            v => $"{v}\u00B0", out _rotationSlider);
+            v => $"{v}\u00B0", out _rotationSlider,
+            "Total steering angle lock-to-lock. Lower values (e.g. 540\u00B0) suit arcade racers, higher values (900\u00B0+) suit simulators.");
 
         int ffb = _data?["ffbStrength"]?.GetValue<int>() ?? 100;
         AddSliderRow(panel, "FFB Strength", 0, 100, ffb, 1,
-            v => $"{v}%", out _ffbSlider);
+            v => $"{v}%", out _ffbSlider,
+            "Overall force feedback intensity. Scales all FFB effects sent to the wheel.");
 
         int maxTorque = _data?["maxTorque"]?.GetValue<int>() ?? 100;
         AddSliderRow(panel, "Max Torque", 50, 100, maxTorque, 1,
-            v => $"{v}%", out _maxTorqueSlider);
+            v => $"{v}%", out _maxTorqueSlider,
+            "Caps the peak force the wheel can output. Lower this to prevent jarring jolts from crashes or wall hits.");
 
         bool ffbReverse = _data?["ffbReverse"]?.GetValue<bool>() ?? false;
         _ffbReverseCheckBox = new CheckBox
@@ -98,7 +101,8 @@ internal class MozaEditorTab
             IsChecked = ffbReverse,
             IsEnabled = !_readOnly,
             Foreground = ForegroundBrush,
-            Margin = new Thickness(0, 0, 0, 15)
+            Margin = new Thickness(0, 0, 0, 15),
+            ToolTip = "Flip the FFB direction. Enable this if the wheel pulls into turns instead of resisting them."
         };
         panel.Children.Add(_ffbReverseCheckBox);
 
@@ -107,19 +111,23 @@ internal class MozaEditorTab
 
         int damping = _data?["damping"]?.GetValue<int>() ?? 0;
         AddSliderRow(panel, "Damping", 0, 100, damping, 1,
-            v => $"{v}%", out _dampingSlider);
+            v => $"{v}%", out _dampingSlider,
+            "Adds resistance that slows the wheel's movement. Smooths out twitchy steering in arcade racers.");
 
         int spring = _data?["springStrength"]?.GetValue<int>() ?? 0;
         AddSliderRow(panel, "Center Spring", 0, 100, spring, 1,
-            v => $"{v}%", out _springSlider);
+            v => $"{v}%", out _springSlider,
+            "Force that pulls the wheel back to center. Useful when games don't provide their own centering force.");
 
         int inertia = _data?["naturalInertia"]?.GetValue<int>() ?? 100;
         AddSliderRow(panel, "Natural Inertia", 100, 500, inertia, 5,
-            v => $"{v}%", out _inertiaSlider);
+            v => $"{v}%", out _inertiaSlider,
+            "Simulates the weight of the steering wheel. Higher values make the wheel feel heavier and slower to turn.");
 
         int speedDamping = _data?["speedDamping"]?.GetValue<int>() ?? 0;
         AddSliderRow(panel, "Speed Damping", 0, 100, speedDamping, 1,
-            v => $"{v}%", out _speedDampingSlider);
+            v => $"{v}%", out _speedDampingSlider,
+            "Resistance that increases with turning speed. Prevents snapping the wheel quickly from lock to lock.");
 
         // Wrap in ScrollViewer
         var scrollViewer = new ScrollViewer
@@ -151,7 +159,8 @@ internal class MozaEditorTab
     }
 
     private void AddSliderRow(StackPanel parent, string label, int min, int max,
-        int value, int tickFrequency, Func<int, string> format, out Slider slider)
+        int value, int tickFrequency, Func<int, string> format, out Slider slider,
+        string? tooltip = null)
     {
         // Label
         parent.Children.Add(new TextBlock
@@ -159,7 +168,9 @@ internal class MozaEditorTab
             Text = label,
             Foreground = ForegroundBrush,
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 3)
+            Margin = new Thickness(0, 0, 0, 3),
+            ToolTip = tooltip,
+            Cursor = tooltip != null ? System.Windows.Input.Cursors.Help : null
         });
 
         // Slider + value in a horizontal grid
