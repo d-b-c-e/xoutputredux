@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using XOutputRedux.Core.ForceFeedback;
 using XOutputRedux.Core.HidHide;
@@ -44,6 +45,11 @@ public class MappingProfile
     /// HidHide settings for this profile.
     /// </summary>
     public HidHideSettings? HidHideSettings { get; set; }
+
+    /// <summary>
+    /// Arbitrary plugin data, keyed by plugin ID.
+    /// </summary>
+    public Dictionary<string, JsonObject>? PluginData { get; set; }
 
     /// <summary>
     /// All output mappings indexed by Xbox output.
@@ -125,7 +131,10 @@ public class MappingProfile
             CreatedAt = DateTime.Now,
             ModifiedAt = DateTime.Now,
             ForceFeedbackSettings = ForceFeedbackSettings?.Clone(),
-            HidHideSettings = HidHideSettings?.Clone()
+            HidHideSettings = HidHideSettings?.Clone(),
+            PluginData = PluginData?.ToDictionary(
+                kvp => kvp.Key,
+                kvp => JsonNode.Parse(kvp.Value.ToJsonString())!.AsObject())
         };
 
         foreach (var kvp in _mappings)
@@ -188,6 +197,7 @@ public class MappingProfileData
     public List<OutputMappingData> Mappings { get; set; } = new();
     public ForceFeedbackSettingsData? ForceFeedback { get; set; }
     public HidHideSettingsData? HidHide { get; set; }
+    public Dictionary<string, JsonObject>? PluginData { get; set; }
 
     /// <summary>
     /// Whether this data needs to be migrated to the current schema version.
@@ -234,7 +244,10 @@ public class MappingProfileData
             ForceFeedback = profile.ForceFeedbackSettings != null
                 ? ForceFeedbackSettingsData.FromSettings(profile.ForceFeedbackSettings)
                 : null,
-            HidHide = HidHideSettingsData.FromSettings(profile.HidHideSettings)
+            HidHide = HidHideSettingsData.FromSettings(profile.HidHideSettings),
+            PluginData = profile.PluginData != null
+                ? new Dictionary<string, JsonObject>(profile.PluginData)
+                : null
         };
 
         foreach (var kvp in profile.Mappings)
@@ -261,7 +274,10 @@ public class MappingProfileData
             ModifiedAt = ModifiedAt,
             IsDefault = IsDefault,
             ForceFeedbackSettings = ForceFeedback?.ToSettings(),
-            HidHideSettings = HidHide?.ToSettings()
+            HidHideSettings = HidHide?.ToSettings(),
+            PluginData = PluginData != null
+                ? new Dictionary<string, JsonObject>(PluginData)
+                : null
         };
 
         foreach (var mappingData in Mappings)

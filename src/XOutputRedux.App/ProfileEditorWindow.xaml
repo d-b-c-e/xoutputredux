@@ -347,7 +347,7 @@
         </GroupBox>
 
         <!-- Right Panel - Tabbed Settings -->
-        <TabControl Grid.Row="1" Grid.Column="1"
+        <TabControl x:Name="MainTabControl" Grid.Row="1" Grid.Column="1"
                     Background="{StaticResource BackgroundSecondaryBrush}"
                     BorderBrush="{StaticResource BorderBrush}">
 

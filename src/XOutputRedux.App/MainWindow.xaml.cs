@@ -10,6 +10,7 @@ using System.Windows.Threading;
 using XOutputRedux.App.ViewModels;
 using XOutputRedux.Core.Games;
 using XOutputRedux.Core.Mapping;
+using XOutputRedux.Core.Plugins;
 using XOutputRedux.Emulation;
 using XOutputRedux.HidHide;
 using XOutputRedux.Input;
@@ -45,6 +46,7 @@ public partial class MainWindow : Window
     private readonly GameAssociationManager _gameManager;
     private readonly GameMonitorService _gameMonitorService;
     private GlobalHotkeyService? _hotkeyService;
+    private readonly List<IXOutputPlugin> _plugins = new();
 
     // Test tab brushes
     private static readonly SolidColorBrush ReleasedBrush = new(Color.FromRgb(0xCC, 0xCC, 0xCC));
@@ -123,6 +125,10 @@ public partial class MainWindow : Window
         CheckDriverStatus();
         InitializeOptions();
         InitializeGlobalHotkey();
+
+        // Load plugins
+        var pluginsDir = Path.Combine(AppContext.BaseDirectory, "plugins");
+        _plugins.AddRange(PluginLoader.LoadPlugins(pluginsDir));
 
         // Show portable mode indicators if applicable
         if (AppPaths.IsPortable)
@@ -600,7 +606,7 @@ public partial class MainWindow : Window
         // Open in read-only mode if profile is running
         bool readOnly = selected.IsRunning;
 
-        var editor = new ProfileEditorWindow(selected.Profile, _deviceManager, _hidHideService, _deviceSettings, readOnly);
+        var editor = new ProfileEditorWindow(selected.Profile, _deviceManager, _hidHideService, _deviceSettings, readOnly, _plugins);
         editor.Owner = this;
         editor.ShowDialog();
 
@@ -820,6 +826,20 @@ public partial class MainWindow : Window
             // Hide devices if HidHide is enabled for this profile
             HideProfileDevices(profile.Profile);
 
+            // Notify plugins
+            foreach (var plugin in _plugins)
+            {
+                try
+                {
+                    var data = profile.Profile.PluginData?.GetValueOrDefault(plugin.Id);
+                    plugin.OnProfileStart(data);
+                }
+                catch (Exception pex)
+                {
+                    AppLogger.Error($"Plugin {plugin.Id} failed on profile start", pex);
+                }
+            }
+
             // Show toast notification
             ToastNotificationService.ShowProfileStarted(profile.Name);
 
@@ -929,6 +949,13 @@ public partial class MainWindow : Window
 
     private void StopProfile()
     {
+        // Notify plugins
+        foreach (var plugin in _plugins)
+        {
+            try { plugin.OnProfileStop(); }
+            catch (Exception ex) { AppLogger.Error($"Plugin {plugin.Id} failed on profile stop", ex); }
+        }
+
         // Unhide any devices we hid when starting the profile
         UnhideProfileDevices();
 
@@ -1099,6 +1126,12 @@ public partial class MainWindow : Window
 
         try { _hotkeyService?.Dispose(); }
         catch (Exception ex) { AppLogger.Error("CleanupResources: GlobalHotkeyService.Dispose failed", ex); }
+
+        foreach (var plugin in _plugins)
+        {
+            try { plugin.Dispose(); }
+            catch (Exception ex) { AppLogger.Error($"CleanupResources: Plugin {plugin.Id} dispose failed", ex); }
+        }
 
         try { _gameMonitorService.Dispose(); }
         catch (Exception ex) { AppLogger.Error("CleanupResources: GameMonitorService.Dispose failed", ex); }

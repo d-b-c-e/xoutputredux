@@ -28,6 +28,7 @@ XOutputRedux/
 │   ├── XOutputRedux.App/            # WPF GUI + CLI application
 │   │   └── Assets/                  # Icons, banners, branding assets
 │   ├── XOutputRedux.StreamDeck/     # Stream Deck plugin
+│   ├── XOutputRedux.Moza.Plugin/    # Moza wheel plugin (optional, built separately)
 │   └── XOutputRedux.HidSharper/     # Forked/slimmed HidSharp library (Windows-only HID)
 └── tests/
     └── XOutputRedux.Tests/
@@ -111,6 +112,8 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 17: Rebrand to XOutput Redux | ✓ Complete | Codebase renamed to XOutput Redux |
 | 18: Rename GitHub Repository | ✓ Complete | Renamed repo to `xoutputredux`, URLs already pointed to new name |
 | 19: Quick Add Game Hotkey | ✓ Complete | Global hotkey (Ctrl+Shift+G) to add focused game to running profile |
+| 20: Plugin System | ✓ Complete | Simple plugin loader, per-profile plugin data, profile editor tab injection |
+| 21: Moza Wheel Plugin | ✓ Complete | XOutputRedux.Moza.Plugin — wheel rotation and FFB strength per profile |
 
 ### Completed Dependency Upgrades
 
@@ -132,6 +135,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | Item | Description | Priority |
 |------|-------------|----------|
 | **Improved Wheel FFB** | Current FFB uses ConstantForce in one direction (left), designed for gamepad rumble. Enhancements: (1) Use oscillating/periodic effects instead of constant force for more rumble-like feel, (2) Allow configuring effect type/direction in profile, (3) Apply magnitude symmetrically to avoid one-sided pull. Note: Xbox rumble → wheel FFB is inherently limited; games not designed for wheels will never feel like proper wheel games. | Low |
+| **Steering Wheel Axis Tuning** | Explore features to enhance steering wheel usability beyond basic deadzone. Ideas: (1) Axis linearity/response curves — allow non-linear mapping (e.g., less sensitive near center, more at extremes) via configurable curve profiles, (2) Per-axis deadzone with inner and outer deadzone settings, (3) Axis range limiting (e.g., map physical 0-100% to a narrower output range), (4) Sensitivity multiplier per axis, (5) S-curve or custom curve editor in the profile editor GUI. These would make XOutputRedux more competitive with dedicated wheel software for users whose wheels lack built-in tuning. | Medium |
 
 ---
 
@@ -453,7 +457,20 @@ public bool HideDevice(string deviceInstancePath)
 - `AppSettings.cs` - Persists app options (minimize to tray, start with Windows, startup profile)
 - `AppLogger.cs` - File-based async logging for debugging
 - `DarkModeHelper.cs` - Windows DWM API for dark title bars
+- `PluginLoader.cs` - Discovers and loads plugins from `plugins/` subdirectory
 - `ViewModels/` - DeviceViewModel, ProfileViewModel
+
+### Plugin System (`XOutputRedux.Core/Plugins`)
+- `IXOutputPlugin.cs` - Plugin interface (Initialize, CreateEditorTab, OnProfileStart/Stop)
+- Plugins are loaded from `plugins/<Name>/` subdirectory next to exe
+- Plugin data stored in profile JSON under `pluginData` dictionary keyed by plugin ID
+- DLLs matching `*.Plugin.dll` are scanned; each plugin gets its own `AssemblyLoadContext`
+
+### Moza Wheel Plugin (`XOutputRedux.Moza.Plugin`)
+- `MozaPlugin.cs` - IXOutputPlugin implementation
+- `MozaDevice.cs` - Trimmed Moza SDK wrapper (wheel rotation, FFB strength)
+- `MozaEditorTab.cs` - WPF tab UI built in code (enable checkbox, rotation slider, FFB slider)
+- Requires Moza Pit House running; SDK DLLs bundled in plugin folder
 
 ---
 

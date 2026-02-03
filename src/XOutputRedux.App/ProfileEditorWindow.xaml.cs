@@ -4,9 +4,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Text.Json.Nodes;
 using XOutputRedux.Core.ForceFeedback;
 using XOutputRedux.Core.HidHide;
 using XOutputRedux.Core.Mapping;
+using XOutputRedux.Core.Plugins;
 using XOutputRedux.HidHide;
 using XOutputRedux.Input;
 using XOutputRedux.Input.ForceFeedback;
@@ -48,10 +50,13 @@ public partial class ProfileEditorWindow : Window
     private readonly ObservableCollection<WhitelistItem> _whitelistItems = new();
     private bool _isLoadingHidHideSettings;
 
+    // Plugins
+    private readonly IReadOnlyList<IXOutputPlugin> _plugins;
+
     public bool WasSaved { get; private set; }
     private readonly bool _isReadOnly;
 
-    public ProfileEditorWindow(MappingProfile profile, InputDeviceManager deviceManager, HidHideService? hidHideService = null, DeviceSettings? deviceSettings = null, bool readOnly = false)
+    public ProfileEditorWindow(MappingProfile profile, InputDeviceManager deviceManager, HidHideService? hidHideService = null, DeviceSettings? deviceSettings = null, bool readOnly = false, IReadOnlyList<IXOutputPlugin>? plugins = null)
     {
         InitializeComponent();
 
@@ -61,6 +66,7 @@ public partial class ProfileEditorWindow : Window
         _deviceManager = deviceManager;
         _deviceSettings = deviceSettings;
         _isReadOnly = readOnly;
+        _plugins = plugins ?? Array.Empty<IXOutputPlugin>();
 
         // Use passed service or create new one
         _hidHideService = hidHideService ?? new HidHideService();
@@ -91,6 +97,7 @@ public partial class ProfileEditorWindow : Window
         LoadOutputs();
         LoadForceFeedbackSettings();
         LoadHidHideSettings();
+        LoadPluginTabs();
 
         // Apply read-only mode
         if (_isReadOnly)
@@ -1166,6 +1173,54 @@ public partial class ProfileEditorWindow : Window
 
     #endregion
 
+    #region Plugins
+
+    private void LoadPluginTabs()
+    {
+        foreach (var plugin in _plugins)
+        {
+            try
+            {
+                var data = _profile.PluginData?.GetValueOrDefault(plugin.Id);
+                var tab = plugin.CreateEditorTab(data, _isReadOnly);
+                if (tab is TabItem tabItem)
+                {
+                    MainTabControl.Items.Add(tabItem);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"Plugin {plugin.Id} failed to create editor tab", ex);
+            }
+        }
+    }
+
+    private void SavePluginData()
+    {
+        Dictionary<string, JsonObject>? pluginData = null;
+
+        foreach (var plugin in _plugins)
+        {
+            try
+            {
+                var data = plugin.GetEditorData();
+                if (data != null)
+                {
+                    pluginData ??= new Dictionary<string, JsonObject>();
+                    pluginData[plugin.Id] = data;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"Plugin {plugin.Id} failed to get editor data", ex);
+            }
+        }
+
+        _originalProfile.PluginData = pluginData;
+    }
+
+    #endregion
+
     #region Save/Cancel
 
     private void Save_Click(object sender, RoutedEventArgs e)
@@ -1208,6 +1263,9 @@ public partial class ProfileEditorWindow : Window
         {
             _originalProfile.HidHideSettings = null;
         }
+
+        // Copy plugin data
+        SavePluginData();
 
         WasSaved = true;
         StopMonitoring();
