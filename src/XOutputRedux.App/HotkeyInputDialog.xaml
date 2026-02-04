@@ -7,7 +7,8 @@
         Background="#1E1E1E"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
-        KeyDown="Window_KeyDown">
+        KeyDown="Window_KeyDown"
+        Icon="pack://application:,,,/Assets/Icons/favicon.ico">
 
     <Window.Resources>
         <SolidColorBrush x:Key="BackgroundBrush" Color="#1E1E1E"/>

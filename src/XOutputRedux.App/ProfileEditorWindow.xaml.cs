@@ -37,6 +37,7 @@ public partial class ProfileEditorWindow : Window
     private readonly Dictionary<XboxOutput, DateTime> _outputLastActive = new();
     private DateTime _captureStartTime;
     private readonly Dictionary<string, double> _captureBaseline = new(); // device:sourceIndex -> baseline value
+    private readonly Dictionary<(string deviceId, int sourceIndex), double> _latestInputValues = new();
     private const int CaptureGracePeriodMs = 300; // Grace period to establish baseline before detecting
 
     // Force feedback
@@ -158,6 +159,8 @@ public partial class ProfileEditorWindow : Window
             device.InputChanged -= Device_InputChanged_Monitor;
             device.Stop();
         }
+
+        _latestInputValues.Clear();
     }
 
     private void DefaultProfile_Changed(object sender, RoutedEventArgs e)
@@ -280,6 +283,9 @@ public partial class ProfileEditorWindow : Window
     private void Device_InputChanged_Monitor(object? sender, InputChangedEventArgs e)
     {
         if (sender is not IInputDevice device) return;
+
+        // Track latest values for axis capture
+        _latestInputValues[(device.UniqueId, e.Source.Index)] = e.NewValue;
 
         Dispatcher.BeginInvoke(() =>
         {
@@ -524,17 +530,37 @@ public partial class ProfileEditorWindow : Window
 
         if (_selectedBinding != null)
         {
-            InvertCheckBox.IsEnabled = true;
-            ThresholdSlider.IsEnabled = _selectedOutput?.Output.IsButton() == true;
+            InvertCheckBox.IsEnabled = !_isReadOnly;
+            ThresholdSlider.IsEnabled = !_isReadOnly && _selectedOutput?.Output.IsButton() == true;
 
             // Load current values
             InvertCheckBox.IsChecked = _selectedBinding.Binding.Invert;
             ThresholdSlider.Value = _selectedBinding.Binding.ButtonThreshold;
+
+            // Show input range for axes and triggers
+            var isAxisOrTrigger = _selectedOutput?.Output.IsAxis() == true ||
+                                  _selectedOutput?.Output.IsTrigger() == true;
+            InputRangePanel.Visibility = isAxisOrTrigger
+                ? System.Windows.Visibility.Visible
+                : System.Windows.Visibility.Collapsed;
+
+            if (isAxisOrTrigger)
+            {
+                MinValueTextBox.Text = _selectedBinding.Binding.MinValue.ToString("F4");
+                MaxValueTextBox.Text = _selectedBinding.Binding.MaxValue.ToString("F4");
+                MinValueTextBox.IsEnabled = !_isReadOnly;
+                MaxValueTextBox.IsEnabled = !_isReadOnly;
+                CaptureMinButton.IsEnabled = !_isReadOnly;
+                CaptureMaxButton.IsEnabled = !_isReadOnly;
+                ResetRangeButton.IsEnabled = !_isReadOnly;
+                RangeHintText.Text = "";
+            }
         }
         else
         {
             InvertCheckBox.IsEnabled = false;
             ThresholdSlider.IsEnabled = false;
+            InputRangePanel.Visibility = System.Windows.Visibility.Collapsed;
         }
     }
 
@@ -576,6 +602,116 @@ public partial class ProfileEditorWindow : Window
             "Select a binding from the list above to enable this option.",
             "Threshold Help",
             this);
+    }
+
+    private void MinValueTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_selectedBinding == null) return;
+        if (double.TryParse(MinValueTextBox.Text, out double val))
+        {
+            _selectedBinding.Binding.MinValue = Math.Clamp(val, 0.0, 1.0);
+        }
+        MinValueTextBox.Text = _selectedBinding.Binding.MinValue.ToString("F4");
+    }
+
+    private void MaxValueTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_selectedBinding == null) return;
+        if (double.TryParse(MaxValueTextBox.Text, out double val))
+        {
+            _selectedBinding.Binding.MaxValue = Math.Clamp(val, 0.0, 1.0);
+        }
+        MaxValueTextBox.Text = _selectedBinding.Binding.MaxValue.ToString("F4");
+    }
+
+    private void CaptureMinButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedBinding == null) return;
+
+        var liveValue = GetLiveInputValue(_selectedBinding.Binding);
+        if (liveValue.HasValue)
+        {
+            _selectedBinding.Binding.MinValue = liveValue.Value;
+            MinValueTextBox.Text = liveValue.Value.ToString("F4");
+            RangeHintText.Text = $"Captured min: {liveValue.Value:F4}";
+            RangeHintText.Foreground = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50));
+        }
+        else
+        {
+            RangeHintText.Text = "Enable 'Listen for Input' first, then move axis to position";
+            RangeHintText.Foreground = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0xEF, 0x53, 0x50));
+        }
+    }
+
+    private void CaptureMaxButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedBinding == null) return;
+
+        var liveValue = GetLiveInputValue(_selectedBinding.Binding);
+        if (liveValue.HasValue)
+        {
+            _selectedBinding.Binding.MaxValue = liveValue.Value;
+            MaxValueTextBox.Text = liveValue.Value.ToString("F4");
+            RangeHintText.Text = $"Captured max: {liveValue.Value:F4}";
+            RangeHintText.Foreground = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50));
+        }
+        else
+        {
+            RangeHintText.Text = "Enable 'Listen for Input' first, then move axis to position";
+            RangeHintText.Foreground = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0xEF, 0x53, 0x50));
+        }
+    }
+
+    private void ResetRangeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedBinding == null) return;
+        _selectedBinding.Binding.MinValue = 0.0;
+        _selectedBinding.Binding.MaxValue = 1.0;
+        MinValueTextBox.Text = "0.0000";
+        MaxValueTextBox.Text = "1.0000";
+        RangeHintText.Text = "Range reset to defaults";
+        RangeHintText.Foreground = new System.Windows.Media.SolidColorBrush(
+            System.Windows.Media.Color.FromRgb(0x90, 0x90, 0x90));
+    }
+
+    private void InputRangeHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        HelpDialog.Show(
+            "Input Range remaps a portion of the physical axis to the full output range.\n\n" +
+            "WHY USE IT?\n" +
+            "If your wheel rotation is set to 270\u00b0 but the axis is calibrated for 1080\u00b0, " +
+            "the axis only reaches ~25% at full lock. Setting Min and Max to the actual " +
+            "range remaps it to the full 0-100% output.\n\n" +
+            "HOW TO USE:\n" +
+            "1. Check 'Listen for Input' in the Input Monitor above\n" +
+            "2. Select the axis binding from the list\n" +
+            "3. Move your axis to its minimum position and click 'Capture Min'\n" +
+            "4. Move your axis to its maximum position and click 'Capture Max'\n\n" +
+            "Or enter values manually (0.0 to 1.0).\n" +
+            "Click 'Reset Range' to restore the default full range.",
+            "Input Range Help",
+            this);
+    }
+
+    private double? GetLiveInputValue(InputBinding binding)
+    {
+        if (!_isMonitoring)
+        {
+            StartMonitoring();
+            // Give devices a moment to report values
+            System.Threading.Thread.Sleep(100);
+        }
+
+        if (_latestInputValues.TryGetValue((binding.DeviceId, binding.SourceIndex), out var value))
+        {
+            return value;
+        }
+
+        return null;
     }
 
     private void RemoveBinding_Click(object sender, RoutedEventArgs e)

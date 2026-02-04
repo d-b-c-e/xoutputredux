@@ -1,10 +1,11 @@
 # XOutputRedux Release Script
-# Creates installer, portable ZIP, and Stream Deck plugin for distribution
-# Usage: .\scripts\release.ps1 [-SkipBuild] [-SkipStreamDeck] [-InnoSetupPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"]
+# Creates installer, portable ZIP, Stream Deck plugin, and Moza plugin for distribution
+# Usage: .\scripts\release.ps1 [-SkipBuild] [-SkipStreamDeck] [-SkipMozaPlugin] [-InnoSetupPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"]
 
 param(
     [switch]$SkipBuild,
     [switch]$SkipStreamDeck,
+    [switch]$SkipMozaPlugin,
     [string]$InnoSetupPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 )
 
@@ -39,6 +40,7 @@ if (-not (Test-Path $DistDir)) {
 # Determine total steps
 $totalSteps = 3
 if (-not $SkipStreamDeck) { $totalSteps++ }
+if (-not $SkipMozaPlugin) { $totalSteps++ }
 $currentStep = 0
 
 # Build if not skipped
@@ -83,6 +85,56 @@ if (-not $SkipStreamDeck) {
         }
     } else {
         Write-Host "Stream Deck build script not found at: $StreamDeckBuildScript" -ForegroundColor Yellow
+    }
+}
+
+# Build Moza plugin
+if (-not $SkipMozaPlugin) {
+    $currentStep++
+    Write-Host "`n[$currentStep/$totalSteps] Building Moza plugin..." -ForegroundColor Yellow
+    $MozaPluginProject = Join-Path $ProjectRoot "src\XOutputRedux.Moza.Plugin\XOutputRedux.Moza.Plugin.csproj"
+
+    if (Test-Path $MozaPluginProject) {
+        $MozaPublishDir = Join-Path $ProjectRoot "publish-moza-plugin"
+        if (Test-Path $MozaPublishDir) {
+            Remove-Item -Recurse -Force $MozaPublishDir
+        }
+
+        & dotnet publish $MozaPluginProject -c Release -o $MozaPublishDir --nologo --self-contained false
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Moza plugin build failed (non-fatal)" -ForegroundColor Yellow
+        } else {
+            # Remove XOutputRedux.Core.dll from plugin output (already in main app)
+            $coreDll = Join-Path $MozaPublishDir "XOutputRedux.Core.dll"
+            if (Test-Path $coreDll) {
+                Remove-Item $coreDll
+            }
+
+            # Remove deps.json that references Core (not needed for plugin loading)
+            Get-ChildItem $MozaPublishDir -Filter "*.deps.json" | Remove-Item -Force
+
+            # Create plugin package (.xoutputreduxplugin is a renamed ZIP)
+            $MozaPluginName = "XOutputRedux-$Version-MozaPlugin.xoutputreduxplugin"
+            $MozaPluginPath = Join-Path $DistDir $MozaPluginName
+            # Build as .zip first, then rename (Compress-Archive requires .zip extension)
+            $MozaTempZip = Join-Path $DistDir "MozaPlugin-temp.zip"
+
+            if (Test-Path $MozaPluginPath) {
+                Remove-Item $MozaPluginPath
+            }
+            if (Test-Path $MozaTempZip) {
+                Remove-Item $MozaTempZip
+            }
+
+            Compress-Archive -Path "$MozaPublishDir\*" -DestinationPath $MozaTempZip -CompressionLevel Optimal
+            Move-Item $MozaTempZip $MozaPluginPath
+            Write-Host "Created: $MozaPluginName" -ForegroundColor Green
+
+            # Clean up temp publish dir
+            Remove-Item -Recurse -Force $MozaPublishDir
+        }
+    } else {
+        Write-Host "Moza plugin project not found at: $MozaPluginProject" -ForegroundColor Yellow
     }
 }
 
@@ -131,6 +183,13 @@ Write-Host "Files created:"
 Get-ChildItem $DistDir -Filter "XOutputRedux-$Version*" | ForEach-Object {
     $sizeMB = [math]::Round($_.Length / 1MB, 2)
     Write-Host "  - $($_.Name) ($sizeMB MB)"
+}
+
+# List Stream Deck plugin if present
+$StreamDeckInDist = Join-Path $DistDir "com.xoutputredux.streamDeckPlugin"
+if (Test-Path $StreamDeckInDist) {
+    $sizeMB = [math]::Round((Get-Item $StreamDeckInDist).Length / 1MB, 2)
+    Write-Host "  - com.xoutputredux.streamDeckPlugin ($sizeMB MB)"
 }
 
 Write-Host ""

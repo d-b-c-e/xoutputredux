@@ -530,6 +530,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
@@ -664,6 +665,18 @@
                                            Text="⚠ Portable mode: Stream Deck plugin reads profiles from AppData, not the portable location."
                                            Foreground="#FFA500" TextWrapping="Wrap" Margin="0,8,0,0" FontSize="11"
                                            Visibility="Collapsed"/>
+                            </StackPanel>
+                        </GroupBox>
+                        <!-- Plugins -->
+                        <GroupBox Grid.Row="7" Header="Plugins" Margin="0,0,0,10">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="Install optional plugins to add device-specific features (e.g., Moza wheel settings)."
+                                           TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                <Button x:Name="InstallPluginButton" Content="Install Plugin..."
+                                        Padding="15,5" HorizontalAlignment="Left"
+                                        Click="InstallPlugin_Click"/>
+                                <TextBlock Text="Plugins are .xoutputreduxplugin files. Restart the app after installing."
+                                           Foreground="Gray" Margin="0,5,0,0" FontSize="11"/>
                             </StackPanel>
                         </GroupBox>
                     </Grid>

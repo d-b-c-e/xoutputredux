@@ -113,7 +113,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 18: Rename GitHub Repository | ✓ Complete | Renamed repo to `xoutputredux`, URLs already pointed to new name |
 | 19: Quick Add Game Hotkey | ✓ Complete | Global hotkey (Ctrl+Shift+G) to add focused game to running profile |
 | 20: Plugin System | ✓ Complete | Simple plugin loader, per-profile plugin data, profile editor tab injection |
-| 21: Moza Wheel Plugin | ✓ Complete | XOutputRedux.Moza.Plugin — wheel rotation and FFB strength per profile |
+| 21: Moza Wheel Plugin | ✓ Complete | XOutputRedux.Moza.Plugin — 8 wheel settings (rotation, FFB, damping, spring, inertia, torque, speed damping, FFB reverse) per profile via Pit House SDK |
 
 ### Completed Dependency Upgrades
 
@@ -302,6 +302,19 @@ dotnet run --project src/XOutputRedux.App
 
 # Run tests
 dotnet test
+
+# Build Moza plugin separately (not part of main solution)
+dotnet publish src/XOutputRedux.Moza.Plugin -c Release -o publish-moza-plugin --self-contained false
+
+# Deploy plugin for local testing (copy to app's output plugins folder)
+# Copy XOutputRedux.Moza.Plugin.dll, MOZA_SDK.dll, MOZA_API_C.dll, MOZA_API_CSharp.dll
+# to: src/XOutputRedux.App/bin/Release/net8.0-windows10.0.17763.0/plugins/Moza/
+
+# Create full release (installer + portable ZIP + Stream Deck + Moza plugin)
+.\scripts\release.ps1
+
+# Skip optional components
+.\scripts\release.ps1 -SkipStreamDeck -SkipMozaPlugin
 ```
 
 ## Requirements

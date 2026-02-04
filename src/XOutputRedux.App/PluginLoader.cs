@@ -68,6 +68,22 @@ public static class PluginLoader
                         continue;
 
                     var plugin = (IXOutputPlugin)Activator.CreateInstance(type)!;
+
+                    // Wire up logging if the plugin exposes a static Log property
+                    var logProp = type.GetProperty("Log", BindingFlags.Public | BindingFlags.Static);
+                    if (logProp != null)
+                    {
+                        try
+                        {
+                            logProp.SetValue(null, (Action<string>)(msg => AppLogger.Info(msg)));
+                            AppLogger.Info($"Plugin {type.Name}: Log callback wired up");
+                        }
+                        catch (Exception logEx)
+                        {
+                            AppLogger.Warning($"Plugin {type.Name}: Failed to wire up Log: {logEx.Message}");
+                        }
+                    }
+
                     if (plugin.Initialize())
                     {
                         plugins.Add(plugin);

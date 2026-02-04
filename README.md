@@ -18,6 +18,7 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 - **Backup/restore** - Export and import all settings via `.xorbackup` files
 - **Crash reporting** - One-click GitHub issue creation with diagnostic info
 - **Portable mode** - Create `portable.txt` next to exe to store settings locally
+- **Plugin system** - Optional plugins for device-specific features (e.g., Moza wheel settings)
 
 ## Requirements
 
@@ -116,6 +117,50 @@ XOutputRedux includes a native Stream Deck plugin for controlling profiles direc
 
 The plugin communicates directly with the running GUI via IPC. If the GUI isn't running when you press an action, it will start automatically (minimized to tray).
 
+### Plugins
+
+XOutputRedux supports optional plugins that add device-specific features to the profile editor.
+
+#### Moza Wheel Plugin
+
+Adds a **Moza Wheel** tab to the profile editor with hardware settings that are sent directly to your Moza wheel base when a profile starts. This lets you store per-game wheel settings inside your XOutputRedux profiles.
+
+**Requirements:**
+- Moza racing wheel (R5, R9, R12, R16, R21, etc.)
+- [Moza Pit House](https://www.mozaracing.com/pitHouse) running (the plugin communicates via Pit House's SDK)
+
+**Available Settings:**
+| Setting | Range | Description |
+|---------|-------|-------------|
+| Wheel Rotation | 90-2700° | Total steering angle lock-to-lock |
+| FFB Strength | 0-100% | Overall force feedback intensity |
+| Max Torque | 50-100% | Caps peak force to prevent jarring jolts |
+| FFB Reverse | On/Off | Flip FFB direction |
+| Damping | 0-100% | Resistance that slows wheel movement |
+| Center Spring | 0-100% | Force pulling wheel back to center |
+| Natural Inertia | 100-500% | Simulated weight of the steering wheel |
+| Speed Damping | 0-100% | Resistance increasing with turning speed |
+
+**Installation:**
+1. Download `XOutputRedux-x.x.x-MozaPlugin.zip` from the [Releases page](https://github.com/d-b-c-e/xoutputredux/releases)
+2. Create a `plugins\Moza` folder next to `XOutputRedux.exe`
+3. Extract the ZIP contents into that folder
+
+Your directory should look like:
+```
+XOutputRedux.exe
+plugins\
+  Moza\
+    XOutputRedux.Moza.Plugin.dll
+    MOZA_API_CSharp.dll
+    MOZA_API_C.dll
+    MOZA_SDK.dll
+```
+
+4. Restart XOutputRedux — the "Moza Wheel" tab will appear in the profile editor
+
+**Note:** The plugin is completely optional. XOutputRedux works exactly the same without it. Profiles with Moza settings will still load if the plugin is removed (the data is preserved in the profile JSON but the tab won't appear).
+
 ### Startup Options
 
 ```bash
@@ -160,7 +205,8 @@ XOutputRedux/
 │   ├── XOutputRedux.HidHide/        # HidHide integration
 │   ├── XOutputRedux.App/            # WPF GUI + CLI application
 │   │   └── Assets/                  # Icons, banners, branding assets
-│   └── XOutputRedux.StreamDeck/     # Stream Deck plugin
+│   ├── XOutputRedux.StreamDeck/     # Stream Deck plugin
+│   └── XOutputRedux.Moza.Plugin/   # Moza wheel plugin (optional, built separately)
 └── tests/
     └── XOutputRedux.Tests/
 ```
@@ -203,6 +249,8 @@ XOutputRedux/
 - **Portable mode** - Create `portable.txt` next to exe to store all data in `data\` subfolder
 - **About tab** - Version info, GitHub links, and acknowledgments
 - **Quick Add Game hotkey** - Ctrl+Shift+G adds focused game to running profile (configurable in Options)
+- **Plugin system** - Optional device-specific plugins loaded from `plugins/` folder
+- **Moza Wheel plugin** - Per-profile wheel settings (rotation, FFB, damping, etc.) sent via Moza Pit House SDK
 
 ### Devices Tested
 - MOZA R12 steering wheel base (DirectInput)

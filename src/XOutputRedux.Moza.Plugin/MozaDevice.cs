@@ -12,6 +12,8 @@ internal class MozaDevice : IDisposable
     private bool _initialized;
     private bool _disposed;
 
+    public bool IsInitialized => _initialized;
+
     public bool Initialize()
     {
         if (_initialized) return true;
@@ -89,6 +91,81 @@ internal class MozaDevice : IDisposable
         EnsureInitialized();
         var error = setMotorFfbReverse(reversed ? 1 : 0);
         ThrowIfError(error, "Failed to set FFB reverse");
+    }
+
+    // --- Getters (read current values from wheel) ---
+
+    public int GetFfbStrength()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorFfbStrength(ref error);
+        ThrowIfError(error, "Failed to get FFB strength");
+        return result;
+    }
+
+    public int GetWheelRotation()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorLimitAngle(ref error);
+        ThrowIfError(error, "Failed to get wheel rotation");
+        // Returns (hardwareLimit, gameLimit) - use gameLimit
+        return result?.Item2 ?? 900;
+    }
+
+    public int GetDamping()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorNaturalDamper(ref error);
+        ThrowIfError(error, "Failed to get damping");
+        return result;
+    }
+
+    public int GetSpringStrength()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorSpringStrength(ref error);
+        ThrowIfError(error, "Failed to get spring strength");
+        return result;
+    }
+
+    public int GetNaturalInertia()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorNaturalInertia(ref error);
+        ThrowIfError(error, "Failed to get natural inertia");
+        return result;
+    }
+
+    public int GetMaxTorque()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorPeakTorque(ref error);
+        ThrowIfError(error, "Failed to get max torque");
+        return result;
+    }
+
+    public int GetSpeedDamping()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorSpeedDamping(ref error);
+        ThrowIfError(error, "Failed to get speed damping");
+        return result;
+    }
+
+    public bool GetFfbReverse()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorFfbReverse(ref error);
+        ThrowIfError(error, "Failed to get FFB reverse");
+        return result != 0;
     }
 
     private void EnsureInitialized()

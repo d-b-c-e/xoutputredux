@@ -11,9 +11,22 @@ internal class MozaEditorTab
     private static readonly SolidColorBrush ForegroundBrush = new(Color.FromRgb(0xE0, 0xE0, 0xE0));
     private static readonly SolidColorBrush SubtextBrush = new(Color.FromRgb(0x9E, 0x9E, 0x9E));
     private static readonly SolidColorBrush SeparatorBrush = new(Color.FromRgb(0x40, 0x40, 0x42));
+    private static readonly SolidColorBrush TooltipBackgroundBrush = new(Color.FromRgb(0x3C, 0x3C, 0x3C));
+    private static readonly SolidColorBrush TooltipBorderBrush = new(Color.FromRgb(0x55, 0x55, 0x55));
+    private static readonly SolidColorBrush HelpTextBrush = new(Color.FromRgb(0x00, 0x78, 0xD4));
 
     private readonly JsonObject? _data;
     private readonly bool _readOnly;
+
+    // Default values (hardcoded fallbacks, overridden by live wheel read)
+    private int _defaultRotation = 900;
+    private int _defaultFfb = 100;
+    private int _defaultMaxTorque = 100;
+    private bool _defaultFfbReverse = false;
+    private int _defaultDamping = 0;
+    private int _defaultSpring = 0;
+    private int _defaultInertia = 100;
+    private int _defaultSpeedDamping = 0;
 
     private CheckBox? _enabledCheckBox;
     private Slider? _rotationSlider;
@@ -25,10 +38,36 @@ internal class MozaEditorTab
     private Slider? _speedDampingSlider;
     private CheckBox? _ffbReverseCheckBox;
 
-    public MozaEditorTab(JsonObject? data, bool readOnly)
+    public MozaEditorTab(JsonObject? data, bool readOnly, MozaDevice? device = null)
     {
         _data = data;
         _readOnly = readOnly;
+
+        // If no saved data (or disabled), try reading current values from the wheel
+        bool hasEnabledData = data?["enabled"]?.GetValue<bool>() == true;
+        if (!hasEnabledData && device != null)
+        {
+            ReadCurrentWheelSettings(device);
+        }
+    }
+
+    private void ReadCurrentWheelSettings(MozaDevice device)
+    {
+        try
+        {
+            _defaultRotation = device.GetWheelRotation();
+            _defaultFfb = device.GetFfbStrength();
+            _defaultMaxTorque = device.GetMaxTorque();
+            _defaultFfbReverse = device.GetFfbReverse();
+            _defaultDamping = device.GetDamping();
+            _defaultSpring = device.GetSpringStrength();
+            _defaultInertia = device.GetNaturalInertia();
+            _defaultSpeedDamping = device.GetSpeedDamping();
+        }
+        catch
+        {
+            // Pit House not running or wheel not connected — use hardcoded defaults
+        }
     }
 
     public TabItem CreateTab()
@@ -79,53 +118,54 @@ internal class MozaEditorTab
         // --- Primary Settings ---
         AddSectionHeader(panel, "Primary");
 
-        int rotation = _data?["wheelRotation"]?.GetValue<int>() ?? 900;
-        AddSliderRow(panel, "Wheel Rotation", 90, 2700, rotation, 10,
+        int rotation = _data?["wheelRotation"]?.GetValue<int>() ?? _defaultRotation;
+        AddSliderRow(panel, "Wheel Rotation", 90, 2700, rotation, 90,
             v => $"{v}\u00B0", out _rotationSlider,
             "Total steering angle lock-to-lock. Lower values (e.g. 540\u00B0) suit arcade racers, higher values (900\u00B0+) suit simulators.");
 
-        int ffb = _data?["ffbStrength"]?.GetValue<int>() ?? 100;
-        AddSliderRow(panel, "FFB Strength", 0, 100, ffb, 1,
+        int ffb = _data?["ffbStrength"]?.GetValue<int>() ?? _defaultFfb;
+        AddSliderRow(panel, "FFB Strength", 0, 100, ffb, 5,
             v => $"{v}%", out _ffbSlider,
             "Overall force feedback intensity. Scales all FFB effects sent to the wheel.");
 
-        int maxTorque = _data?["maxTorque"]?.GetValue<int>() ?? 100;
-        AddSliderRow(panel, "Max Torque", 50, 100, maxTorque, 1,
+        int maxTorque = _data?["maxTorque"]?.GetValue<int>() ?? _defaultMaxTorque;
+        AddSliderRow(panel, "Max Torque", 50, 100, maxTorque, 5,
             v => $"{v}%", out _maxTorqueSlider,
             "Caps the peak force the wheel can output. Lower this to prevent jarring jolts from crashes or wall hits.");
 
-        bool ffbReverse = _data?["ffbReverse"]?.GetValue<bool>() ?? false;
+        bool ffbReverse = _data?["ffbReverse"]?.GetValue<bool>() ?? _defaultFfbReverse;
+        var ffbReversePanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 15) };
         _ffbReverseCheckBox = new CheckBox
         {
             Content = "Reverse FFB Direction",
             IsChecked = ffbReverse,
             IsEnabled = !_readOnly,
             Foreground = ForegroundBrush,
-            Margin = new Thickness(0, 0, 0, 15),
-            ToolTip = "Flip the FFB direction. Enable this if the wheel pulls into turns instead of resisting them."
         };
-        panel.Children.Add(_ffbReverseCheckBox);
+        ffbReversePanel.Children.Add(_ffbReverseCheckBox);
+        ffbReversePanel.Children.Add(CreateHelpBadge("Flip the FFB direction. Enable this if the wheel pulls into turns instead of resisting them."));
+        panel.Children.Add(ffbReversePanel);
 
         // --- Feel Settings ---
         AddSectionHeader(panel, "Wheel Feel");
 
-        int damping = _data?["damping"]?.GetValue<int>() ?? 0;
-        AddSliderRow(panel, "Damping", 0, 100, damping, 1,
+        int damping = _data?["damping"]?.GetValue<int>() ?? _defaultDamping;
+        AddSliderRow(panel, "Damping", 0, 100, damping, 5,
             v => $"{v}%", out _dampingSlider,
             "Adds resistance that slows the wheel's movement. Smooths out twitchy steering in arcade racers.");
 
-        int spring = _data?["springStrength"]?.GetValue<int>() ?? 0;
-        AddSliderRow(panel, "Center Spring", 0, 100, spring, 1,
+        int spring = _data?["springStrength"]?.GetValue<int>() ?? _defaultSpring;
+        AddSliderRow(panel, "Center Spring", 0, 100, spring, 5,
             v => $"{v}%", out _springSlider,
             "Force that pulls the wheel back to center. Useful when games don't provide their own centering force.");
 
-        int inertia = _data?["naturalInertia"]?.GetValue<int>() ?? 100;
+        int inertia = _data?["naturalInertia"]?.GetValue<int>() ?? _defaultInertia;
         AddSliderRow(panel, "Natural Inertia", 100, 500, inertia, 5,
             v => $"{v}%", out _inertiaSlider,
             "Simulates the weight of the steering wheel. Higher values make the wheel feel heavier and slower to turn.");
 
-        int speedDamping = _data?["speedDamping"]?.GetValue<int>() ?? 0;
-        AddSliderRow(panel, "Speed Damping", 0, 100, speedDamping, 1,
+        int speedDamping = _data?["speedDamping"]?.GetValue<int>() ?? _defaultSpeedDamping;
+        AddSliderRow(panel, "Speed Damping", 0, 100, speedDamping, 5,
             v => $"{v}%", out _speedDampingSlider,
             "Resistance that increases with turning speed. Prevents snapping the wheel quickly from lock to lock.");
 
@@ -162,16 +202,29 @@ internal class MozaEditorTab
         int value, int tickFrequency, Func<int, string> format, out Slider slider,
         string? tooltip = null)
     {
-        // Label
-        parent.Children.Add(new TextBlock
+        // Label with optional help badge
+        if (tooltip != null)
         {
-            Text = label,
-            Foreground = ForegroundBrush,
-            FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 3),
-            ToolTip = tooltip,
-            Cursor = tooltip != null ? System.Windows.Input.Cursors.Help : null
-        });
+            var labelPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 3) };
+            labelPanel.Children.Add(new TextBlock
+            {
+                Text = label,
+                Foreground = ForegroundBrush,
+                FontWeight = FontWeights.SemiBold,
+            });
+            labelPanel.Children.Add(CreateHelpBadge(tooltip));
+            parent.Children.Add(labelPanel);
+        }
+        else
+        {
+            parent.Children.Add(new TextBlock
+            {
+                Text = label,
+                Foreground = ForegroundBrush,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 0, 0, 3),
+            });
+        }
 
         // Slider + value in a horizontal grid
         var grid = new Grid { Margin = new Thickness(0, 0, 0, 15) };
@@ -219,6 +272,44 @@ internal class MozaEditorTab
             FontSize = 11,
             Margin = new Thickness(0, -10, 0, 10)
         });
+    }
+
+    private FrameworkElement CreateHelpBadge(string tooltipText)
+    {
+        var helpText = new TextBlock
+        {
+            Text = "?",
+            Foreground = HelpTextBrush,
+            FontWeight = FontWeights.Bold,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            Margin = new Thickness(5, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = CreateDarkToolTip(tooltipText),
+        };
+        ToolTipService.SetShowDuration(helpText, 15000);
+        ToolTipService.SetInitialShowDelay(helpText, 200);
+
+        return helpText;
+    }
+
+    private static ToolTip CreateDarkToolTip(string text)
+    {
+        return new ToolTip
+        {
+            Content = new TextBlock
+            {
+                Text = text,
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 300,
+                Foreground = ForegroundBrush,
+                FontSize = 12,
+            },
+            Background = TooltipBackgroundBrush,
+            Foreground = ForegroundBrush,
+            BorderBrush = TooltipBorderBrush,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(8, 4, 8, 4),
+        };
     }
 
     public JsonObject? GetData()

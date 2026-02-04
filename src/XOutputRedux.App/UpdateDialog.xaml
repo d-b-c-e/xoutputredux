@@ -5,7 +5,8 @@
         Height="450" Width="550"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#1E1E1E">
+        Background="#1E1E1E"
+        Icon="pack://application:,,,/Assets/Icons/favicon.ico">
 
     <Grid Margin="20">
         <Grid.RowDefinitions>

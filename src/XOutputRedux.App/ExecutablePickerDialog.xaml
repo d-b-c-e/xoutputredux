@@ -5,7 +5,8 @@
         Height="400" Width="550"
         WindowStartupLocation="CenterOwner"
         Background="#1E1E1E"
-        ResizeMode="CanResizeWithGrip">
+        ResizeMode="CanResizeWithGrip"
+        Icon="pack://application:,,,/Assets/Icons/favicon.ico">
 
     <Window.Resources>
         <SolidColorBrush x:Key="BackgroundBrush" Color="#1E1E1E"/>

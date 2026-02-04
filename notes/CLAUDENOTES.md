@@ -426,3 +426,58 @@ Tested with "SP Grand Prix" game - working correctly after bug fix.
 - [ ] Startup profile setting (Options tab)
 - [ ] Start with Windows setting
 - [ ] HidHide integration (Phase 5)
+
+---
+
+## Session 2026-02-04
+
+### Moza SDK Same-Process DirectInput Calibration Issue
+
+**Problem**: When the Moza SDK's `setMotorLimitAngle(270)` is called from the same process as DirectInput, the physical wheel stop moves correctly but DirectInput axis calibration does not update. The axis only reaches ~25% deflection at full lock because DirectInput is still calibrated for 1080°.
+
+**What was tried (all failed from same process):**
+1. SDK call before DirectInput acquisition → readback=270 but axis still ~25%
+2. Adding 2s delay after SDK call before DirectInput → same result
+3. SDK call on background thread after DirectInput opens → SDK call silently fails (readback=1080)
+4. Keeping SDK session alive (not calling removeMozaSDK) → no effect
+
+**What works**: A different process (MozaHotkey) calling the SDK while XOutputRedux has DirectInput open → axis recalibrates correctly.
+
+**Root cause**: DirectInput axis calibration only updates when the SDK call originates from a different process than the one that acquired the DirectInput device.
+
+### Architecture Options for Moza SDK Integration
+
+#### Option 1: Helper Exe (Selected for implementation)
+XOutputRedux's Moza plugin spawns a small console app to apply settings:
+```
+MozaHelper.exe --rotation 270 --ffb 80 --damping 50
+```
+- Plugin builds command-line args from profile data, calls `Process.Start()`
+- Helper applies settings via SDK and exits
+- XOutputRedux never loads the Moza SDK in-process
+- Stream Deck continues using MozaHotkey as before
+- No IPC needed, no service lifecycle to manage
+- If both XOutputRedux and Stream Deck set values, last one wins (fire-and-forget)
+
+#### Option 2: Moza Service (Replaces MozaHotkey)
+A background process that owns the SDK, both XOutputRedux and Stream Deck talk to it:
+```
+XOutputRedux plugin  ──┐
+                       ├──► MozaService (named pipe) ──► Moza SDK
+Stream Deck plugin   ──┘
+```
+- Replaces MozaHotkey entirely
+- One unified Moza control layer
+- Named pipe IPC (pattern already exists in XOutputRedux)
+- Could run as tray app or launched on-demand
+- More work upfront, but cleaner long-term
+
+#### Option 3: Hybrid (Recommended long-term path)
+Start with Option 1 (helper exe). The helper exe code becomes the foundation for Option 2 later — just add a pipe listener and keep it running instead of exiting.
+
+### Input Range UI (Added, may be revisited)
+Added MinValue/MaxValue controls to the profile editor for manual axis range configuration. The `InputBinding.TransformValue()` already supported this — just needed UI exposure. This remains useful for non-Moza devices or fine-tuning, even if the helper exe approach solves the Moza calibration issue.
+
+**Files added/changed:**
+- `ProfileEditorWindow.xaml` — Input Range panel with Capture Min/Max buttons
+- `ProfileEditorWindow.xaml.cs` — Event handlers, live value tracking, capture logic

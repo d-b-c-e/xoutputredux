@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Windows;
 using Microsoft.Win32;
@@ -792,6 +793,21 @@ public partial class MainWindow : Window
 
         try
         {
+            // Notify plugins BEFORE emulation starts — e.g. Moza wheel rotation
+            // must be set before input polling begins so axis calibration is correct
+            foreach (var plugin in _plugins)
+            {
+                try
+                {
+                    var data = profile.Profile.PluginData?.GetValueOrDefault(plugin.Id);
+                    plugin.OnProfileStart(data);
+                }
+                catch (Exception pex)
+                {
+                    AppLogger.Error($"Plugin {plugin.Id} failed on profile start", pex);
+                }
+            }
+
             // Create controller
             _activeController = _vigemService.CreateXboxController();
             _activeController.Connect();
@@ -825,20 +841,6 @@ public partial class MainWindow : Window
 
             // Hide devices if HidHide is enabled for this profile
             HideProfileDevices(profile.Profile);
-
-            // Notify plugins
-            foreach (var plugin in _plugins)
-            {
-                try
-                {
-                    var data = profile.Profile.PluginData?.GetValueOrDefault(plugin.Id);
-                    plugin.OnProfileStart(data);
-                }
-                catch (Exception pex)
-                {
-                    AppLogger.Error($"Plugin {plugin.Id} failed on profile start", pex);
-                }
-            }
 
             // Show toast notification
             ToastNotificationService.ShowProfileStarted(profile.Name);
@@ -1895,6 +1897,86 @@ public partial class MainWindow : Window
                 "Installation Failed",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
+        }
+    }
+
+    private async void InstallPlugin_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = "XOutputRedux Plugin|*.xoutputreduxplugin|All files|*.*",
+            DefaultExt = ".xoutputreduxplugin",
+            Title = "Select Plugin File"
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"XOutputRedux-Plugin-{Guid.NewGuid():N}");
+
+        try
+        {
+            Directory.CreateDirectory(tempDir);
+
+            // Extract the plugin package (it's a ZIP file)
+            await Task.Run(() => ZipFile.ExtractToDirectory(dialog.FileName, tempDir));
+
+            // Find the plugin DLL to determine the folder name
+            var pluginDlls = Directory.GetFiles(tempDir, "*.Plugin.dll");
+            if (pluginDlls.Length == 0)
+            {
+                MessageBox.Show(
+                    "No plugin found in the selected file.\n\n" +
+                    "A valid .xoutputreduxplugin file must contain a *.Plugin.dll file.",
+                    "Invalid Plugin",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            // Derive folder name from DLL: "XOutputRedux.Moza.Plugin.dll" → "Moza"
+            var pluginDllName = Path.GetFileNameWithoutExtension(pluginDlls[0]);
+            var parts = pluginDllName.Split('.');
+            // Expected format: XOutputRedux.<Name>.Plugin
+            string folderName;
+            if (parts.Length >= 3 && parts[^1].Equals("Plugin", StringComparison.OrdinalIgnoreCase))
+                folderName = parts[^2]; // Second to last segment
+            else
+                folderName = pluginDllName; // Fallback to full name
+
+            var pluginsDir = Path.Combine(AppContext.BaseDirectory, "plugins");
+            var targetDir = Path.Combine(pluginsDir, folderName);
+
+            Directory.CreateDirectory(targetDir);
+
+            // Copy all files from temp to target
+            foreach (var file in Directory.GetFiles(tempDir))
+            {
+                var destFile = Path.Combine(targetDir, Path.GetFileName(file));
+                File.Copy(file, destFile, overwrite: true);
+            }
+
+            AppLogger.Info($"Installed plugin to: {targetDir}");
+
+            MessageBox.Show(
+                $"Plugin installed to:\n{targetDir}\n\nRestart XOutputRedux to load the plugin.",
+                "Plugin Installed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Failed to install plugin", ex);
+            MessageBox.Show(
+                $"Failed to install plugin: {ex.Message}",
+                "Installation Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            try { if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true); }
+            catch { /* cleanup best-effort */ }
         }
     }
 
