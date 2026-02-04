@@ -40,6 +40,14 @@ public class Program
             return LaunchGui(null, false);
         }
 
+        // If args are only GUI startup options (--minimized and/or --start-profile),
+        // launch GUI directly without attaching to a console. This is the path taken
+        // when Windows starts the app via the Run registry key.
+        if (IsGuiOnlyArgs(args))
+        {
+            return LaunchGuiFromArgs(args);
+        }
+
         // Attach to parent console for CLI output
         AttachConsole(ATTACH_PARENT_PROCESS);
 
@@ -52,6 +60,55 @@ public class Program
 
         FreeConsole();
         return result;
+    }
+
+    /// <summary>
+    /// Returns true if all args are GUI startup options (--minimized, --start-profile).
+    /// </summary>
+    private static bool IsGuiOnlyArgs(string[] args)
+    {
+        var guiOptions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "--minimized", "--start-profile"
+        };
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (!guiOptions.Contains(args[i]))
+                return false;
+
+            // --start-profile takes a value argument, skip it
+            if (args[i].Equals("--start-profile", StringComparison.OrdinalIgnoreCase))
+            {
+                i++; // skip the profile name value
+                if (i >= args.Length) return false; // missing value
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Parses GUI startup options from args and launches the GUI directly.
+    /// </summary>
+    private static int LaunchGuiFromArgs(string[] args)
+    {
+        string? startProfile = null;
+        bool minimized = false;
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i].Equals("--minimized", StringComparison.OrdinalIgnoreCase))
+            {
+                minimized = true;
+            }
+            else if (args[i].Equals("--start-profile", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                startProfile = args[++i];
+            }
+        }
+
+        return LaunchGui(startProfile, minimized);
     }
 
     private static RootCommand BuildRootCommand()
