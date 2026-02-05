@@ -87,7 +87,12 @@ internal class Program
                 var refResult = getMotorLimitAngle(ref refError);
                 if (refError == ERRORCODE.NORMAL && refResult != null)
                 {
-                    Log($"MozaHelper: ref-rotation={refResult.Item2}");
+                    Log($"MozaHelper: getMotorLimitAngle returned hardware={refResult.Item1}, game={refResult.Item2}");
+                    // Item1 = hardware max rotation, Item2 = current game limit
+                    // After removeMozaSDK() cleanup, game limit may be 0 (unset).
+                    // Use hardware limit as reference if game limit is 0.
+                    var refRotation = refResult.Item2 > 0 ? refResult.Item2 : refResult.Item1;
+                    Log($"MozaHelper: ref-rotation={refRotation}");
                 }
             }
             catch
