@@ -1,3 +1,7 @@
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Text;
 using System.Text.Json.Nodes;
 using XOutputRedux.Core.Plugins;
 
@@ -14,7 +18,12 @@ public class MozaPlugin : IXOutputPlugin
     public static Action<string>? Log { get; set; }
 
     private MozaEditorTab? _editorTab;
-    private MozaDevice? _device;
+    private Process? _helperProcess;
+
+    // Axis auto-scaling fields
+    private int? _firstSeenRefRotation;
+    private double? _axisScaleMin;
+    private double? _axisScaleMax;
 
     public bool Initialize()
     {
@@ -24,6 +33,7 @@ public class MozaPlugin : IXOutputPlugin
     public object? CreateEditorTab(JsonObject? pluginData, bool readOnly)
     {
         // Use a short-lived SDK session to read current wheel values for slider defaults.
+        // Reads are safe in-process — only writes affect DirectInput calibration.
         MozaDevice? reader = null;
         try
         {
@@ -71,68 +81,136 @@ public class MozaPlugin : IXOutputPlugin
         if (!enabled)
             return;
 
-        Log?.Invoke("Moza OnProfileStart: applying settings...");
+        // Kill any previous helper that's still running
+        StopHelper();
+
+        Log?.Invoke("Moza OnProfileStart: applying settings via helper exe...");
 
         try
         {
-            // Keep the SDK session alive for the duration of the profile.
-            _device?.Dispose();
-            _device = new MozaDevice();
-            if (!_device.Initialize())
+            // Build command-line arguments from plugin data
+            var args = BuildHelperArgs(pluginData);
+            if (string.IsNullOrEmpty(args))
             {
-                Log?.Invoke("Moza: SDK init failed");
-                _device = null;
+                Log?.Invoke("Moza: no settings to apply");
                 return;
             }
 
-            // The SDK needs time after installMozaSDK() to connect to Pit House
-            // and discover devices. Poll until a read succeeds or we timeout.
-            Log?.Invoke("Moza: waiting for device discovery...");
-            var deviceReady = false;
-            for (var attempt = 1; attempt <= 10; attempt++)
-            {
-                Thread.Sleep(1000);
-                try
-                {
-                    _device.GetWheelRotation();
-                    deviceReady = true;
-                    Log?.Invoke($"Moza: device ready after {attempt}s");
-                    break;
-                }
-                catch
-                {
-                    Log?.Invoke($"Moza: attempt {attempt}/10 - device not ready");
-                }
-            }
+            // Locate MozaHelper.exe next to this plugin DLL
+            var pluginDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var helperPath = Path.Combine(pluginDir!, "MozaHelper.exe");
 
-            if (!deviceReady)
+            if (!File.Exists(helperPath))
             {
-                Log?.Invoke("Moza: device discovery timed out after 10s");
-                _device.Dispose();
-                _device = null;
+                Log?.Invoke($"Moza: helper exe not found at {helperPath}");
                 return;
             }
 
-            // Apply all settings. The SDK sets the physical wheel stop (rotation limit)
-            // and other wheel feel parameters. Axis scaling for DirectInput is handled
-            // separately by the binding's Input Range (MinValue/MaxValue) in the profile.
-            LogAndApply(pluginData, "wheelRotation", _device.SetWheelRotation);
-            LogAndApply(pluginData, "ffbStrength", _device.SetFfbStrength);
-            LogAndApply(pluginData, "maxTorque", _device.SetMaxTorque);
+            Log?.Invoke($"Moza: launching {helperPath} {args}");
 
-            var ffbReverse = pluginData["ffbReverse"]?.GetValue<bool>();
-            if (ffbReverse.HasValue)
+            var psi = new ProcessStartInfo
             {
-                Log?.Invoke($"Moza: setting ffbReverse = {ffbReverse.Value}");
-                _device.SetFfbReverse(ffbReverse.Value);
+                FileName = helperPath,
+                Arguments = args,
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                WorkingDirectory = pluginDir!
+            };
+
+            var process = Process.Start(psi);
+            if (process == null)
+            {
+                Log?.Invoke("Moza: failed to start helper exe");
+                return;
             }
 
-            LogAndApply(pluginData, "damping", _device.SetDamping);
-            LogAndApply(pluginData, "springStrength", _device.SetSpringStrength);
-            LogAndApply(pluginData, "naturalInertia", _device.SetNaturalInertia);
-            LogAndApply(pluginData, "speedDamping", _device.SetSpeedDamping);
+            // Read output until we see the "settings applied" confirmation
+            // or the process exits (failure). The helper stays alive after
+            // applying settings to keep the SDK session open.
+            var settingsApplied = false;
+            var deadline = DateTime.UtcNow.AddSeconds(30);
 
-            Log?.Invoke("Moza: settings applied (SDK session kept alive)");
+            process.ErrorDataReceived += (_, e) =>
+            {
+                if (e.Data != null)
+                    Log?.Invoke($"MozaHelper stderr: {e.Data}");
+            };
+            process.BeginErrorReadLine();
+
+            while (DateTime.UtcNow < deadline)
+            {
+                if (process.HasExited)
+                {
+                    // Drain remaining output
+                    var remaining = process.StandardOutput.ReadToEnd();
+                    if (!string.IsNullOrEmpty(remaining))
+                    {
+                        foreach (var line in remaining.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                            Log?.Invoke(line.TrimEnd('\r'));
+                    }
+                    Log?.Invoke($"Moza: helper exe exited early with code {process.ExitCode}");
+                    process.Dispose();
+                    return;
+                }
+
+                var outputLine = process.StandardOutput.ReadLine();
+                if (outputLine != null)
+                {
+                    Log?.Invoke(outputLine);
+
+                    // Parse reference rotation from helper output
+                    const string refPrefix = "ref-rotation=";
+                    var refIdx = outputLine.IndexOf(refPrefix);
+                    if (refIdx >= 0 && int.TryParse(outputLine[(refIdx + refPrefix.Length)..], out var refRot))
+                    {
+                        _firstSeenRefRotation ??= refRot;
+                    }
+
+                    if (outputLine.Contains("settings applied"))
+                    {
+                        settingsApplied = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!settingsApplied)
+            {
+                Log?.Invoke("Moza: helper exe timed out waiting for settings, killing");
+                try { process.Kill(); } catch { }
+                process.Dispose();
+                return;
+            }
+
+            // Calculate axis auto-scaling based on reference vs target rotation.
+            // The reference rotation is the rotation at which the device maps its
+            // full HID axis range (0-65535). When the target rotation is smaller,
+            // the axis only uses a fraction of that range and needs scaling.
+            _axisScaleMin = null;
+            _axisScaleMax = null;
+            var targetRotation = pluginData["wheelRotation"]?.GetValue<int>();
+            if (targetRotation.HasValue && _firstSeenRefRotation.HasValue && _firstSeenRefRotation.Value > 0)
+            {
+                var ratio = (double)targetRotation.Value / _firstSeenRefRotation.Value;
+                if (ratio < 1.0)
+                {
+                    _axisScaleMin = 0.5 - (0.5 * ratio);
+                    _axisScaleMax = 0.5 + (0.5 * ratio);
+                    Log?.Invoke($"Moza: axis auto-scale: ratio={ratio:F3}, range={_axisScaleMin:F3}-{_axisScaleMax:F3}");
+                }
+                else
+                {
+                    Log?.Invoke($"Moza: no axis scaling needed (target={targetRotation.Value} >= ref={_firstSeenRefRotation.Value})");
+                }
+            }
+
+            // Helper is now keeping the SDK alive. Store the process so we
+            // can kill it on profile stop (closing stdin triggers cleanup).
+            _helperProcess = process;
+            Log?.Invoke("Moza: helper running in background (SDK session alive)");
         }
         catch (Exception ex)
         {
@@ -140,29 +218,91 @@ public class MozaPlugin : IXOutputPlugin
         }
     }
 
-    private void LogAndApply(JsonObject data, string key, Action<int> setter)
+    private static string BuildHelperArgs(JsonObject data)
     {
-        var value = data[key]?.GetValue<int>();
+        var sb = new StringBuilder();
+
+        AppendIntArg(sb, data, "wheelRotation", "rotation");
+        AppendIntArg(sb, data, "ffbStrength", "ffb");
+        AppendIntArg(sb, data, "maxTorque", "torque");
+        AppendIntArg(sb, data, "damping", "damping");
+        AppendIntArg(sb, data, "springStrength", "spring");
+        AppendIntArg(sb, data, "naturalInertia", "inertia");
+        AppendIntArg(sb, data, "speedDamping", "speed-damping");
+
+        var ffbReverse = data["ffbReverse"]?.GetValue<bool>();
+        if (ffbReverse.HasValue)
+            sb.Append($" --reverse {ffbReverse.Value.ToString().ToLowerInvariant()}");
+
+        return sb.ToString().Trim();
+    }
+
+    private static void AppendIntArg(StringBuilder sb, JsonObject data, string jsonKey, string argKey)
+    {
+        var value = data[jsonKey]?.GetValue<int>();
         if (value.HasValue)
-        {
-            Log?.Invoke($"Moza: setting {key} = {value.Value}");
-            setter(value.Value);
-        }
+            sb.Append($" --{argKey} {value.Value}");
     }
 
     public void OnProfileStop()
     {
-        if (_device != null)
+        StopHelper();
+        _axisScaleMin = null;
+        _axisScaleMax = null;
+    }
+
+    public IReadOnlyList<AxisRangeOverride>? GetAxisRangeOverrides()
+    {
+        if (_axisScaleMin == null || _axisScaleMax == null)
+            return null;
+
+        return new[]
         {
-            _device.Dispose();
-            _device = null;
-            Log?.Invoke("Moza OnProfileStop: SDK session released");
-        }
+            new AxisRangeOverride("VID_346E&PID_0006", 0, _axisScaleMin.Value, _axisScaleMax.Value)
+        };
     }
 
     public void Dispose()
     {
-        _device?.Dispose();
-        _device = null;
+        StopHelper();
+    }
+
+    private void StopHelper()
+    {
+        var process = _helperProcess;
+        _helperProcess = null;
+
+        if (process == null)
+            return;
+
+        try
+        {
+            if (!process.HasExited)
+            {
+                // Close stdin — the helper blocks on ReadToEnd() and will
+                // call removeMozaSDK() then exit cleanly.
+                Log?.Invoke("Moza: closing helper stdin to trigger cleanup...");
+                process.StandardInput.Close();
+
+                if (!process.WaitForExit(5000))
+                {
+                    Log?.Invoke("Moza: helper did not exit in 5s, killing");
+                    process.Kill();
+                }
+                else
+                {
+                    Log?.Invoke("Moza: helper exited cleanly");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log?.Invoke($"Moza: error stopping helper: {ex.Message}");
+            try { process.Kill(); } catch { }
+        }
+        finally
+        {
+            process.Dispose();
+        }
     }
 }

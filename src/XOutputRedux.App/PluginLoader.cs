@@ -62,7 +62,23 @@ public static class PluginLoader
             {
                 var assembly = context.LoadFromAssemblyPath(Path.GetFullPath(dll));
 
-                foreach (var type in assembly.GetTypes())
+                Type[] types;
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    AppLogger.Error($"Failed to load types from {dll}", ex);
+                    foreach (var loaderEx in ex.LoaderExceptions)
+                    {
+                        if (loaderEx != null)
+                            AppLogger.Error($"  Loader exception: {loaderEx.Message}");
+                    }
+                    continue;
+                }
+
+                foreach (var type in types)
                 {
                     if (!typeof(IXOutputPlugin).IsAssignableFrom(type) || type.IsAbstract)
                         continue;

@@ -481,3 +481,74 @@ Added MinValue/MaxValue controls to the profile editor for manual axis range con
 **Files added/changed:**
 - `ProfileEditorWindow.xaml` — Input Range panel with Capture Min/Max buttons
 - `ProfileEditorWindow.xaml.cs` — Event handlers, live value tracking, capture logic
+
+---
+
+## Session 2026-02-04/05: Moza Axis Auto-Scaling
+
+### Problem
+
+When the Moza helper exe sets `setMotorLimitAngle(270)`, the physical motor stop changes correctly but the steering axis only reads ~25% of its range (reads like 1080° when physically limited to 270°).
+
+### Investigation: Per-Process DirectInput Calibration Cache (DISPROVEN)
+
+**Theory**: DirectInput caches HID descriptor calibration data at first device enumeration. If the SDK changes the descriptor after enumeration, DirectInput keeps using the old range.
+
+**Three attempts to defer DirectInput operations — all failed:**
+
+1. **Deferred `Acquire()` only**: Moved `Acquire()` and axis property setting from constructor to `Start()`. No effect.
+2. **Deferred all DI device creation**: Added `_directInputEnabled` flag preventing `RefreshDevices()` until profile start. Even with zero DI operations before rotation change, still wrong.
+3. **Deferred `DInput.DirectInput8Create()` COM initialization**: Made `IDirectInput8` creation lazy. Even with NO DirectInput COM objects created before rotation change, still wrong.
+
+**Conclusion**: The per-process calibration cache theory was **wrong**. All three attempts failed because the issue is not about when DirectInput is initialized.
+
+### Root Cause: HID Descriptor Never Changes
+
+Added diagnostic logging to track raw axis values during polling:
+- **All axes report native range 0-65535** regardless of rotation setting
+- At 270° with ~1080° reference rotation:
+  - X axis min at full left: **24324** (normalized: 0.371)
+  - X axis max at full right: **41230** (normalized: 0.629)
+  - Expected from 270/1080 ratio: 0.375-0.625 (close match within mechanical tolerance)
+
+**The Moza SDK's `setMotorLimitAngle()` only changes the physical motor stop.** The HID descriptor always reports 0-65535 mapped to the **reference rotation** (the rotation at boot / Pit House default). When the target rotation is smaller, the axis only uses a proportional fraction of that range.
+
+### Solution: Software Auto-Scaling
+
+Use the existing `InputBinding.MinValue/MaxValue` transform to remap the partial axis range to full 0.0-1.0 at profile start time.
+
+**Scaling formula:**
+```
+ratio = targetRotation / referenceRotation
+axisMin = 0.5 - (0.5 * ratio)    // e.g., 0.375 for 270/1080
+axisMax = 0.5 + (0.5 * ratio)    // e.g., 0.625 for 270/1080
+```
+
+The existing `InputBinding.TransformValue()` then maps axisMin→0.0, axisMax→1.0 with clamping.
+
+**Key design decisions:**
+- Reference rotation queried from device via `getMotorLimitAngle()` **before** changing it
+- Plugin stores the **first-seen** reference rotation across stop/start cycles (same app session)
+- App restart clears stored reference — next query gets boot/Pit House default (correct)
+- Axis overrides applied in-memory only — saved profile keeps user's manual values
+
+### Changes
+
+**New plugin interface extension:**
+- `IXOutputPlugin.cs` — Added `GetAxisRangeOverrides()` default interface method and `AxisRangeOverride` record
+
+**MozaHelper output:**
+- `Program.cs` — Queries `getMotorLimitAngle()` before applying settings, outputs `ref-rotation=XXXX` to stdout
+
+**MozaPlugin scaling:**
+- `MozaPlugin.cs` — Parses `ref-rotation=` from helper stdout, calculates axisMin/axisMax, implements `GetAxisRangeOverrides()` returning override for X axis (sourceIndex=0) on Moza device (`VID_346E&PID_0006`)
+
+**Runtime application:**
+- `MainWindow.xaml.cs` — New `ApplyPluginAxisOverrides()` method called after plugin start and device recreation, before mapping engine starts. Matches devices by hardware ID, sets MinValue/MaxValue on matching bindings.
+
+**Infrastructure:**
+- `DirectInputDeviceProvider.cs` — Added `RecreateDevices()` method (dispose all + refresh)
+- `InputDeviceManager.cs` — Added `RecreateDirectInputDevices()` wrapper
+
+**Reverted:**
+- All deferred-DI changes (lazy IDirectInput8, `_directInputEnabled` flag, `AcquireForPolling()`, diagnostic logging) — these didn't help and added unnecessary complexity

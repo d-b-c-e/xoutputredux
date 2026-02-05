@@ -99,6 +99,27 @@ public class DirectInputDeviceProvider : IDisposable
     }
 
     /// <summary>
+    /// Disposes all devices and rediscovers them.
+    /// Used after hardware state changes (e.g., Moza wheel config)
+    /// to get fresh device handles with correct FFB state.
+    /// </summary>
+    public void RecreateDevices()
+    {
+        if (_disposed) return;
+
+        lock (_lock)
+        {
+            foreach (var device in _devices.Values)
+            {
+                device.Dispose();
+            }
+            _devices.Clear();
+        }
+
+        RefreshDevices();
+    }
+
+    /// <summary>
     /// Gets all currently known devices.
     /// </summary>
     public IReadOnlyList<DirectInputDevice> GetDevices()

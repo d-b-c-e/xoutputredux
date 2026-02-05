@@ -29,6 +29,7 @@ XOutputRedux/
 │   │   └── Assets/                  # Icons, banners, branding assets
 │   ├── XOutputRedux.StreamDeck/     # Stream Deck plugin
 │   ├── XOutputRedux.Moza.Plugin/    # Moza wheel plugin (optional, built separately)
+│   ├── XOutputRedux.Moza.Helper/    # Out-of-process Moza SDK helper (keeps SDK alive)
 │   └── XOutputRedux.HidSharper/     # Forked/slimmed HidSharp library (Windows-only HID)
 └── tests/
     └── XOutputRedux.Tests/
@@ -113,7 +114,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 18: Rename GitHub Repository | ✓ Complete | Renamed repo to `xoutputredux`, URLs already pointed to new name |
 | 19: Quick Add Game Hotkey | ✓ Complete | Global hotkey (Ctrl+Shift+G) to add focused game to running profile |
 | 20: Plugin System | ✓ Complete | Simple plugin loader, per-profile plugin data, profile editor tab injection |
-| 21: Moza Wheel Plugin | ✓ Complete | XOutputRedux.Moza.Plugin — 8 wheel settings (rotation, FFB, damping, spring, inertia, torque, speed damping, FFB reverse) per profile via Pit House SDK |
+| 21: Moza Wheel Plugin | ✓ Complete | XOutputRedux.Moza.Plugin — 8 wheel settings via out-of-process helper exe + Pit House SDK. Auto-scales steering axis when rotation differs from device reference. |
 
 ### Completed Dependency Upgrades
 
@@ -474,16 +475,19 @@ public bool HideDevice(string deviceInstancePath)
 - `ViewModels/` - DeviceViewModel, ProfileViewModel
 
 ### Plugin System (`XOutputRedux.Core/Plugins`)
-- `IXOutputPlugin.cs` - Plugin interface (Initialize, CreateEditorTab, OnProfileStart/Stop)
+- `IXOutputPlugin.cs` - Plugin interface (Initialize, CreateEditorTab, OnProfileStart/Stop, GetAxisRangeOverrides)
+- `AxisRangeOverride` record - Describes per-axis input range overrides applied by plugins at profile start
 - Plugins are loaded from `plugins/<Name>/` subdirectory next to exe
 - Plugin data stored in profile JSON under `pluginData` dictionary keyed by plugin ID
 - DLLs matching `*.Plugin.dll` are scanned; each plugin gets its own `AssemblyLoadContext`
 
 ### Moza Wheel Plugin (`XOutputRedux.Moza.Plugin`)
-- `MozaPlugin.cs` - IXOutputPlugin implementation
-- `MozaDevice.cs` - Trimmed Moza SDK wrapper (wheel rotation, FFB strength)
+- `MozaPlugin.cs` - IXOutputPlugin implementation, spawns helper exe, parses ref-rotation, calculates axis auto-scaling
+- `MozaDevice.cs` - Trimmed Moza SDK wrapper (reads only, used for editor defaults)
 - `MozaEditorTab.cs` - WPF tab UI built in code (enable checkbox, rotation slider, FFB slider)
+- `XOutputRedux.Moza.Helper/Program.cs` - Out-of-process helper that applies SDK settings and keeps SDK alive
 - Requires Moza Pit House running; SDK DLLs bundled in plugin folder
+- **Axis auto-scaling**: When target rotation < reference rotation, the steering axis only uses a fraction of 0-65535. The plugin queries the reference rotation before changing it, calculates axisMin/axisMax, and returns `AxisRangeOverride` to auto-scale the binding's InputRange at profile start.
 
 ---
 

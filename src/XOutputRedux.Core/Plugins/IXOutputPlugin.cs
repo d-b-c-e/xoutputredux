@@ -47,4 +47,21 @@ public interface IXOutputPlugin : IDisposable
     /// Called when a profile stops running.
     /// </summary>
     void OnProfileStop();
+
+    /// <summary>
+    /// After OnProfileStart, returns axis input range adjustments.
+    /// The runtime applies these to matching bindings before the mapping engine starts,
+    /// overriding MinValue/MaxValue in memory only (not persisted to disk).
+    /// Returns null if no adjustments needed.
+    /// </summary>
+    IReadOnlyList<AxisRangeOverride>? GetAxisRangeOverrides() => null;
 }
+
+/// <summary>
+/// Describes an axis input range override applied by a plugin at profile start.
+/// </summary>
+/// <param name="DeviceHardwareId">VID/PID substring to match (e.g., "VID_346E&amp;PID_0006").</param>
+/// <param name="SourceIndex">Axis source index on the device (e.g., 0 for X axis).</param>
+/// <param name="MinValue">Normalized min value (0.0-1.0) at the physical axis limit.</param>
+/// <param name="MaxValue">Normalized max value (0.0-1.0) at the physical axis limit.</param>
+public record AxisRangeOverride(string DeviceHardwareId, int SourceIndex, double MinValue, double MaxValue);

@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Windows;
 using Microsoft.Win32;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using XOutputRedux.App.ViewModels;
@@ -218,6 +219,14 @@ public partial class MainWindow : Window
             if (_hidHideService.WhitelistSelf())
             {
                 AppLogger.Info("Whitelisted XOutputRedux in HidHide");
+            }
+
+            // Clean up stale cloaking state from a previous crash/abnormal exit.
+            // Cloaking left on blocks other processes (including plugin helpers)
+            // from accessing HID devices.
+            if (_hidHideService.DisableCloaking())
+            {
+                AppLogger.Info("Disabled stale HidHide cloaking from previous session");
             }
         }
         else
@@ -752,13 +761,23 @@ public partial class MainWindow : Window
     {
         if (ProfileListView.SelectedItem is not ProfileViewModel selected) return;
 
-        if (selected.IsRunning)
+        StartStopButton.IsEnabled = false;
+        Mouse.OverrideCursor = Cursors.Wait;
+        try
         {
-            StopProfile();
+            if (selected.IsRunning)
+            {
+                StopProfile();
+            }
+            else
+            {
+                StartProfile(selected);
+            }
         }
-        else
+        finally
         {
-            StartProfile(selected);
+            Mouse.OverrideCursor = null;
+            UpdateStartStopButton();
         }
     }
 
@@ -808,6 +827,15 @@ public partial class MainWindow : Window
                 }
             }
 
+            // Wait for device firmware to settle after plugin changes,
+            // then recreate DirectInput devices to pick up any hardware
+            // changes (e.g., FFB re-initialization after Moza wheel config).
+            Thread.Sleep(2000);
+            _deviceManager.RecreateDirectInputDevices();
+
+            // Apply plugin axis overrides (e.g., Moza steering auto-scale)
+            ApplyPluginAxisOverrides(profile.Profile);
+
             // Create controller
             _activeController = _vigemService.CreateXboxController();
             _activeController.Connect();
@@ -853,6 +881,48 @@ public partial class MainWindow : Window
             MessageBox.Show($"Failed to start profile: {ex.Message}", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
             StopProfile();
+        }
+    }
+
+    private void ApplyPluginAxisOverrides(MappingProfile profile)
+    {
+        foreach (var plugin in _plugins)
+        {
+            IReadOnlyList<AxisRangeOverride>? overrides;
+            try
+            {
+                overrides = plugin.GetAxisRangeOverrides();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"Plugin {plugin.Id} failed to get axis overrides", ex);
+                continue;
+            }
+
+            if (overrides == null) continue;
+
+            foreach (var axisOverride in overrides)
+            {
+                var device = _deviceManager.Devices
+                    .FirstOrDefault(d => d.HardwareId != null &&
+                        d.HardwareId.Contains(axisOverride.DeviceHardwareId, StringComparison.OrdinalIgnoreCase));
+                if (device == null) continue;
+
+                foreach (var mapping in profile.Mappings.Values)
+                {
+                    foreach (var binding in mapping.Bindings)
+                    {
+                        if (binding.DeviceId == device.UniqueId &&
+                            binding.SourceIndex == axisOverride.SourceIndex)
+                        {
+                            binding.MinValue = axisOverride.MinValue;
+                            binding.MaxValue = axisOverride.MaxValue;
+                            AppLogger.Info($"Auto-scaled {device.Name} axis {axisOverride.SourceIndex}: " +
+                                $"range={axisOverride.MinValue:F3}-{axisOverride.MaxValue:F3}");
+                        }
+                    }
+                }
+            }
         }
     }
 

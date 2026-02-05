@@ -101,6 +101,19 @@ public class InputDeviceManager : IDisposable
     }
 
     /// <summary>
+    /// Disposes and recreates all DirectInput devices.
+    /// Used after hardware state changes (e.g., Moza wheel config)
+    /// to get fresh device handles with correct FFB state.
+    /// </summary>
+    public void RecreateDirectInputDevices()
+    {
+        lock (_lock)
+        {
+            _directInputProvider.RecreateDevices();
+        }
+    }
+
+    /// <summary>
     /// Gets a device by its unique ID.
     /// </summary>
     public IInputDevice? GetDevice(string uniqueId)
