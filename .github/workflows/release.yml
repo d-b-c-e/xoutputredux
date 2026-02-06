@@ -64,6 +64,26 @@ jobs:
         run: |
           dotnet publish src/XOutputRedux.App/XOutputRedux.App.csproj -c Release -o publish -p:PublishReadyToRun=true --self-contained false
 
+      - name: Build Moza plugin
+        shell: pwsh
+        run: |
+          dotnet publish src/XOutputRedux.Moza.Plugin -c Release -o publish-moza-plugin --self-contained false
+          dotnet publish src/XOutputRedux.Moza.Helper -c Release -o publish-moza-helper --self-contained false
+
+          # Copy helper into plugin dir
+          Copy-Item publish-moza-helper/MozaHelper.exe publish-moza-plugin/
+          Copy-Item publish-moza-helper/MozaHelper.dll publish-moza-plugin/
+          Copy-Item publish-moza-helper/MozaHelper.runtimeconfig.json publish-moza-plugin/
+
+          # Remove files already in main app
+          Remove-Item publish-moza-plugin/XOutputRedux.Core.dll -ErrorAction SilentlyContinue
+          Get-ChildItem publish-moza-plugin -Filter "*.deps.json" | Remove-Item -Force
+          Get-ChildItem publish-moza-plugin -Filter "*.pdb" | Remove-Item -Force
+
+          $version = "${{ steps.version.outputs.VERSION }}"
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          Compress-Archive -Path "publish-moza-plugin\*" -DestinationPath "dist\XOutputRedux-$version-MozaPlugin.xoutputreduxplugin" -CompressionLevel Optimal
+
       - name: Create portable ZIP
         shell: pwsh
         run: |
@@ -92,5 +112,6 @@ jobs:
           files: |
             dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-Portable.zip
             dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-Setup.exe
+            dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-MozaPlugin.xoutputreduxplugin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
