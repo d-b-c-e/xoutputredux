@@ -64,6 +64,37 @@ jobs:
         run: |
           dotnet publish src/XOutputRedux.App/XOutputRedux.App.csproj -c Release -o publish -p:PublishReadyToRun=true --self-contained false
 
+      - name: Build Stream Deck plugin
+        shell: pwsh
+        run: |
+          $sdProject = "src/XOutputRedux.StreamDeck"
+          Push-Location $sdProject
+          dotnet build -c Release
+          Pop-Location
+
+          # Assemble plugin directory
+          $pluginDir = "release/streamdeck/com.xoutputredux.sdPlugin"
+          New-Item -ItemType Directory -Path $pluginDir -Force | Out-Null
+
+          # Copy binaries
+          Get-ChildItem "$sdProject/bin/Release/net8.0-windows/win-x64" -File | Copy-Item -Destination $pluginDir
+
+          # Copy manifest and assets
+          Copy-Item "$sdProject/manifest.json" $pluginDir
+          if (Test-Path "$sdProject/Images") { Copy-Item "$sdProject/Images" "$pluginDir/Images" -Recurse }
+          if (Test-Path "$sdProject/PropertyInspector") { Copy-Item "$sdProject/PropertyInspector" "$pluginDir/PropertyInspector" -Recurse }
+
+          # Create .streamDeckPlugin (renamed zip)
+          $pluginFile = "release/streamdeck/com.xoutputredux.streamDeckPlugin"
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [System.IO.Compression.ZipFile]::CreateFromDirectory($pluginDir, $pluginFile)
+
+          # Copy to publish dir (bundled with app) and dist (standalone download)
+          Copy-Item $pluginFile publish/
+          $version = "${{ steps.version.outputs.VERSION }}"
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          Copy-Item $pluginFile "dist/XOutputRedux-$version-StreamDeckPlugin.streamDeckPlugin"
+
       - name: Build Moza plugin
         shell: pwsh
         run: |
@@ -113,5 +144,6 @@ jobs:
             dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-Portable.zip
             dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-Setup.exe
             dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-MozaPlugin.xoutputreduxplugin
+            dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-StreamDeckPlugin.streamDeckPlugin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
