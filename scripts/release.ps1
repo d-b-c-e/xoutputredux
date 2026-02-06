@@ -104,6 +104,28 @@ if (-not $SkipMozaPlugin) {
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Moza plugin build failed (non-fatal)" -ForegroundColor Yellow
         } else {
+            # Build MozaHelper.exe (out-of-process SDK helper)
+            $MozaHelperProject = Join-Path $ProjectRoot "src\XOutputRedux.Moza.Helper\XOutputRedux.Moza.Helper.csproj"
+            $MozaHelperPublishDir = Join-Path $ProjectRoot "publish-moza-helper"
+            if (Test-Path $MozaHelperPublishDir) {
+                Remove-Item -Recurse -Force $MozaHelperPublishDir
+            }
+
+            & dotnet publish $MozaHelperProject -c Release -o $MozaHelperPublishDir --nologo --self-contained false
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Moza helper build failed (non-fatal)" -ForegroundColor Yellow
+            } else {
+                # Copy helper files into plugin publish dir
+                Copy-Item (Join-Path $MozaHelperPublishDir "MozaHelper.exe") $MozaPublishDir
+                Copy-Item (Join-Path $MozaHelperPublishDir "MozaHelper.dll") $MozaPublishDir
+                Copy-Item (Join-Path $MozaHelperPublishDir "MozaHelper.runtimeconfig.json") $MozaPublishDir
+            }
+
+            # Clean up helper publish dir
+            if (Test-Path $MozaHelperPublishDir) {
+                Remove-Item -Recurse -Force $MozaHelperPublishDir
+            }
+
             # Remove XOutputRedux.Core.dll from plugin output (already in main app)
             $coreDll = Join-Path $MozaPublishDir "XOutputRedux.Core.dll"
             if (Test-Path $coreDll) {
@@ -112,6 +134,9 @@ if (-not $SkipMozaPlugin) {
 
             # Remove deps.json that references Core (not needed for plugin loading)
             Get-ChildItem $MozaPublishDir -Filter "*.deps.json" | Remove-Item -Force
+
+            # Remove .pdb files (not needed in release)
+            Get-ChildItem $MozaPublishDir -Filter "*.pdb" | Remove-Item -Force
 
             # Create plugin package (.xoutputreduxplugin is a renamed ZIP)
             $MozaPluginName = "XOutputRedux-$Version-MozaPlugin.xoutputreduxplugin"
