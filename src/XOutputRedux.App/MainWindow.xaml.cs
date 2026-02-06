@@ -2171,7 +2171,10 @@ public partial class MainWindow : Window
             }
             // Silently ignore errors on startup - don't bother user
 
-            _appSettings.RecordUpdateCheck();
+            // Only record timestamp on success so failed checks (e.g. 404
+            // when repo was private) don't block retries for 24 hours
+            if (result.Success)
+                _appSettings.RecordUpdateCheck();
         }
         catch (Exception ex)
         {
