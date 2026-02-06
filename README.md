@@ -206,14 +206,15 @@ XOutputRedux/
 │   ├── XOutputRedux.App/            # WPF GUI + CLI application
 │   │   └── Assets/                  # Icons, banners, branding assets
 │   ├── XOutputRedux.StreamDeck/     # Stream Deck plugin
-│   └── XOutputRedux.Moza.Plugin/   # Moza wheel plugin (optional, built separately)
+│   ├── XOutputRedux.Moza.Plugin/   # Moza wheel plugin (optional, built separately)
+│   └── XOutputRedux.Moza.Helper/   # Out-of-process Moza SDK helper (keeps SDK alive)
 └── tests/
     └── XOutputRedux.Tests/
 ```
 
 ## Current Status
 
-**v0.9.1-alpha** - Auto-incrementing build numbers (Major.Minor.Patch.YYDDDHHmm).
+**v0.9.2-alpha** - Fix Moza steering axis auto-scaling when SDK returns stale rotation values.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)

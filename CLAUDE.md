@@ -593,6 +593,18 @@ AppLogger.Error("Something failed", exception);
 - **Fix**: Updated code to use correct filename
 - **Files Changed**: `src/XOutputRedux.App/MainWindow.xaml.cs`
 
+### v0.9.2-alpha: Moza steering axis not using full range after rotation change (2026-02-05)
+- **Symptom**: Setting wheel rotation to 270° (from 1080° default) worked physically, but the Test tab showed the axis not reaching full deflection — only ~25% of the range was used
+- **Root Cause**: `MozaHelper.exe` calls `removeMozaSDK()` then `installMozaSDK()` to clean stale state. After re-init, `getMotorLimitAngle()` returns `hardware=0, game=0` even though the device reports as "ready" — the SDK needs extra time to sync rotation values from Pit House.
+- **Issue**: With ref-rotation=0, the auto-scaling ratio calculation (`target / ref`) was skipped, so the axis mapping treated the full HID range (0-65535) as valid even though only a fraction was active at 270°.
+- **Secondary Issue**: `_firstSeenRefRotation` in MozaPlugin was never reset on profile stop, so a stale `0` persisted across start/stop cycles without restarting the app.
+- **Fix**:
+  1. Added retry loop in `MozaHelper.exe` — queries `getMotorLimitAngle()` up to 5 times (1s apart) until a non-zero value is returned
+  2. Reset `_firstSeenRefRotation` to null in `OnProfileStop()` so each profile start gets a fresh reading
+- **Files Changed**:
+  - `src/XOutputRedux.Moza.Helper/Program.cs` - Added ref-rotation retry loop
+  - `src/XOutputRedux.Moza.Plugin/MozaPlugin.cs` - Reset `_firstSeenRefRotation` on profile stop
+
 ---
 
 ## Workspace Reference
