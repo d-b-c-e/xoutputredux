@@ -214,7 +214,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.2-alpha** - Fix Moza steering axis auto-scaling when SDK returns stale rotation values.
+**v0.9.3-alpha** - Fix startup update checker not retrying after failed checks; CI now builds all release assets (Moza plugin, Stream Deck plugin).
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)

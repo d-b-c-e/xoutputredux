@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.3-alpha] - 2026-02-05
+
+### Fixed
+- Startup update checker not retrying after a failed check (e.g. 404 when repo was private) — now only records check timestamp on success
+
+### Changed
+- CI release workflow now builds and uploads Moza plugin and Stream Deck plugin as standalone downloads
+- Release script includes MozaHelper.exe in the Moza plugin package
+
 ## [0.9.2-alpha] - 2026-02-05
 
 ### Added
