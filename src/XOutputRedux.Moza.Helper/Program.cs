@@ -81,19 +81,33 @@ internal class Program
             // This is the "reference rotation" — the rotation at which
             // the device maps its full HID axis range (0-65535).
             // Needed for axis auto-scaling when the target rotation differs.
+            //
+            // After removeMozaSDK()/installMozaSDK(), the SDK may need
+            // extra time to sync rotation values even though the device
+            // reports as "ready". Retry a few times with delays.
             try
             {
-                ERRORCODE refError = ERRORCODE.NORMAL;
-                var refResult = getMotorLimitAngle(ref refError);
-                if (refError == ERRORCODE.NORMAL && refResult != null)
+                var refRotation = 0;
+                for (var refAttempt = 1; refAttempt <= 5; refAttempt++)
                 {
-                    Log($"MozaHelper: getMotorLimitAngle returned hardware={refResult.Item1}, game={refResult.Item2}");
-                    // Item1 = hardware max rotation, Item2 = current game limit
-                    // After removeMozaSDK() cleanup, game limit may be 0 (unset).
-                    // Use hardware limit as reference if game limit is 0.
-                    var refRotation = refResult.Item2 > 0 ? refResult.Item2 : refResult.Item1;
-                    Log($"MozaHelper: ref-rotation={refRotation}");
+                    ERRORCODE refError = ERRORCODE.NORMAL;
+                    var refResult = getMotorLimitAngle(ref refError);
+                    if (refError == ERRORCODE.NORMAL && refResult != null)
+                    {
+                        Log($"MozaHelper: getMotorLimitAngle returned hardware={refResult.Item1}, game={refResult.Item2}");
+                        // Item1 = hardware max rotation, Item2 = current game limit
+                        // After removeMozaSDK() cleanup, game limit may be 0 (unset).
+                        // Use hardware limit as reference if game limit is 0.
+                        refRotation = refResult.Item2 > 0 ? refResult.Item2 : refResult.Item1;
+                    }
+
+                    if (refRotation > 0)
+                        break;
+
+                    Log($"MozaHelper: ref-rotation query attempt {refAttempt}/5 returned 0, retrying...");
+                    Thread.Sleep(1000);
                 }
+                Log($"MozaHelper: ref-rotation={refRotation}");
             }
             catch
             {

@@ -247,6 +247,7 @@ public class MozaPlugin : IXOutputPlugin
     public void OnProfileStop()
     {
         StopHelper();
+        _firstSeenRefRotation = null;
         _axisScaleMin = null;
         _axisScaleMax = null;
     }
