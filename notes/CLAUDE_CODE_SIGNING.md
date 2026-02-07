@@ -214,10 +214,10 @@ Once approved, integrate with your release workflow:
 
 Before applying:
 
-- [ ] Make repository public (currently private)
-- [ ] Ensure all contributors have MFA enabled on GitHub
-- [ ] Add code signing policy page to repo (required by SignPath)
-- [ ] Review current release workflow for integration points
+- [x] Make repository public (confirmed public)
+- [x] Ensure all contributors have MFA enabled on GitHub
+- [x] Add code signing policy page to repo (CODESIGNING.md + README link)
+- [x] Review current release workflow for integration points
 
 ---
 

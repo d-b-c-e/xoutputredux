@@ -436,3 +436,6 @@ check-*.ps1
 
 # Old nodejs plugin (replaced by C# plugin)
 streamdeck-plugin-nodejs/
+
+# SignPath application forms (contain personal info)
+notes/OSSRequestForm*

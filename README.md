@@ -289,6 +289,12 @@ XOutputRedux is a modernized reimplementation inspired by the archived [XOutput]
 - **Powerful**: OR mapping lets you combine inputs (wheel button + handbrake = same Xbox button)
 - **Scriptable**: Full CLI control for gaming frontends, launchers, and Stream Deck
 
+## Code Signing Policy
+
+See [CODESIGNING.md](CODESIGNING.md) for details on signed artifacts, verification, and privacy.
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
 ## License
 
 MIT License
