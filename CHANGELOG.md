@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [0.9.5-alpha] - 2026-02-07
+## [0.9.6-alpha] - 2026-02-08
 
 ### Added
 - Test tab in Profile Editor with Start/Stop toggle button and live Xbox controller visualization — test mappings without leaving the editor

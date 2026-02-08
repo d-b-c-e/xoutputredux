@@ -213,7 +213,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.5-alpha** - Per-axis sensitivity/response curves with visual curve preview; advanced settings collapsible panel; skip update check on local dev builds; improved dark mode readability for HidHide device list.
+**v0.9.6-alpha** - Test tab in profile editor with Start/Stop and live controller visualization; reusable Xbox controller test view; per-axis response curves; collapsible advanced settings.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
