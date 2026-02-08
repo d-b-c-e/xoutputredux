@@ -115,13 +115,6 @@ jobs:
           New-Item -ItemType Directory -Path dist -Force | Out-Null
           Compress-Archive -Path "publish-moza-plugin\*" -DestinationPath "dist\XOutputRedux-$version-MozaPlugin.xoutputreduxplugin" -CompressionLevel Optimal
 
-      - name: Create portable ZIP
-        shell: pwsh
-        run: |
-          $version = "${{ steps.version.outputs.VERSION }}"
-          New-Item -ItemType Directory -Path dist -Force | Out-Null
-          Compress-Archive -Path "publish\*" -DestinationPath "dist\XOutputRedux-$version-Portable.zip" -CompressionLevel Optimal
-
       - name: Install Inno Setup
         shell: pwsh
         run: |
@@ -161,7 +154,6 @@ jobs:
           prerelease: ${{ contains(steps.version.outputs.VERSION, 'alpha') || contains(steps.version.outputs.VERSION, 'beta') || contains(steps.version.outputs.VERSION, 'rc') }}
           body_path: release-notes.md
           files: |
-            dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-Portable.zip
             dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-Setup.exe
             dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-MozaPlugin.xoutputreduxplugin
             dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-StreamDeckPlugin.streamDeckPlugin

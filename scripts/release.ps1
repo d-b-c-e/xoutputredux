@@ -38,7 +38,7 @@ if (-not (Test-Path $DistDir)) {
 }
 
 # Determine total steps
-$totalSteps = 3
+$totalSteps = 2
 if (-not $SkipStreamDeck) { $totalSteps++ }
 if (-not $SkipMozaPlugin) { $totalSteps++ }
 $currentStep = 0
@@ -163,19 +163,6 @@ if (-not $SkipMozaPlugin) {
     }
 }
 
-# Create portable ZIP
-$currentStep++
-Write-Host "`n[$currentStep/$totalSteps] Creating portable ZIP..." -ForegroundColor Yellow
-$ZipName = "XOutputRedux-$Version-Portable.zip"
-$ZipPath = Join-Path $DistDir $ZipName
-
-if (Test-Path $ZipPath) {
-    Remove-Item $ZipPath
-}
-
-Compress-Archive -Path "$PublishDir\*" -DestinationPath $ZipPath -CompressionLevel Optimal
-Write-Host "Created: $ZipName" -ForegroundColor Green
-
 # Build installer
 $currentStep++
 Write-Host "`n[$currentStep/$totalSteps] Building installer..." -ForegroundColor Yellow
@@ -219,7 +206,7 @@ if (Test-Path $StreamDeckInDist) {
 
 Write-Host ""
 Write-Host "Next steps:"
-Write-Host "  1. Test the installer and portable ZIP"
+Write-Host "  1. Test the installer"
 Write-Host "  2. Create a git tag: git tag v$Version"
 Write-Host "  3. Push the tag: git push origin v$Version"
 Write-Host "  4. Create GitHub release and upload files from dist/"

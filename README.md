@@ -17,7 +17,6 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 - **Toast notifications** - Windows notifications when profiles start/stop or games are detected
 - **Backup/restore** - Export and import all settings via `.xorbackup` files
 - **Crash reporting** - One-click GitHub issue creation with diagnostic info
-- **Portable mode** - Create `portable.txt` next to exe to store settings locally
 - **Axis response curves** - Per-axis sensitivity tuning with visual curve preview (less sensitive near center for high-rotation wheels, or more sensitive for low-rotation)
 - **Plugin system** - Optional plugins for device-specific features (e.g., Moza wheel settings)
 
@@ -33,7 +32,6 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 ### Download
 Download the latest release from the [Releases page](https://github.com/d-b-c-e/xoutputredux/releases):
 - **Setup installer** (`XOutputRedux-x.x.x-Setup.exe`) - Recommended, includes options for PATH and startup
-- **Portable ZIP** (`XOutputRedux-x.x.x-Portable.zip`) - Extract and run, no installation needed
 
 ### Prerequisites
 1. Install the [ViGEmBus driver](https://github.com/nefarius/ViGEmBus/releases) (required)
@@ -249,7 +247,6 @@ XOutputRedux/
 - **Auto-update** - Check for updates on startup with in-app download and install
 - **Crash reporting** - Detailed crash dialog with one-click GitHub issue creation
 - **Backup/restore settings** - Export all settings and profiles to `.xorbackup` file for easy migration
-- **Portable mode** - Create `portable.txt` next to exe to store all data in `data\` subfolder
 - **About tab** - Version info, GitHub links, and acknowledgments
 - **Quick Add Game hotkey** - Ctrl+Shift+G adds focused game to running profile (configurable in Options)
 - **Plugin system** - Optional device-specific plugins loaded from `plugins/` folder
@@ -281,7 +278,6 @@ XOutputRedux is a modernized reimplementation inspired by the archived [XOutput]
 | **Automation** | CLI + Stream Deck plugin + IPC | Web API only |
 | **Settings Backup** | One-click export/import | Manual file copy |
 | **Crash Reporting** | One-click GitHub issue creation | None |
-| **Portable Mode** | Built-in support | Not supported |
 
 ### Why XOutputRedux?
 

@@ -108,7 +108,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 12: ViGEmBus Check | ✓ Complete | Driver detection, auto-install prompt |
 | 13: Stream Deck Plugin | ✓ Complete | Native C# plugin with IPC, profile/monitor toggles |
 | 14: Backup/Restore Settings | ✓ Complete | Export/import to `.xorbackup` file (ZIP containing all settings, profiles, games.json) |
-| 15: Portable Mode | ✓ Complete | True portable support - detect `portable.txt` and store settings in `data\` subfolder |
+| 15: Portable Mode | ⏸ Shelved | Code exists but not advertised or distributed. Removed from release artifacts and public docs pending proper testing. |
 | 16: Code Signing | ⏳ Applied | SignPath Foundation application submitted 2026-02-07. CODESIGNING.md + README added. Awaiting approval (typically a few weeks), then wire into CI. |
 | 17: Rebrand to XOutput Redux | ✓ Complete | Codebase renamed to XOutput Redux |
 | 18: Rename GitHub Repository | ✓ Complete | Renamed repo to `xoutputredux`, URLs already pointed to new name |
@@ -139,6 +139,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | **Improved Wheel FFB** | Current FFB uses ConstantForce in one direction (left), designed for gamepad rumble. Enhancements: (1) Use oscillating/periodic effects instead of constant force for more rumble-like feel, (2) Allow configuring effect type/direction in profile, (3) Apply magnitude symmetrically to avoid one-sided pull. Note: Xbox rumble → wheel FFB is inherently limited; games not designed for wheels will never feel like proper wheel games. | Low |
 | **Steering Wheel Axis Tuning (Extended)** | Phase 1 (response curve) complete. Remaining ideas: (1) Per-axis inner/outer deadzone at binding level, (2) S-curve or custom curve editor, (3) Additional curve presets. | Low |
 | **Live Profile Preview in Editor** | Visual-only live preview mode in the Profile Editor. Runs input through the mapping pipeline (including response curves, input range, invert) and displays simulated Xbox controller output in real-time — without creating a ViGEm controller. Enables tweaking sensitivity/settings and seeing the result immediately without stop/edit/restart cycle. Key work: run mapping pipeline from editor using existing device polling, output visualization panel, live-updating bindings. | Medium |
+| **Portable Mode (Revisit)** | Code exists (detects `portable.txt`, stores settings in `data\` subfolder) but removed from release artifacts and docs because it's untested. Needs: automated test coverage for portable paths, manual QA pass, then re-add to release workflow and docs. | Low |
 
 ---
 
@@ -313,7 +314,7 @@ dotnet publish src/XOutputRedux.Moza.Plugin -c Release -o publish-moza-plugin --
 # Copy XOutputRedux.Moza.Plugin.dll, MOZA_SDK.dll, MOZA_API_C.dll, MOZA_API_CSharp.dll
 # to: src/XOutputRedux.App/bin/Release/net8.0-windows10.0.17763.0/plugins/Moza/
 
-# Create full release (installer + portable ZIP + Stream Deck + Moza plugin)
+# Create full release (installer + Stream Deck + Moza plugin)
 .\scripts\release.ps1
 
 # Skip optional components
