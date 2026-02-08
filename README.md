@@ -231,11 +231,12 @@ XOutputRedux/
 - Verbose logging for debugging device issues
 - Dark mode UI theme with dark tooltips and dialogs
 - **Synthwave branding** - New logo and gradient color scheme
-- Visual Xbox controller test display
+- Visual Xbox controller test display (reusable in both main window and profile editor)
 - Options for startup profile and "Start with Windows"
-- Profile editor with tabbed interface (Mapping, Force Feedback, Device Hiding) and collapsible Advanced Settings
+- Profile editor with tabbed interface (Mapping, Test, Force Feedback, Device Hiding) and collapsible Advanced Settings
+- **Test tab in Profile Editor** - Start/Stop profile and see live Xbox controller output without leaving the editor
 - Per-axis sensitivity/response curves with visual curve preview
-- **Read-only profile view** when profile is running
+- **Live profile testing in editor** - Start/stop profiles directly from the editor's Test tab with real-time controller visualization
 - **Toast notifications** - Windows notifications when profiles start/stop
 - **CLI/IPC** - Control running instance from command line (`start`, `stop`, `status`, `monitor on/off`)
 - **Default profile** - Set a profile as default for quick CLI start

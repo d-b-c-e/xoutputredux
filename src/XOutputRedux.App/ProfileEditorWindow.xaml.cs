@@ -55,7 +55,11 @@ public partial class ProfileEditorWindow : Window
     private readonly IReadOnlyList<IXOutputPlugin> _plugins;
 
     public bool WasSaved { get; private set; }
+    public bool IsProfileRunning { get; private set; }
     private readonly bool _isReadOnly;
+
+    public event EventHandler? ProfileStartRequested;
+    public event EventHandler? ProfileStopRequested;
 
     public ProfileEditorWindow(MappingProfile profile, InputDeviceManager deviceManager, HidHideService? hidHideService = null, DeviceSettings? deviceSettings = null, bool readOnly = false, IReadOnlyList<IXOutputPlugin>? plugins = null)
     {
@@ -1553,6 +1557,73 @@ public partial class ProfileEditorWindow : Window
     {
         StopMonitoring();
         StopCapturing();
+    }
+
+    #endregion
+
+    #region Test Tab
+
+    public void SetProfileRunning(bool running)
+    {
+        IsProfileRunning = running;
+        Cursor = System.Windows.Input.Cursors.Arrow;
+        EditorStartButton.IsEnabled = true;
+
+        if (running)
+        {
+            EditorStartButton.Content = "Stop";
+            EditorStartButton.Background = new SolidColorBrush(Color.FromRgb(0xF4, 0x43, 0x36)); // Red
+            EditorTestStatus.Text = "Running";
+            EditorTestStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
+            EditorTestView.HideOverlay();
+            EditorTestView.SetProfileStatus($"Profile: {_profile.Name}", true);
+
+            // Disable editing while profile is running (only if not originally read-only)
+            if (!_isReadOnly)
+                SetEditorReadOnly(true);
+        }
+        else
+        {
+            EditorStartButton.Content = "Start";
+            EditorStartButton.Background = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)); // Green
+            EditorTestStatus.Text = "";
+            EditorTestView.ShowOverlay("Start a profile to see controller output");
+            EditorTestView.SetProfileStatus("Not Running", false);
+            EditorTestView.Reset();
+
+            // Re-enable editing (only if not originally read-only)
+            if (!_isReadOnly)
+                SetEditorReadOnly(false);
+        }
+    }
+
+    public void UpdateControllerState(XboxControllerState state)
+    {
+        if (IsProfileRunning)
+            EditorTestView.UpdateState(state);
+    }
+
+    private void SetEditorReadOnly(bool readOnly)
+    {
+        // Toggle Save button and capture controls
+        SaveButton.IsEnabled = !readOnly;
+        CaptureButton.IsEnabled = !readOnly;
+    }
+
+    private void EditorStart_Click(object sender, RoutedEventArgs e)
+    {
+        if (IsProfileRunning)
+        {
+            ProfileStopRequested?.Invoke(this, EventArgs.Empty);
+        }
+        else
+        {
+            Cursor = System.Windows.Input.Cursors.Wait;
+            EditorStartButton.IsEnabled = false;
+            EditorTestStatus.Text = "Starting...";
+            EditorTestStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x9E, 0x9E, 0x9E));
+            ProfileStartRequested?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     #endregion

@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:XOutputRedux.App"
         mc:Ignorable="d"
         Title="Edit Profile"
         Height="850" Width="1000"
@@ -560,6 +561,29 @@
                 </Grid>
             </TabItem>
 
+            <!-- Test Tab -->
+            <TabItem Header="Test">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Test Controls (single row) -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="Test Profile" FontWeight="Bold" FontSize="14"
+                                   Foreground="{StaticResource ForegroundBrush}" VerticalAlignment="Center"/>
+                        <Button x:Name="EditorStartButton" Content="Start" Padding="12,4" Margin="15,0,0,0"
+                                Click="EditorStart_Click" Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
+                        <TextBlock x:Name="EditorTestStatus" Text="" VerticalAlignment="Center"
+                                   Margin="10,0,0,0" Foreground="{StaticResource ForegroundDimBrush}"/>
+                    </StackPanel>
+
+                    <!-- Xbox Controller Test View -->
+                    <local:XboxControllerTestView x:Name="EditorTestView" Grid.Row="1"/>
+                </Grid>
+            </TabItem>
+
             <!-- Force Feedback Tab -->
             <TabItem Header="Force Feedback">
                 <Grid Background="{StaticResource BackgroundSecondaryBrush}">
@@ -695,6 +719,7 @@
                     </StackPanel>
                 </Grid>
             </TabItem>
+
         </TabControl>
 
         <!-- Footer Buttons -->

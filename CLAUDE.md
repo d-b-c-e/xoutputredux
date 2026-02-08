@@ -116,6 +116,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 20: Plugin System | ✓ Complete | Simple plugin loader, per-profile plugin data, profile editor tab injection |
 | 21: Moza Wheel Plugin | ✓ Complete | XOutputRedux.Moza.Plugin — 8 wheel settings via out-of-process helper exe + Pit House SDK. Auto-scales steering axis when rotation differs from device reference. |
 | 22: Axis Response Curves | ✓ Complete | Per-binding Sensitivity parameter (power/gamma curve, 0.1–5.0), symmetric for axes, simple power for triggers. Visual curve preview in profile editor. |
+| 23: Test Tab in Profile Editor | ✓ Complete | Reusable `XboxControllerTestView` UserControl shared by MainWindow and ProfileEditorWindow. Start/Stop toggle button in editor fires events handled by MainWindow. Live controller state forwarded via `Dispatcher.BeginInvoke`. |
 
 ### Completed Dependency Upgrades
 
@@ -138,7 +139,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 |------|-------------|----------|
 | **Improved Wheel FFB** | Current FFB uses ConstantForce in one direction (left), designed for gamepad rumble. Enhancements: (1) Use oscillating/periodic effects instead of constant force for more rumble-like feel, (2) Allow configuring effect type/direction in profile, (3) Apply magnitude symmetrically to avoid one-sided pull. Note: Xbox rumble → wheel FFB is inherently limited; games not designed for wheels will never feel like proper wheel games. | Low |
 | **Steering Wheel Axis Tuning (Extended)** | Phase 1 (response curve) complete. Remaining ideas: (1) Per-axis inner/outer deadzone at binding level, (2) S-curve or custom curve editor, (3) Additional curve presets. | Low |
-| **Live Profile Preview in Editor** | Visual-only live preview mode in the Profile Editor. Runs input through the mapping pipeline (including response curves, input range, invert) and displays simulated Xbox controller output in real-time — without creating a ViGEm controller. Enables tweaking sensitivity/settings and seeing the result immediately without stop/edit/restart cycle. Key work: run mapping pipeline from editor using existing device polling, output visualization panel, live-updating bindings. | Medium |
+| **Visual-Only Preview (No ViGEm)** | Run input through the mapping pipeline and display output in the editor's Test tab *without* creating a ViGEm controller. Currently Start/Stop creates a real emulated controller; a visual-only mode would allow previewing mappings without affecting games. | Low |
 | **Portable Mode (Revisit)** | Code exists (detects `portable.txt`, stores settings in `data\` subfolder) but removed from release artifacts and docs because it's untested. Needs: automated test coverage for portable paths, manual QA pass, then re-add to release workflow and docs. | Low |
 
 ---
@@ -469,7 +470,8 @@ public bool HideDevice(string deviceInstancePath)
 ### Application (`XOutputRedux.App`)
 - `Program.cs` - CLI entry point with System.CommandLine
 - `MainWindow.xaml/.cs` - Main GUI with Devices/Profiles/Status/Options/Test tabs
-- `ProfileEditorWindow.xaml/.cs` - Interactive mapping editor with output highlighting
+- `ProfileEditorWindow.xaml/.cs` - Interactive mapping editor with output highlighting, Test tab with Start/Stop toggle
+- `XboxControllerTestView.xaml/.cs` - Reusable Xbox controller visualization UserControl (shared by MainWindow and ProfileEditorWindow)
 - `DeviceSettings.cs` - Persists device friendly names
 - `AppSettings.cs` - Persists app options (minimize to tray, start with Windows, startup profile)
 - `AppLogger.cs` - File-based async logging for debugging

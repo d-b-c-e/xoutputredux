@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [0.9.5-alpha] - 2026-02-07
 
 ### Added
+- Test tab in Profile Editor with Start/Stop toggle button and live Xbox controller visualization — test mappings without leaving the editor
+- Reusable `XboxControllerTestView` UserControl shared by main window and profile editor (auto-scales via Viewbox, compact data panel)
 - Per-axis sensitivity/response curves — power/gamma curve (0.1–5.0) with visual curve preview in profile editor
 - Collapsible "Advanced Settings" section in profile editor for Input Range and Axis Tuning (less intimidating for basic users)
 - Profile schema v2 with backward-compatible migration (legacy profiles load with default sensitivity)
@@ -18,6 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Release workflow using auto-generated changelog links instead of actual CHANGELOG.md content
 
 ### Changed
+- Test tab is now the second tab in the profile editor (after Mapping, before Force Feedback)
+- Main window Test tab refactored to use shared `XboxControllerTestView` UserControl
 - Binding Settings panel in profile editor now scrollable to accommodate new Axis Tuning section
 - Input Range and Axis Tuning grouped under collapsible Advanced Settings expander
 

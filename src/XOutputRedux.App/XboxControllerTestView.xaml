@@ -1,0 +1,219 @@
+<UserControl x:Class="XOutputRedux.App.XboxControllerTestView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Profile Status -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
+            <TextBlock x:Name="ProfileStatusText" Text="No Profile Running"
+                       FontWeight="Bold" FontSize="12" Foreground="#888888"/>
+            <TextBlock x:Name="OverlayText" Text=" — Start a profile to see controller output"
+                       FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Visual Controller (auto-scales to fit) -->
+        <Border Grid.Row="1" Background="#F8F8F8" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="5">
+            <Grid>
+                <!-- Viewbox scales the fixed-size Canvas to fit available space -->
+                <Viewbox Stretch="Uniform" Margin="5">
+                    <Canvas x:Name="ControllerCanvas" Width="420" Height="320">
+
+                        <!-- Left Trigger -->
+                        <Border Canvas.Left="50" Canvas.Top="5" Width="45" Height="50"
+                                BorderBrush="#999999" BorderThickness="1" CornerRadius="3" Background="#E8E8E8">
+                            <Grid>
+                                <Rectangle x:Name="LeftTriggerFill" Fill="#2196F3"
+                                           VerticalAlignment="Bottom" Height="0"/>
+                                <TextBlock Text="LT" HorizontalAlignment="Center" VerticalAlignment="Top"
+                                           Margin="0,2,0,0" FontSize="10" Foreground="#666666"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Right Trigger -->
+                        <Border Canvas.Left="325" Canvas.Top="5" Width="45" Height="50"
+                                BorderBrush="#999999" BorderThickness="1" CornerRadius="3" Background="#E8E8E8">
+                            <Grid>
+                                <Rectangle x:Name="RightTriggerFill" Fill="#2196F3"
+                                           VerticalAlignment="Bottom" Height="0"/>
+                                <TextBlock Text="RT" HorizontalAlignment="Center" VerticalAlignment="Top"
+                                           Margin="0,2,0,0" FontSize="10" Foreground="#666666"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Left Bumper -->
+                        <Border Canvas.Left="45" Canvas.Top="60" Width="55" Height="22"
+                                BorderBrush="#999999" BorderThickness="1" CornerRadius="10" Background="#CCCCCC">
+                            <Ellipse x:Name="ButtonLB" Fill="#CCCCCC"/>
+                        </Border>
+                        <TextBlock Canvas.Left="66" Canvas.Top="63" Text="LB" FontSize="10" Foreground="#333333"/>
+
+                        <!-- Right Bumper -->
+                        <Border Canvas.Left="320" Canvas.Top="60" Width="55" Height="22"
+                                BorderBrush="#999999" BorderThickness="1" CornerRadius="10" Background="#CCCCCC">
+                            <Ellipse x:Name="ButtonRB" Fill="#CCCCCC"/>
+                        </Border>
+                        <TextBlock Canvas.Left="341" Canvas.Top="63" Text="RB" FontSize="10" Foreground="#333333"/>
+
+                        <!-- Back Button -->
+                        <Ellipse x:Name="ButtonBack" Canvas.Left="135" Canvas.Top="95" Width="35" Height="22"
+                                 Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <TextBlock Canvas.Left="142" Canvas.Top="101" Text="Back" FontSize="9" Foreground="#333333"/>
+
+                        <!-- Guide Button -->
+                        <Ellipse x:Name="ButtonGuide" Canvas.Left="190" Canvas.Top="90" Width="35" Height="35"
+                                 Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <TextBlock Canvas.Left="203" Canvas.Top="101" Text="G" FontSize="12" FontWeight="Bold" Foreground="#333333"/>
+
+                        <!-- Start Button -->
+                        <Ellipse x:Name="ButtonStart" Canvas.Left="245" Canvas.Top="95" Width="35" Height="22"
+                                 Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <TextBlock Canvas.Left="252" Canvas.Top="100" Text="Start" FontSize="9" Foreground="#333333"/>
+
+                        <!-- Left Stick Background -->
+                        <Ellipse Canvas.Left="55" Canvas.Top="130" Width="70" Height="70"
+                                 Fill="#E0E0E0" Stroke="#999999" StrokeThickness="1"/>
+                        <!-- Left Stick Click -->
+                        <Ellipse x:Name="ButtonLS" Canvas.Left="72" Canvas.Top="147" Width="36" Height="36"
+                                 Fill="#CCCCCC" Stroke="#888888" StrokeThickness="1"/>
+                        <!-- Left Stick Dot (moves) -->
+                        <Ellipse x:Name="LeftStickDot" Canvas.Left="82" Canvas.Top="157" Width="16" Height="16"
+                                 Fill="#333333"/>
+                        <TextBlock Canvas.Left="82" Canvas.Top="205" Text="LS" FontSize="10" Foreground="#666666"/>
+
+                        <!-- D-Pad -->
+                        <Rectangle x:Name="DPadUp" Canvas.Left="149" Canvas.Top="226" Width="22" Height="22"
+                                   Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <Rectangle x:Name="DPadDown" Canvas.Left="149" Canvas.Top="270" Width="22" Height="22"
+                                   Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <Rectangle x:Name="DPadLeft" Canvas.Left="127" Canvas.Top="248" Width="22" Height="22"
+                                   Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <Rectangle x:Name="DPadRight" Canvas.Left="171" Canvas.Top="248" Width="22" Height="22"
+                                   Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <Rectangle Canvas.Left="149" Canvas.Top="248" Width="22" Height="22"
+                                   Fill="#AAAAAA" Stroke="#999999" StrokeThickness="1"/>
+
+                        <!-- Face Buttons -->
+                        <Ellipse x:Name="ButtonY" Canvas.Left="320" Canvas.Top="115" Width="32" Height="32"
+                                 Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <TextBlock Canvas.Left="330" Canvas.Top="122" Text="Y" FontSize="12" FontWeight="Bold" Foreground="#333333"/>
+
+                        <Ellipse x:Name="ButtonX" Canvas.Left="285" Canvas.Top="145" Width="32" Height="32"
+                                 Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <TextBlock Canvas.Left="296" Canvas.Top="152" Text="X" FontSize="12" FontWeight="Bold" Foreground="#333333"/>
+
+                        <Ellipse x:Name="ButtonB" Canvas.Left="355" Canvas.Top="145" Width="32" Height="32"
+                                 Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <TextBlock Canvas.Left="366" Canvas.Top="152" Text="B" FontSize="12" FontWeight="Bold" Foreground="#333333"/>
+
+                        <Ellipse x:Name="ButtonA" Canvas.Left="320" Canvas.Top="175" Width="32" Height="32"
+                                 Fill="#CCCCCC" Stroke="#999999" StrokeThickness="1"/>
+                        <TextBlock Canvas.Left="330" Canvas.Top="182" Text="A" FontSize="12" FontWeight="Bold" Foreground="#333333"/>
+
+                        <!-- Right Stick Background -->
+                        <Ellipse Canvas.Left="225" Canvas.Top="220" Width="70" Height="70"
+                                 Fill="#E0E0E0" Stroke="#999999" StrokeThickness="1"/>
+                        <!-- Right Stick Click -->
+                        <Ellipse x:Name="ButtonRS" Canvas.Left="242" Canvas.Top="237" Width="36" Height="36"
+                                 Fill="#CCCCCC" Stroke="#888888" StrokeThickness="1"/>
+                        <!-- Right Stick Dot (moves) -->
+                        <Ellipse x:Name="RightStickDot" Canvas.Left="252" Canvas.Top="247" Width="16" Height="16"
+                                 Fill="#333333"/>
+                        <TextBlock Canvas.Left="252" Canvas.Top="295" Text="RS" FontSize="10" Foreground="#666666"/>
+                    </Canvas>
+                </Viewbox>
+            </Grid>
+        </Border>
+
+        <!-- Data Panel (compact horizontal flow below controller) -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="160">
+            <WrapPanel Margin="0,5,0,0">
+                <!-- Buttons (5 columns, 3 rows) -->
+                <GroupBox Header="Buttons" Margin="0,0,6,3" Padding="2">
+                    <Grid Margin="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" x:Name="TextA" Text="A: -" Margin="1" MinWidth="55" FontSize="11"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TextB" Text="B: -" Margin="1" MinWidth="55" FontSize="11"/>
+                        <TextBlock Grid.Row="0" Grid.Column="2" x:Name="TextX" Text="X: -" Margin="1" MinWidth="55" FontSize="11"/>
+                        <TextBlock Grid.Row="0" Grid.Column="3" x:Name="TextY" Text="Y: -" Margin="1" MinWidth="55" FontSize="11"/>
+                        <TextBlock Grid.Row="0" Grid.Column="4" x:Name="TextGuide" Text="Guide: -" Margin="1" MinWidth="55" FontSize="11"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" x:Name="TextLB" Text="LB: -" Margin="1" FontSize="11"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TextRB" Text="RB: -" Margin="1" FontSize="11"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" x:Name="TextBack" Text="Back: -" Margin="1" FontSize="11"/>
+                        <TextBlock Grid.Row="1" Grid.Column="3" x:Name="TextStart" Text="Start: -" Margin="1" FontSize="11"/>
+                        <TextBlock Grid.Row="1" Grid.Column="4" x:Name="TextLS" Text="LS: -" Margin="1" FontSize="11"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" x:Name="TextRS" Text="RS: -" Margin="1" FontSize="11"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TextDPadUp" Text="Up: -" Margin="1" FontSize="11"/>
+                        <TextBlock Grid.Row="2" Grid.Column="2" x:Name="TextDPadDown" Text="Down: -" Margin="1" FontSize="11"/>
+                        <TextBlock Grid.Row="2" Grid.Column="3" x:Name="TextDPadLeft" Text="Left: -" Margin="1" FontSize="11"/>
+                        <TextBlock Grid.Row="2" Grid.Column="4" x:Name="TextDPadRight" Text="Right: -" Margin="1" FontSize="11"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- Triggers -->
+                <GroupBox Header="Triggers" Margin="0,0,6,3" Padding="2">
+                    <StackPanel Margin="1">
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <TextBlock Text="LT:" Width="22" FontSize="11"/>
+                            <ProgressBar x:Name="BarLT" Width="55" Height="10" Minimum="0" Maximum="100" Value="0"/>
+                            <TextBlock x:Name="TextLT" Text="0.00" Margin="3,0,0,0" Width="30" FontSize="11"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <TextBlock Text="RT:" Width="22" FontSize="11"/>
+                            <ProgressBar x:Name="BarRT" Width="55" Height="10" Minimum="0" Maximum="100" Value="0"/>
+                            <TextBlock x:Name="TextRT" Text="0.00" Margin="3,0,0,0" Width="30" FontSize="11"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Left Stick -->
+                <GroupBox Header="LS" Margin="0,0,6,3" Padding="2">
+                    <StackPanel Margin="1">
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <TextBlock Text="X:" Width="16" FontSize="11"/>
+                            <ProgressBar x:Name="BarLSX" Width="55" Height="10" Minimum="0" Maximum="100" Value="50"/>
+                            <TextBlock x:Name="TextLSX" Text="0.50" Margin="3,0,0,0" Width="30" FontSize="11"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <TextBlock Text="Y:" Width="16" FontSize="11"/>
+                            <ProgressBar x:Name="BarLSY" Width="55" Height="10" Minimum="0" Maximum="100" Value="50"/>
+                            <TextBlock x:Name="TextLSY" Text="0.50" Margin="3,0,0,0" Width="30" FontSize="11"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Right Stick -->
+                <GroupBox Header="RS" Margin="0,0,6,3" Padding="2">
+                    <StackPanel Margin="1">
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <TextBlock Text="X:" Width="16" FontSize="11"/>
+                            <ProgressBar x:Name="BarRSX" Width="55" Height="10" Minimum="0" Maximum="100" Value="50"/>
+                            <TextBlock x:Name="TextRSX" Text="0.50" Margin="3,0,0,0" Width="30" FontSize="11"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <TextBlock Text="Y:" Width="16" FontSize="11"/>
+                            <ProgressBar x:Name="BarRSY" Width="55" Height="10" Minimum="0" Maximum="100" Value="50"/>
+                            <TextBlock x:Name="TextRSY" Text="0.50" Margin="3,0,0,0" Width="30" FontSize="11"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+            </WrapPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
