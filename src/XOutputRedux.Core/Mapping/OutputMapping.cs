@@ -81,7 +81,7 @@ public class OutputMapping
             double? inputValue = getInputValue(binding.DeviceId, binding.SourceIndex);
             if (inputValue.HasValue)
             {
-                double transformed = binding.TransformValue(inputValue.Value);
+                double transformed = binding.TransformValue(inputValue.Value, isAxisOutput: true);
                 double deflection = Math.Abs(transformed - 0.5);
                 if (deflection > maxDeflection)
                 {

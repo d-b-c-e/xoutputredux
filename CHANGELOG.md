@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.5-alpha] - 2026-02-07
+
+### Added
+- Per-axis sensitivity/response curves — power/gamma curve (0.1–5.0) with visual curve preview in profile editor
+- Collapsible "Advanced Settings" section in profile editor for Input Range and Axis Tuning (less intimidating for basic users)
+- Profile schema v2 with backward-compatible migration (legacy profiles load with default sensitivity)
+- 12 new unit tests for response curve math and schema migration
+
+### Fixed
+- Update check dialog appearing on local development builds — now skipped automatically
+- HidHide device list text barely readable in dark mode — checkboxes no longer dimmed by disabled parent
+- Release workflow using auto-generated changelog links instead of actual CHANGELOG.md content
+
+### Changed
+- Binding Settings panel in profile editor now scrollable to accommodate new Axis Tuning section
+- Input Range and Axis Tuning grouped under collapsible Advanced Settings expander
+
 ## [0.9.3-alpha] - 2026-02-05
 
 ### Fixed

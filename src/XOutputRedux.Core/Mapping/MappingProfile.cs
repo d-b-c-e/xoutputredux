@@ -149,7 +149,8 @@ public class MappingProfile
                     Invert = binding.Invert,
                     MinValue = binding.MinValue,
                     MaxValue = binding.MaxValue,
-                    ButtonThreshold = binding.ButtonThreshold
+                    ButtonThreshold = binding.ButtonThreshold,
+                    Sensitivity = binding.Sensitivity
                 });
             }
         }
@@ -182,7 +183,7 @@ public class MappingProfileData
     /// <summary>
     /// Current schema version. Increment when making breaking changes.
     /// </summary>
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     /// <summary>
     /// Schema version of this profile data. Used for migration.
@@ -219,12 +220,12 @@ public class MappingProfileData
             SchemaVersion = 1;
         }
 
-        // Future migrations go here:
-        // if (SchemaVersion < 2)
-        // {
-        //     // Migration logic for v1 -> v2
-        //     SchemaVersion = 2;
-        // }
+        // v1 -> v2: Added Sensitivity to InputBindingData
+        // No data transformation needed - default (Sensitivity=1.0) matches pre-tuning behavior.
+        if (SchemaVersion < 2)
+        {
+            SchemaVersion = 2;
+        }
 
         SchemaVersion = CurrentSchemaVersion;
     }
@@ -319,6 +320,7 @@ public class InputBindingData
     public double MinValue { get; set; } = 0.0;
     public double MaxValue { get; set; } = 1.0;
     public double ButtonThreshold { get; set; } = 0.5;
+    public double Sensitivity { get; set; } = 1.0;
 
     public static InputBindingData FromBinding(InputBinding binding)
     {
@@ -330,7 +332,8 @@ public class InputBindingData
             Invert = binding.Invert,
             MinValue = binding.MinValue,
             MaxValue = binding.MaxValue,
-            ButtonThreshold = binding.ButtonThreshold
+            ButtonThreshold = binding.ButtonThreshold,
+            Sensitivity = binding.Sensitivity
         };
     }
 
@@ -344,7 +347,8 @@ public class InputBindingData
             Invert = Invert,
             MinValue = MinValue,
             MaxValue = MaxValue,
-            ButtonThreshold = ButtonThreshold
+            ButtonThreshold = ButtonThreshold,
+            Sensitivity = Sensitivity
         };
     }
 }

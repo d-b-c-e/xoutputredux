@@ -537,10 +537,10 @@ public partial class ProfileEditorWindow : Window
             InvertCheckBox.IsChecked = _selectedBinding.Binding.Invert;
             ThresholdSlider.Value = _selectedBinding.Binding.ButtonThreshold;
 
-            // Show input range for axes and triggers
+            // Show advanced settings for axes and triggers
             var isAxisOrTrigger = _selectedOutput?.Output.IsAxis() == true ||
                                   _selectedOutput?.Output.IsTrigger() == true;
-            InputRangePanel.Visibility = isAxisOrTrigger
+            AdvancedSettingsExpander.Visibility = isAxisOrTrigger
                 ? System.Windows.Visibility.Visible
                 : System.Windows.Visibility.Collapsed;
 
@@ -554,13 +554,26 @@ public partial class ProfileEditorWindow : Window
                 CaptureMaxButton.IsEnabled = !_isReadOnly;
                 ResetRangeButton.IsEnabled = !_isReadOnly;
                 RangeHintText.Text = "";
+
+                // Load sensitivity
+                _updatingSensitivitySlider = true;
+                SensitivitySlider.Value = _selectedBinding.Binding.Sensitivity;
+                SensitivityValueText.Text = _selectedBinding.Binding.Sensitivity.ToString("F2");
+                _updatingSensitivitySlider = false;
+                SensitivitySlider.IsEnabled = !_isReadOnly;
+                ResetSensitivityButton.IsEnabled = !_isReadOnly;
+                UpdateCurvePreview();
             }
+
+            AxisTuningPanel.Visibility = isAxisOrTrigger
+                ? System.Windows.Visibility.Visible
+                : System.Windows.Visibility.Collapsed;
         }
         else
         {
             InvertCheckBox.IsEnabled = false;
             ThresholdSlider.IsEnabled = false;
-            InputRangePanel.Visibility = System.Windows.Visibility.Collapsed;
+            AdvancedSettingsExpander.Visibility = System.Windows.Visibility.Collapsed;
         }
     }
 
@@ -695,6 +708,126 @@ public partial class ProfileEditorWindow : Window
             "Click 'Reset Range' to restore the default full range.",
             "Input Range Help",
             this);
+    }
+
+    private bool _updatingSensitivitySlider;
+
+    private void SensitivitySlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_updatingSensitivitySlider || _selectedBinding == null) return;
+        _selectedBinding.Binding.Sensitivity = SensitivitySlider.Value;
+        SensitivityValueText.Text = SensitivitySlider.Value.ToString("F2");
+        UpdateCurvePreview();
+    }
+
+    private void ResetSensitivityButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedBinding == null) return;
+        _selectedBinding.Binding.Sensitivity = 1.0;
+        _updatingSensitivitySlider = true;
+        SensitivitySlider.Value = 1.0;
+        SensitivityValueText.Text = "1.00";
+        _updatingSensitivitySlider = false;
+        UpdateCurvePreview();
+    }
+
+    private void SensitivityHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        HelpDialog.Show(
+            "Sensitivity controls the response curve of the axis.\n\n" +
+            "1.00 = Linear (default, no change)\n" +
+            "> 1.00 = Less sensitive near center, more at extremes\n" +
+            "< 1.00 = More sensitive near center, less at extremes\n\n" +
+            "EXAMPLES:\n" +
+            "\u2022 Steering wheel on a tight circuit: Set to 2.0\u20133.0 for more " +
+            "precision near center, full lock still reaches the ends.\n" +
+            "\u2022 Low-rotation wheel needing quick response: Set to 0.3\u20130.7 " +
+            "for faster initial turn-in.\n\n" +
+            "The curve preview shows how input (bottom) maps to output (left).",
+            "Sensitivity Help",
+            this);
+    }
+
+    private void CurvePreviewCanvas_SizeChanged(object sender, System.Windows.SizeChangedEventArgs e)
+    {
+        UpdateCurvePreview();
+    }
+
+    private void UpdateCurvePreview()
+    {
+        CurvePreviewCanvas.Children.Clear();
+
+        double width = CurvePreviewCanvas.ActualWidth;
+        double height = CurvePreviewCanvas.ActualHeight;
+
+        if (width < 10 || height < 10) return;
+
+        double sensitivity = SensitivitySlider.Value;
+        bool isAxis = _selectedOutput?.Output.IsAxis() == true;
+
+        // Draw grid lines (subtle)
+        var gridBrush = new System.Windows.Media.SolidColorBrush(
+            System.Windows.Media.Color.FromRgb(0x3F, 0x3F, 0x46));
+        for (int i = 1; i <= 3; i++)
+        {
+            double pos = i / 4.0;
+            // Horizontal
+            var hLine = new System.Windows.Shapes.Line
+            {
+                X1 = 0, Y1 = height * (1 - pos), X2 = width, Y2 = height * (1 - pos),
+                Stroke = gridBrush, StrokeThickness = 0.5
+            };
+            CurvePreviewCanvas.Children.Add(hLine);
+            // Vertical
+            var vLine = new System.Windows.Shapes.Line
+            {
+                X1 = width * pos, Y1 = 0, X2 = width * pos, Y2 = height,
+                Stroke = gridBrush, StrokeThickness = 0.5
+            };
+            CurvePreviewCanvas.Children.Add(vLine);
+        }
+
+        // Draw linear reference (dashed diagonal)
+        var refLine = new System.Windows.Shapes.Line
+        {
+            X1 = 0, Y1 = height, X2 = width, Y2 = 0,
+            Stroke = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0x55, 0x55, 0x55)),
+            StrokeThickness = 1,
+            StrokeDashArray = new System.Windows.Media.DoubleCollection { 4, 3 }
+        };
+        CurvePreviewCanvas.Children.Add(refLine);
+
+        // Draw response curve
+        var points = new System.Windows.Media.PointCollection();
+        int steps = (int)width;
+        for (int i = 0; i <= steps; i++)
+        {
+            double input = (double)i / steps;
+            double output;
+
+            if (isAxis)
+            {
+                double deflection = Math.Abs(input - 0.5) * 2.0;
+                double curved = Math.Pow(deflection, sensitivity);
+                output = 0.5 + Math.Sign(input - 0.5) * curved * 0.5;
+            }
+            else
+            {
+                output = Math.Pow(input, sensitivity);
+            }
+
+            points.Add(new System.Windows.Point(i, height * (1 - output)));
+        }
+
+        var polyline = new System.Windows.Shapes.Polyline
+        {
+            Points = points,
+            Stroke = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0x00, 0x78, 0xD4)), // AccentBrush
+            StrokeThickness = 2
+        };
+        CurvePreviewCanvas.Children.Add(polyline);
     }
 
     private double? GetLiveInputValue(InputBinding binding)
@@ -900,7 +1033,6 @@ public partial class ProfileEditorWindow : Window
         {
             HidHideStatusText.Text = "HidHide is not installed. Install from nefarius.at/HidHide";
             HidHideEnabledCheckBox.IsEnabled = false;
-            HidHideDeviceListBox.IsEnabled = false;
             _isLoadingHidHideSettings = false;
             return;
         }
@@ -1191,7 +1323,8 @@ public partial class ProfileEditorWindow : Window
 
     private void UpdateHidHideControlsEnabled(bool enabled)
     {
-        HidHideDeviceListBox.IsEnabled = enabled;
+        // Checkboxes bind IsEnabled to HidHideEnabledCheckBox via XAML.
+        // No additional code needed here.
     }
 
     private void HidHideEnabled_Changed(object sender, RoutedEventArgs e)
@@ -1375,7 +1508,8 @@ public partial class ProfileEditorWindow : Window
                     Invert = binding.Invert,
                     MinValue = binding.MinValue,
                     MaxValue = binding.MaxValue,
-                    ButtonThreshold = binding.ButtonThreshold
+                    ButtonThreshold = binding.ButtonThreshold,
+                    Sensitivity = binding.Sensitivity
                 });
             }
         }

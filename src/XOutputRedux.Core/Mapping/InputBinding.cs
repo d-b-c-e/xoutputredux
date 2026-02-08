@@ -46,11 +46,20 @@ public class InputBinding
     public double ButtonThreshold { get; set; } = 0.5;
 
     /// <summary>
+    /// Response curve sensitivity. 1.0 = linear (default).
+    /// Greater than 1.0 = less sensitive near center (convex curve).
+    /// Less than 1.0 = more sensitive near center (concave curve).
+    /// Range: 0.1 to 5.0. Implemented as a power/gamma function.
+    /// </summary>
+    public double Sensitivity { get; set; } = 1.0;
+
+    /// <summary>
     /// Transforms an input value according to this binding's settings.
     /// </summary>
     /// <param name="inputValue">The raw input value (0.0 - 1.0).</param>
+    /// <param name="isAxisOutput">True if the output is an axis (centered at 0.5), false for triggers/buttons.</param>
     /// <returns>The transformed value (0.0 - 1.0).</returns>
-    public double TransformValue(double inputValue)
+    public double TransformValue(double inputValue, bool isAxisOutput = false)
     {
         // Apply min/max scaling
         double range = MaxValue - MinValue;
@@ -61,6 +70,12 @@ public class InputBinding
         // Clamp to 0-1 range
         scaled = Math.Clamp(scaled, 0.0, 1.0);
 
+        // Apply response curve (if not linear)
+        if (Math.Abs(Sensitivity - 1.0) > 0.001)
+        {
+            scaled = ApplyResponseCurve(scaled, isAxisOutput);
+        }
+
         // Apply inversion
         if (Invert)
         {
@@ -68,6 +83,27 @@ public class InputBinding
         }
 
         return scaled;
+    }
+
+    /// <summary>
+    /// Applies a power/gamma response curve to the value.
+    /// For axes: symmetric curve around center (0.5).
+    /// For triggers: simple power curve over 0-1 range.
+    /// </summary>
+    private double ApplyResponseCurve(double value, bool isAxis)
+    {
+        if (isAxis)
+        {
+            // Symmetric power curve around center (0.5)
+            double deflection = Math.Abs(value - 0.5) * 2.0; // normalize to 0-1 from center
+            double curved = Math.Pow(deflection, Sensitivity);
+            return 0.5 + Math.Sign(value - 0.5) * curved * 0.5;
+        }
+        else
+        {
+            // Simple power curve for triggers (0-1 range)
+            return Math.Pow(value, Sensitivity);
+        }
     }
 
     /// <summary>

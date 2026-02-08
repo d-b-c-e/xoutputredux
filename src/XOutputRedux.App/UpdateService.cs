@@ -56,6 +56,16 @@ public class UpdateService
     }
 
     /// <summary>
+    /// Returns true if running from a build output directory (local development).
+    /// </summary>
+    public static bool IsLocalDevBuild()
+    {
+        var exePath = Assembly.GetExecutingAssembly().Location;
+        return exePath.Contains(@"\bin\Release\", StringComparison.OrdinalIgnoreCase)
+            || exePath.Contains(@"\bin\Debug\", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Gets the current application version.
     /// </summary>
     public static SemanticVersion GetCurrentVersion()

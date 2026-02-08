@@ -2155,6 +2155,12 @@ public partial class MainWindow : Window
         await Task.CompletedTask; // Suppress warning
         return;
 #else
+        if (UpdateService.IsLocalDevBuild())
+        {
+            AppLogger.Info("Skipping automatic update check (local dev build)");
+            return;
+        }
+
         if (!_appSettings.ShouldCheckForUpdates())
             return;
 

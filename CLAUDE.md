@@ -109,12 +109,13 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 13: Stream Deck Plugin | ✓ Complete | Native C# plugin with IPC, profile/monitor toggles |
 | 14: Backup/Restore Settings | ✓ Complete | Export/import to `.xorbackup` file (ZIP containing all settings, profiles, games.json) |
 | 15: Portable Mode | ✓ Complete | True portable support - detect `portable.txt` and store settings in `data\` subfolder |
-| 16: Code Signing | Planned | Sign installer/exe to avoid Windows Defender/SmartScreen warnings |
+| 16: Code Signing | ⏳ Applied | SignPath Foundation application submitted 2026-02-07. CODESIGNING.md + README added. Awaiting approval (typically a few weeks), then wire into CI. |
 | 17: Rebrand to XOutput Redux | ✓ Complete | Codebase renamed to XOutput Redux |
 | 18: Rename GitHub Repository | ✓ Complete | Renamed repo to `xoutputredux`, URLs already pointed to new name |
 | 19: Quick Add Game Hotkey | ✓ Complete | Global hotkey (Ctrl+Shift+G) to add focused game to running profile |
 | 20: Plugin System | ✓ Complete | Simple plugin loader, per-profile plugin data, profile editor tab injection |
 | 21: Moza Wheel Plugin | ✓ Complete | XOutputRedux.Moza.Plugin — 8 wheel settings via out-of-process helper exe + Pit House SDK. Auto-scales steering axis when rotation differs from device reference. |
+| 22: Axis Response Curves | ✓ Complete | Per-binding Sensitivity parameter (power/gamma curve, 0.1–5.0), symmetric for axes, simple power for triggers. Visual curve preview in profile editor. |
 
 ### Completed Dependency Upgrades
 
@@ -136,7 +137,8 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | Item | Description | Priority |
 |------|-------------|----------|
 | **Improved Wheel FFB** | Current FFB uses ConstantForce in one direction (left), designed for gamepad rumble. Enhancements: (1) Use oscillating/periodic effects instead of constant force for more rumble-like feel, (2) Allow configuring effect type/direction in profile, (3) Apply magnitude symmetrically to avoid one-sided pull. Note: Xbox rumble → wheel FFB is inherently limited; games not designed for wheels will never feel like proper wheel games. | Low |
-| **Steering Wheel Axis Tuning** | Explore features to enhance steering wheel usability beyond basic deadzone. Ideas: (1) Axis linearity/response curves — allow non-linear mapping (e.g., less sensitive near center, more at extremes) via configurable curve profiles, (2) Per-axis deadzone with inner and outer deadzone settings, (3) Axis range limiting (e.g., map physical 0-100% to a narrower output range), (4) Sensitivity multiplier per axis, (5) S-curve or custom curve editor in the profile editor GUI. These would make XOutputRedux more competitive with dedicated wheel software for users whose wheels lack built-in tuning. | Medium |
+| **Steering Wheel Axis Tuning (Extended)** | Phase 1 (response curve) complete. Remaining ideas: (1) Per-axis inner/outer deadzone at binding level, (2) S-curve or custom curve editor, (3) Additional curve presets. | Low |
+| **Live Profile Preview in Editor** | Visual-only live preview mode in the Profile Editor. Runs input through the mapping pipeline (including response curves, input range, invert) and displays simulated Xbox controller output in real-time — without creating a ViGEm controller. Enables tweaking sensitivity/settings and seeing the result immediately without stop/edit/restart cycle. Key work: run mapping pipeline from editor using existing device polling, output visualization panel, live-updating bindings. | Medium |
 
 ---
 

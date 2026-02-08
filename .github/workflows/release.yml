@@ -133,13 +133,33 @@ jobs:
           $version = "${{ steps.version.outputs.VERSION }}"
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=$version installer\XOutputRedux.iss
 
+      - name: Extract changelog for this version
+        id: changelog
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $content = Get-Content CHANGELOG.md -Raw
+
+          # Extract section for this version (between ## [version] and next ## [)
+          $escaped = [regex]::Escape($version)
+          $pattern = "(?ms)^## \[$escaped\].*?$\r?\n(.*?)(?=^## \[|\z)"
+          if ($content -match $pattern) {
+            $notes = $Matches[1].Trim()
+          } else {
+            $notes = "See [CHANGELOG.md](https://github.com/d-b-c-e/xoutputredux/blob/main/CHANGELOG.md) for details."
+          }
+
+          # Write to file to preserve formatting
+          $notes | Out-File -FilePath release-notes.md -Encoding utf8
+          echo "Found changelog for v$version"
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           name: XOutputRedux v${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: ${{ contains(steps.version.outputs.VERSION, 'alpha') || contains(steps.version.outputs.VERSION, 'beta') || contains(steps.version.outputs.VERSION, 'rc') }}
-          generate_release_notes: true
+          body_path: release-notes.md
           files: |
             dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-Portable.zip
             dist/XOutputRedux-${{ steps.version.outputs.VERSION }}-Setup.exe

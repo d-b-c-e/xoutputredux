@@ -18,6 +18,7 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 - **Backup/restore** - Export and import all settings via `.xorbackup` files
 - **Crash reporting** - One-click GitHub issue creation with diagnostic info
 - **Portable mode** - Create `portable.txt` next to exe to store settings locally
+- **Axis response curves** - Per-axis sensitivity tuning with visual curve preview (less sensitive near center for high-rotation wheels, or more sensitive for low-rotation)
 - **Plugin system** - Optional plugins for device-specific features (e.g., Moza wheel settings)
 
 ## Requirements
@@ -214,7 +215,7 @@ XOutputRedux/
 
 ## Current Status
 
-**v0.9.3-alpha** - Fix startup update checker not retrying after failed checks; CI now builds all release assets (Moza plugin, Stream Deck plugin).
+**v0.9.5-alpha** - Per-axis sensitivity/response curves with visual curve preview; advanced settings collapsible panel; skip update check on local dev builds; improved dark mode readability for HidHide device list.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)
@@ -234,7 +235,8 @@ XOutputRedux/
 - **Synthwave branding** - New logo and gradient color scheme
 - Visual Xbox controller test display
 - Options for startup profile and "Start with Windows"
-- Profile editor with tabbed interface (Mapping, Force Feedback, Device Hiding)
+- Profile editor with tabbed interface (Mapping, Force Feedback, Device Hiding) and collapsible Advanced Settings
+- Per-axis sensitivity/response curves with visual curve preview
 - **Read-only profile view** when profile is running
 - **Toast notifications** - Windows notifications when profiles start/stop
 - **CLI/IPC** - Control running instance from command line (`start`, `stop`, `status`, `monitor on/off`)

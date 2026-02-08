@@ -221,6 +221,49 @@ public class SchemaMigrationTests
         Assert.IsTrue(json.Contains("schemaVersion", StringComparison.OrdinalIgnoreCase));
     }
 
+    [TestMethod]
+    public void MappingProfileData_V1_DeserializesWithDefaultSensitivity()
+    {
+        // Simulate a v1 profile JSON (no sensitivity field)
+        // XboxOutput.LeftStickX = 15 (enums serialize as integers)
+        string v1Json = """
+            {
+                "schemaVersion": 1,
+                "name": "V1 Profile",
+                "mappings": [
+                    {
+                        "output": 15,
+                        "bindings": [
+                            {
+                                "deviceId": "dev1",
+                                "sourceIndex": 0,
+                                "displayName": "Steering",
+                                "invert": false,
+                                "minValue": 0.0,
+                                "maxValue": 1.0,
+                                "buttonThreshold": 0.5
+                            }
+                        ]
+                    }
+                ]
+            }
+            """;
+
+        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        var data = JsonSerializer.Deserialize<MappingProfileData>(v1Json, options);
+
+        Assert.IsNotNull(data);
+        Assert.IsTrue(data.NeedsMigration);
+
+        data.Migrate();
+
+        Assert.AreEqual(MappingProfileData.CurrentSchemaVersion, data.SchemaVersion);
+
+        // Sensitivity should default to 1.0 (linear, same as pre-tuning behavior)
+        var binding = data.Mappings[0].Bindings[0];
+        Assert.AreEqual(1.0, binding.Sensitivity, 0.001);
+    }
+
     #endregion
 
     #region MappingProfile Round-Trip Tests
