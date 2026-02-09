@@ -86,6 +86,30 @@ internal class MozaDevice : IDisposable
         ThrowIfError(error, "Failed to set speed damping");
     }
 
+    public void SetNaturalFriction(int value)
+    {
+        EnsureInitialized();
+        value = Math.Clamp(value, 0, 100);
+        var error = setMotorNaturalFriction(value);
+        ThrowIfError(error, "Failed to set natural friction");
+    }
+
+    public void SetSpeedDampingStartPoint(int value)
+    {
+        EnsureInitialized();
+        value = Math.Clamp(value, 0, 100);
+        var error = setMotorSpeedDampingStartPoint(value);
+        ThrowIfError(error, "Failed to set speed damping start point");
+    }
+
+    public void SetHandsOffProtection(int value)
+    {
+        EnsureInitialized();
+        value = Math.Clamp(value, 0, 100);
+        var error = setMotorHandsOffProtection(value);
+        ThrowIfError(error, "Failed to set hands-off protection");
+    }
+
     public void SetFfbReverse(bool reversed)
     {
         EnsureInitialized();
@@ -156,6 +180,33 @@ internal class MozaDevice : IDisposable
         ERRORCODE error = ERRORCODE.NORMAL;
         var result = getMotorSpeedDamping(ref error);
         ThrowIfError(error, "Failed to get speed damping");
+        return result;
+    }
+
+    public int GetNaturalFriction()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorNaturalFriction(ref error);
+        ThrowIfError(error, "Failed to get natural friction");
+        return result;
+    }
+
+    public int GetSpeedDampingStartPoint()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorSpeedDampingStartPoint(ref error);
+        ThrowIfError(error, "Failed to get speed damping start point");
+        return result;
+    }
+
+    public int GetHandsOffProtection()
+    {
+        EnsureInitialized();
+        ERRORCODE error = ERRORCODE.NORMAL;
+        var result = getMotorHandsOffProtection(ref error);
+        ThrowIfError(error, "Failed to get hands-off protection");
         return result;
     }
 

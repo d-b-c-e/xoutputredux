@@ -12,10 +12,29 @@ namespace XOutputRedux.Moza.Helper;
 /// calling removeMozaSDK() causes Pit House to revert to its
 /// stored defaults. The helper stays running until stdin closes
 /// (when the parent process kills it or exits).
+///
+/// When FFB enhancement is enabled, the helper reads "ffb:&lt;value&gt;"
+/// commands from stdin and drives an ETSine effect for vibration-style
+/// rumble instead of DirectInput ConstantForce.
 /// </summary>
 internal class Program
 {
     private static string _logPath = "";
+
+    // FFB enhancement state
+    private static bool _ffbEnhanceEnabled;
+    private static int _ffbFrequencyMs = 50; // sine period in ms (default ~20Hz vibration)
+    private static ETSine? _sineEffect;
+    private static bool _sineStarted;
+
+    // Ambient effects state
+    private static bool _ambientEnabled;
+    private static int _ambientSpringPct = 30;
+    private static int _ambientFrictionPct = 20;
+    private static int _ambientDamperPct = 15;
+    private static ETSpring? _ambientSpring;
+    private static ETFriction? _ambientFriction;
+    private static ETDamper? _ambientDamper;
 
     private static void Log(string message)
     {
@@ -33,7 +52,7 @@ internal class Program
             var settings = ParseArgs(args);
             if (settings.Count == 0)
             {
-                Log("Usage: MozaHelper.exe --rotation 270 --ffb 80 --torque 95 --reverse false --damping 15 --spring 20 --inertia 120 --speed-damping 30");
+                Log("Usage: MozaHelper.exe --rotation 270 --ffb 80 --torque 95 --reverse false --damping 15 --spring 20 --inertia 120 --speed-damping 30 --friction 10 --speed-damping-start 20 --hands-off 50 --ffb-enhance true --ffb-frequency 50");
                 return 1;
             }
 
@@ -157,22 +176,54 @@ internal class Program
                 }
             }
 
+            // Initialize ETSine effect if FFB enhancement is enabled
+            if (_ffbEnhanceEnabled)
+            {
+                InitializeSineEffect();
+            }
+
+            // Initialize ambient effects if enabled
+            if (_ambientEnabled)
+            {
+                InitializeAmbientEffects();
+            }
+
             // Keep the SDK alive — removeMozaSDK() causes Pit House to
-            // revert settings to defaults. Wait until stdin closes (parent
-            // process exits or kills us) before cleaning up.
+            // revert settings to defaults. Read lines from stdin to process
+            // FFB commands (or wait for stdin close when FFB is not enabled).
             Log("MozaHelper: settings applied, keeping SDK alive...");
             Console.Out.Flush();
 
             try
             {
-                // Block until stdin is closed by the parent process
-                Console.In.ReadToEnd();
+                // Read stdin line-by-line. The parent sends:
+                //   "ffb:<value>"  — update sine effect magnitude (0.000-1.000)
+                //   "ffb-stop"     — stop the sine effect
+                //   EOF (close)    — time to exit
+                string? line;
+                while ((line = Console.In.ReadLine()) != null)
+                {
+                    if (line.StartsWith("ffb:"))
+                    {
+                        if (double.TryParse(line[4..], System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out var ffbValue))
+                        {
+                            UpdateSineEffect(ffbValue);
+                        }
+                    }
+                    else if (line == "ffb-stop")
+                    {
+                        StopSineEffect();
+                    }
+                }
             }
             catch
             {
                 // stdin closed or broken pipe — time to exit
             }
 
+            StopSineEffect();
+            StopAmbientEffects();
             Log("MozaHelper: stdin closed, cleaning up SDK...");
             removeMozaSDK();
             Log("MozaHelper: done");
@@ -184,6 +235,178 @@ internal class Program
             try { removeMozaSDK(); } catch { }
             return 1;
         }
+    }
+
+    private static void InitializeSineEffect()
+    {
+        try
+        {
+            ERRORCODE error = ERRORCODE.NORMAL;
+            _sineEffect = createWheelbaseETSine(IntPtr.Zero, ref error);
+            if (error != ERRORCODE.NORMAL || _sineEffect == null)
+            {
+                Log($"MozaHelper: failed to create ETSine effect: {error}");
+                _sineEffect = null;
+                return;
+            }
+
+            // Configure the sine wave for rumble-style vibration
+            _sineEffect.setMagnitude(0);                           // Start silent
+            _sineEffect.setPeriod((ulong)_ffbFrequencyMs * 1000);  // Period in microseconds
+            _sineEffect.setOffset(0);                              // Centered oscillation
+            _sineEffect.setPhase(0);                               // Start at zero-crossing
+            _sineEffect.setDuration(0);                            // Infinite duration
+            _sineEffect.setGain(Effect.DI_FFNOMINALMAX);           // Full gain (scaled by FFB Strength)
+
+            Log($"MozaHelper: ETSine effect created (period={_ffbFrequencyMs}ms)");
+        }
+        catch (Exception ex)
+        {
+            Log($"MozaHelper: failed to initialize sine effect: {ex.Message}");
+            _sineEffect = null;
+        }
+    }
+
+    private static void UpdateSineEffect(double value)
+    {
+        if (_sineEffect == null) return;
+
+        try
+        {
+            // Scale magnitude: 0.0-1.0 → 0 to DI_FFNOMINALMAX (10000)
+            var magnitude = (ulong)(value * Effect.DI_FFNOMINALMAX);
+            _sineEffect.setMagnitude(magnitude);
+
+            if (!_sineStarted && value > 0.001)
+            {
+                _sineEffect.start();
+                _sineStarted = true;
+            }
+            else if (_sineStarted && value < 0.001)
+            {
+                _sineEffect.stop();
+                _sineStarted = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"MozaHelper: sine effect update failed: {ex.Message}");
+        }
+    }
+
+    private static void StopSineEffect()
+    {
+        if (_sineEffect == null) return;
+
+        try
+        {
+            if (_sineStarted)
+            {
+                _sineEffect.stop();
+                _sineStarted = false;
+            }
+        }
+        catch
+        {
+            // Ignore errors during cleanup
+        }
+    }
+
+    private static void InitializeAmbientEffects()
+    {
+        try
+        {
+            ERRORCODE error;
+
+            // Create and start ambient spring effect
+            if (_ambientSpringPct > 0)
+            {
+                error = ERRORCODE.NORMAL;
+                _ambientSpring = createWheelbaseETSpring(IntPtr.Zero, ref error);
+                if (error == ERRORCODE.NORMAL && _ambientSpring != null)
+                {
+                    var coeff = (long)(_ambientSpringPct / 100.0 * (long)Effect.DI_FFNOMINALMAX);
+                    _ambientSpring.setPositiveCoefficient(coeff);
+                    _ambientSpring.setNegativeCoefficient(coeff);
+                    _ambientSpring.setPositiveSaturation(Effect.DI_FFNOMINALMAX);
+                    _ambientSpring.setNegativeSaturation(Effect.DI_FFNOMINALMAX);
+                    _ambientSpring.setOffset(0);        // Center at wheel center
+                    _ambientSpring.setDeadBand(0);       // No dead zone
+                    _ambientSpring.setDuration(0);       // Infinite
+                    _ambientSpring.setGain(Effect.DI_FFNOMINALMAX);
+                    _ambientSpring.start();
+                    Log($"MozaHelper: ambient spring started (coefficient={coeff})");
+                }
+                else
+                {
+                    Log($"MozaHelper: failed to create ambient spring: {error}");
+                    _ambientSpring = null;
+                }
+            }
+
+            // Create and start ambient friction effect
+            if (_ambientFrictionPct > 0)
+            {
+                error = ERRORCODE.NORMAL;
+                _ambientFriction = createWheelbaseETFriction(IntPtr.Zero, ref error);
+                if (error == ERRORCODE.NORMAL && _ambientFriction != null)
+                {
+                    var coeff = (long)(_ambientFrictionPct / 100.0 * (long)Effect.DI_FFNOMINALMAX);
+                    _ambientFriction.setPositiveCoefficient(coeff);
+                    _ambientFriction.setNegativeCoefficient(coeff);
+                    _ambientFriction.setPositiveSaturation(Effect.DI_FFNOMINALMAX);
+                    _ambientFriction.setNegativeSaturation(Effect.DI_FFNOMINALMAX);
+                    _ambientFriction.setOffset(0);
+                    _ambientFriction.setDeadBand(0);
+                    _ambientFriction.setDuration(0);
+                    _ambientFriction.setGain(Effect.DI_FFNOMINALMAX);
+                    _ambientFriction.start();
+                    Log($"MozaHelper: ambient friction started (coefficient={coeff})");
+                }
+                else
+                {
+                    Log($"MozaHelper: failed to create ambient friction: {error}");
+                    _ambientFriction = null;
+                }
+            }
+
+            // Create and start ambient damper effect
+            if (_ambientDamperPct > 0)
+            {
+                error = ERRORCODE.NORMAL;
+                _ambientDamper = createWheelbaseETDamper(IntPtr.Zero, ref error);
+                if (error == ERRORCODE.NORMAL && _ambientDamper != null)
+                {
+                    var coeff = (long)(_ambientDamperPct / 100.0 * (long)Effect.DI_FFNOMINALMAX);
+                    _ambientDamper.setPositiveCoefficient(coeff);
+                    _ambientDamper.setNegativeCoefficient(coeff);
+                    _ambientDamper.setPositiveSaturation(Effect.DI_FFNOMINALMAX);
+                    _ambientDamper.setNegativeSaturation(Effect.DI_FFNOMINALMAX);
+                    _ambientDamper.setOffset(0);
+                    _ambientDamper.setDeadBand(0);
+                    _ambientDamper.setDuration(0);
+                    _ambientDamper.setGain(Effect.DI_FFNOMINALMAX);
+                    _ambientDamper.start();
+                    Log($"MozaHelper: ambient damper started (coefficient={coeff})");
+                }
+                else
+                {
+                    Log($"MozaHelper: failed to create ambient damper: {error}");
+                    _ambientDamper = null;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"MozaHelper: failed to initialize ambient effects: {ex.Message}");
+        }
+    }
+
+    private static void StopAmbientEffects()
+    {
+        try { _ambientSpring?.stop(); } catch { }
+        try { _ambientFriction?.stop(); } catch { }
+        try { _ambientDamper?.stop(); } catch { }
     }
 
     private static void ApplySetting(string key, string value)
@@ -237,6 +460,48 @@ internal class Program
                 var sd = Math.Clamp(int.Parse(value), 0, 100);
                 error = setMotorSpeedDamping(sd);
                 ThrowIfError(error, "setMotorSpeedDamping");
+                break;
+
+            case "friction":
+                var friction = Math.Clamp(int.Parse(value), 0, 100);
+                error = setMotorNaturalFriction(friction);
+                ThrowIfError(error, "setMotorNaturalFriction");
+                break;
+
+            case "speed-damping-start":
+                var sdStart = Math.Clamp(int.Parse(value), 0, 100);
+                error = setMotorSpeedDampingStartPoint(sdStart);
+                ThrowIfError(error, "setMotorSpeedDampingStartPoint");
+                break;
+
+            case "hands-off":
+                var handsOff = Math.Clamp(int.Parse(value), 0, 100);
+                error = setMotorHandsOffProtection(handsOff);
+                ThrowIfError(error, "setMotorHandsOffProtection");
+                break;
+
+            case "ffb-enhance":
+                _ffbEnhanceEnabled = bool.TryParse(value, out var enhance) && enhance;
+                break;
+
+            case "ffb-frequency":
+                _ffbFrequencyMs = Math.Clamp(int.Parse(value), 10, 200);
+                break;
+
+            case "ambient":
+                _ambientEnabled = bool.TryParse(value, out var amb) && amb;
+                break;
+
+            case "ambient-spring":
+                _ambientSpringPct = Math.Clamp(int.Parse(value), 0, 100);
+                break;
+
+            case "ambient-friction":
+                _ambientFrictionPct = Math.Clamp(int.Parse(value), 0, 100);
+                break;
+
+            case "ambient-damper":
+                _ambientDamperPct = Math.Clamp(int.Parse(value), 0, 100);
                 break;
 
             default:

@@ -19,6 +19,7 @@ public class MozaPlugin : IXOutputPlugin
 
     private MozaEditorTab? _editorTab;
     private Process? _helperProcess;
+    private MozaForceFeedbackHandler? _ffbHandler;
 
     // Axis auto-scaling fields
     private int? _firstSeenRefRotation;
@@ -211,6 +212,20 @@ public class MozaPlugin : IXOutputPlugin
             // can kill it on profile stop (closing stdin triggers cleanup).
             _helperProcess = process;
             Log?.Invoke("Moza: helper running in background (SDK session alive)");
+
+            // Create FFB handler if the Moza FFB enhancement is enabled.
+            // This lets the ForceFeedbackService route rumble through the
+            // Moza SDK (ETSine effect) instead of DirectInput ConstantForce.
+            var ffbEnhance = pluginData["ffbEnhancement"]?.GetValue<bool>() ?? false;
+            if (ffbEnhance)
+            {
+                _ffbHandler = new MozaForceFeedbackHandler(process);
+                Log?.Invoke("Moza: FFB enhancement enabled — rumble will use ETSine effect");
+            }
+            else
+            {
+                _ffbHandler = null;
+            }
         }
         catch (Exception ex)
         {
@@ -229,6 +244,27 @@ public class MozaPlugin : IXOutputPlugin
         AppendIntArg(sb, data, "springStrength", "spring");
         AppendIntArg(sb, data, "naturalInertia", "inertia");
         AppendIntArg(sb, data, "speedDamping", "speed-damping");
+        AppendIntArg(sb, data, "naturalFriction", "friction");
+        AppendIntArg(sb, data, "speedDampingStartPoint", "speed-damping-start");
+        AppendIntArg(sb, data, "handsOffProtection", "hands-off");
+
+        // FFB enhancement settings
+        var ffbEnhance = data["ffbEnhancement"]?.GetValue<bool>();
+        if (ffbEnhance == true)
+        {
+            sb.Append(" --ffb-enhance true");
+            AppendIntArg(sb, data, "ffbFrequency", "ffb-frequency");
+        }
+
+        // Ambient effects settings
+        var ambientEnabled = data["ambientEffects"]?.GetValue<bool>();
+        if (ambientEnabled == true)
+        {
+            sb.Append(" --ambient true");
+            AppendIntArg(sb, data, "ambientSpring", "ambient-spring");
+            AppendIntArg(sb, data, "ambientFriction", "ambient-friction");
+            AppendIntArg(sb, data, "ambientDamper", "ambient-damper");
+        }
 
         var ffbReverse = data["ffbReverse"]?.GetValue<bool>();
         if (ffbReverse.HasValue)
@@ -246,6 +282,7 @@ public class MozaPlugin : IXOutputPlugin
 
     public void OnProfileStop()
     {
+        _ffbHandler = null;
         StopHelper();
         _firstSeenRefRotation = null;
         _axisScaleMin = null;
@@ -261,6 +298,11 @@ public class MozaPlugin : IXOutputPlugin
         {
             new AxisRangeOverride("VID_346E&PID_0006", 0, _axisScaleMin.Value, _axisScaleMax.Value)
         };
+    }
+
+    public IForceFeedbackHandler? GetForceFeedbackHandler()
+    {
+        return _ffbHandler;
     }
 
     public void Dispose()

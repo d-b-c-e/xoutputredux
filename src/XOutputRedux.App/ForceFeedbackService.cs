@@ -1,5 +1,6 @@
 using XOutputRedux.Core.ForceFeedback;
 using XOutputRedux.Core.Mapping;
+using XOutputRedux.Core.Plugins;
 using XOutputRedux.Emulation;
 using XOutputRedux.Input;
 using XOutputRedux.Input.ForceFeedback;
@@ -15,6 +16,7 @@ public class ForceFeedbackService : IDisposable
     private XboxController? _controller;
     private MappingProfile? _profile;
     private IForceFeedbackDevice? _targetDevice;
+    private IForceFeedbackHandler? _pluginHandler;
     private bool _disposed;
 
     public ForceFeedbackService(InputDeviceManager deviceManager)
@@ -24,18 +26,28 @@ public class ForceFeedbackService : IDisposable
 
     /// <summary>
     /// Attaches to an Xbox controller and profile to route force feedback.
+    /// If a plugin handler is provided, it is used instead of DirectInput FFB.
     /// </summary>
-    public void Attach(XboxController controller, MappingProfile profile)
+    public void Attach(XboxController controller, MappingProfile profile, IForceFeedbackHandler? pluginHandler = null)
     {
         Detach();
 
         _controller = controller;
         _profile = profile;
+        _pluginHandler = pluginHandler;
 
         var settings = profile.ForceFeedbackSettings;
         if (settings?.Enabled != true)
         {
             AppLogger.Info("Force feedback disabled in profile");
+            return;
+        }
+
+        // If a plugin provides FFB handling, use it instead of DirectInput
+        if (_pluginHandler != null)
+        {
+            _controller.ForceFeedbackReceived += OnForceFeedbackReceived;
+            AppLogger.Info("Force feedback attached via plugin handler");
             return;
         }
 
@@ -75,16 +87,21 @@ public class ForceFeedbackService : IDisposable
             _controller.ForceFeedbackReceived -= OnForceFeedbackReceived;
         }
 
+        _pluginHandler?.Stop();
         _targetDevice?.StopForceFeedback();
 
         _controller = null;
         _profile = null;
         _targetDevice = null;
+        _pluginHandler = null;
     }
 
     private void OnForceFeedbackReceived(object? sender, ForceFeedbackEventArgs e)
     {
-        if (_targetDevice == null || _profile?.ForceFeedbackSettings == null)
+        if (_profile?.ForceFeedbackSettings == null)
+            return;
+
+        if (_pluginHandler == null && _targetDevice == null)
             return;
 
         var settings = _profile.ForceFeedbackSettings;
@@ -102,7 +119,11 @@ public class ForceFeedbackService : IDisposable
         // Apply gain multiplier
         value = Math.Clamp(value * settings.Gain, 0.0, 1.0);
 
-        _targetDevice.SendForceFeedback(value);
+        // Route to plugin handler or DirectInput device
+        if (_pluginHandler != null)
+            _pluginHandler.SendForceFeedback(value);
+        else
+            _targetDevice!.SendForceFeedback(value);
     }
 
     public void Dispose()

@@ -55,6 +55,15 @@ public interface IXOutputPlugin : IDisposable
     /// Returns null if no adjustments needed.
     /// </summary>
     IReadOnlyList<AxisRangeOverride>? GetAxisRangeOverrides() => null;
+
+    /// <summary>
+    /// After OnProfileStart, returns a force feedback handler that replaces
+    /// the default DirectInput FFB routing. When a handler is provided, the
+    /// ForceFeedbackService routes rumble data through the plugin instead of
+    /// sending ConstantForce effects via DirectInput.
+    /// Returns null to use the default DirectInput FFB pipeline.
+    /// </summary>
+    IForceFeedbackHandler? GetForceFeedbackHandler() => null;
 }
 
 /// <summary>

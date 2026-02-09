@@ -27,6 +27,9 @@ internal class MozaEditorTab
     private int _defaultSpring = 0;
     private int _defaultInertia = 100;
     private int _defaultSpeedDamping = 0;
+    private int _defaultNaturalFriction = 0;
+    private int _defaultSpeedDampingStartPoint = 0;
+    private int _defaultHandsOffProtection = 0;
 
     private CheckBox? _enabledCheckBox;
     private Slider? _rotationSlider;
@@ -36,7 +39,16 @@ internal class MozaEditorTab
     private Slider? _inertiaSlider;
     private Slider? _maxTorqueSlider;
     private Slider? _speedDampingSlider;
+    private Slider? _naturalFrictionSlider;
+    private Slider? _speedDampingStartPointSlider;
+    private Slider? _handsOffProtectionSlider;
     private CheckBox? _ffbReverseCheckBox;
+    private CheckBox? _ffbEnhancementCheckBox;
+    private Slider? _ffbFrequencySlider;
+    private CheckBox? _ambientEffectsCheckBox;
+    private Slider? _ambientSpringSlider;
+    private Slider? _ambientFrictionSlider;
+    private Slider? _ambientDamperSlider;
 
     public MozaEditorTab(JsonObject? data, bool readOnly, MozaDevice? device = null)
     {
@@ -63,6 +75,9 @@ internal class MozaEditorTab
             _defaultSpring = device.GetSpringStrength();
             _defaultInertia = device.GetNaturalInertia();
             _defaultSpeedDamping = device.GetSpeedDamping();
+            _defaultNaturalFriction = device.GetNaturalFriction();
+            _defaultSpeedDampingStartPoint = device.GetSpeedDampingStartPoint();
+            _defaultHandsOffProtection = device.GetHandsOffProtection();
         }
         catch
         {
@@ -154,6 +169,11 @@ internal class MozaEditorTab
             v => $"{v}%", out _dampingSlider,
             "Adds resistance that slows the wheel's movement. Smooths out twitchy steering in arcade racers.");
 
+        int naturalFriction = _data?["naturalFriction"]?.GetValue<int>() ?? _defaultNaturalFriction;
+        AddSliderRow(panel, "Natural Friction", 0, 100, naturalFriction, 5,
+            v => $"{v}%", out _naturalFrictionSlider,
+            "Constant grip resistance regardless of speed or direction. Makes the wheel feel connected to the road. Recommended for arcade racers that lack native wheel FFB.");
+
         int spring = _data?["springStrength"]?.GetValue<int>() ?? _defaultSpring;
         AddSliderRow(panel, "Center Spring", 0, 100, spring, 5,
             v => $"{v}%", out _springSlider,
@@ -168,6 +188,89 @@ internal class MozaEditorTab
         AddSliderRow(panel, "Speed Damping", 0, 100, speedDamping, 5,
             v => $"{v}%", out _speedDampingSlider,
             "Resistance that increases with turning speed. Prevents snapping the wheel quickly from lock to lock.");
+
+        int speedDampingStartPoint = _data?["speedDampingStartPoint"]?.GetValue<int>() ?? _defaultSpeedDampingStartPoint;
+        AddSliderRow(panel, "Speed Damping Threshold", 0, 100, speedDampingStartPoint, 5,
+            v => $"{v}%", out _speedDampingStartPointSlider,
+            "The turning speed at which Speed Damping begins to engage. Higher values let small corrections pass freely while still dampening fast movements.");
+
+        // --- Safety ---
+        AddSectionHeader(panel, "Safety");
+
+        int handsOffProtection = _data?["handsOffProtection"]?.GetValue<int>() ?? _defaultHandsOffProtection;
+        AddSliderRow(panel, "Hands-Off Protection", 0, 100, handsOffProtection, 5,
+            v => $"{v}%", out _handsOffProtectionSlider,
+            "Limits wheel torque when hands are detected as off the wheel. Prevents unexpected wheel spin from strong FFB effects.");
+
+        // --- FFB Enhancement ---
+        AddSectionHeader(panel, "FFB Enhancement");
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "For games with Xbox rumble only (no native wheel FFB). Converts controller vibration into oscillating wheel effects instead of a static push.",
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = SubtextBrush,
+            FontSize = 11,
+            Margin = new Thickness(0, 0, 0, 10)
+        });
+
+        bool ffbEnhance = _data?["ffbEnhancement"]?.GetValue<bool>() ?? false;
+        var ffbEnhancePanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 15) };
+        _ffbEnhancementCheckBox = new CheckBox
+        {
+            Content = "Use Moza vibration effects for rumble",
+            IsChecked = ffbEnhance,
+            IsEnabled = !_readOnly,
+            Foreground = ForegroundBrush,
+        };
+        ffbEnhancePanel.Children.Add(_ffbEnhancementCheckBox);
+        ffbEnhancePanel.Children.Add(CreateHelpBadge("Routes Xbox rumble through the Moza SDK as a sine-wave vibration effect instead of the default DirectInput constant force. Feels more like real rumble on a wheel."));
+        panel.Children.Add(ffbEnhancePanel);
+
+        int ffbFrequency = _data?["ffbFrequency"]?.GetValue<int>() ?? 50;
+        AddSliderRow(panel, "Vibration Frequency", 10, 200, ffbFrequency, 10,
+            v => $"{v} ms", out _ffbFrequencySlider,
+            "Period of the vibration cycle in milliseconds. Lower values = faster/buzzier vibration (10ms). Higher values = slower/thuddy vibration (200ms). 50ms is a good starting point.");
+
+        // --- Ambient Effects ---
+        AddSectionHeader(panel, "Ambient Effects");
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Always-on background effects that give the wheel a baseline driving feel, even in games with no force feedback at all. These run alongside any game FFB.",
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = SubtextBrush,
+            FontSize = 11,
+            Margin = new Thickness(0, 0, 0, 10)
+        });
+
+        bool ambientEnabled = _data?["ambientEffects"]?.GetValue<bool>() ?? false;
+        var ambientPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 15) };
+        _ambientEffectsCheckBox = new CheckBox
+        {
+            Content = "Enable ambient wheel effects",
+            IsChecked = ambientEnabled,
+            IsEnabled = !_readOnly,
+            Foreground = ForegroundBrush,
+        };
+        ambientPanel.Children.Add(_ambientEffectsCheckBox);
+        ambientPanel.Children.Add(CreateHelpBadge("Creates persistent spring, friction, and damper effects on the wheel that run continuously while the profile is active."));
+        panel.Children.Add(ambientPanel);
+
+        int ambientSpring = _data?["ambientSpring"]?.GetValue<int>() ?? 30;
+        AddSliderRow(panel, "Ambient Spring", 0, 100, ambientSpring, 5,
+            v => $"{v}%", out _ambientSpringSlider,
+            "Centering force that pulls the wheel back toward center. Creates a natural return-to-center feel for games that don't provide their own.");
+
+        int ambientFriction = _data?["ambientFriction"]?.GetValue<int>() ?? 20;
+        AddSliderRow(panel, "Ambient Friction", 0, 100, ambientFriction, 5,
+            v => $"{v}%", out _ambientFrictionSlider,
+            "Constant resistance in both directions. Simulates tire grip and prevents the wheel from spinning freely.");
+
+        int ambientDamper = _data?["ambientDamper"]?.GetValue<int>() ?? 15;
+        AddSliderRow(panel, "Ambient Damper", 0, 100, ambientDamper, 5,
+            v => $"{v}%", out _ambientDamperSlider,
+            "Speed-dependent resistance. Slows fast wheel movements to simulate hydraulic power steering. Works well with friction for a convincing driving feel.");
 
         // Wrap in ScrollViewer
         var scrollViewer = new ScrollViewer
@@ -325,9 +428,18 @@ internal class MozaEditorTab
             ["maxTorque"] = (int)(_maxTorqueSlider?.Value ?? 100),
             ["ffbReverse"] = _ffbReverseCheckBox?.IsChecked ?? false,
             ["damping"] = (int)(_dampingSlider?.Value ?? 0),
+            ["naturalFriction"] = (int)(_naturalFrictionSlider?.Value ?? 0),
             ["springStrength"] = (int)(_springSlider?.Value ?? 0),
             ["naturalInertia"] = (int)(_inertiaSlider?.Value ?? 100),
-            ["speedDamping"] = (int)(_speedDampingSlider?.Value ?? 0)
+            ["speedDamping"] = (int)(_speedDampingSlider?.Value ?? 0),
+            ["speedDampingStartPoint"] = (int)(_speedDampingStartPointSlider?.Value ?? 0),
+            ["handsOffProtection"] = (int)(_handsOffProtectionSlider?.Value ?? 0),
+            ["ffbEnhancement"] = _ffbEnhancementCheckBox?.IsChecked ?? false,
+            ["ffbFrequency"] = (int)(_ffbFrequencySlider?.Value ?? 50),
+            ["ambientEffects"] = _ambientEffectsCheckBox?.IsChecked ?? false,
+            ["ambientSpring"] = (int)(_ambientSpringSlider?.Value ?? 30),
+            ["ambientFriction"] = (int)(_ambientFrictionSlider?.Value ?? 20),
+            ["ambientDamper"] = (int)(_ambientDamperSlider?.Value ?? 15)
         };
     }
 }

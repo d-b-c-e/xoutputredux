@@ -439,3 +439,6 @@ streamdeck-plugin-nodejs/
 
 # SignPath application forms (contain personal info)
 notes/OSSRequestForm*
+
+# Claude session state (local only)
+.claude-session.md

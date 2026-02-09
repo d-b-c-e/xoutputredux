@@ -865,8 +865,25 @@ public partial class MainWindow : Window
                 device.Start();
             }
 
-            // Attach force feedback service
-            _ffbService?.Attach(_activeController, profile.Profile);
+            // Attach force feedback service — check if a plugin provides FFB handling
+            Core.Plugins.IForceFeedbackHandler? pluginFfbHandler = null;
+            foreach (var plugin in _plugins)
+            {
+                try
+                {
+                    pluginFfbHandler = plugin.GetForceFeedbackHandler();
+                    if (pluginFfbHandler != null)
+                    {
+                        AppLogger.Info($"Plugin '{plugin.Id}' providing force feedback handler");
+                        break;
+                    }
+                }
+                catch (Exception pex)
+                {
+                    AppLogger.Error($"Plugin {plugin.Id} failed to get FFB handler", pex);
+                }
+            }
+            _ffbService?.Attach(_activeController, profile.Profile, pluginFfbHandler);
 
             profile.IsRunning = true;
             _runningProfile = profile;
