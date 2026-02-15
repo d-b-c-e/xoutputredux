@@ -33,6 +33,13 @@ public partial class UpdateDialog : Window
 
         // Format changelog (basic markdown to plain text)
         ChangelogText.Text = FormatChangelog(release.Body);
+
+        // In portable mode, replace download with a link to the release page
+        if (AppPaths.IsPortable)
+        {
+            DownloadButton.Content = "View Release";
+            PortableModeNote.Visibility = Visibility.Visible;
+        }
     }
 
     private static string FormatChangelog(string body)
@@ -85,6 +92,13 @@ public partial class UpdateDialog : Window
 
     private async void DownloadButton_Click(object sender, RoutedEventArgs e)
     {
+        // In portable mode, open the release page instead of downloading
+        if (AppPaths.IsPortable)
+        {
+            ViewOnGitHubButton_Click(sender, e);
+            return;
+        }
+
         if (_downloadedInstallerPath != null)
         {
             // Already downloaded, launch installer

@@ -73,15 +73,6 @@ public class GameAssociationManager
     }
 
     /// <summary>
-    /// Gets the default storage path for games.json.
-    /// </summary>
-    public static string GetDefaultFilePath()
-    {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        return Path.Combine(appData, "XOutputRedux", "games.json");
-    }
-
-    /// <summary>
     /// Loads game associations from disk.
     /// </summary>
     public void Load()

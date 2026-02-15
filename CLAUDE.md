@@ -108,7 +108,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 12: ViGEmBus Check | ✓ Complete | Driver detection, auto-install prompt |
 | 13: Stream Deck Plugin | ✓ Complete | Native C# plugin with IPC, profile/monitor toggles |
 | 14: Backup/Restore Settings | ✓ Complete | Export/import to `.xorbackup` file (ZIP containing all settings, profiles, games.json) |
-| 15: Portable Mode | ⏸ Shelved | Code exists but not advertised or distributed. Removed from release artifacts and public docs pending proper testing. |
+| 15: Portable Mode | ✓ Complete | Drop `portable.txt` next to exe to store all config in `data\` subfolder. Release script produces portable ZIP. "Start with Windows" disabled, update dialog opens release page instead of downloading installer. |
 | 16: Code Signing | ⏳ Applied | SignPath Foundation application submitted 2026-02-07. CODESIGNING.md + README added. Awaiting approval (typically a few weeks), then wire into CI. |
 | 17: Rebrand to XOutput Redux | ✓ Complete | Codebase renamed to XOutput Redux |
 | 18: Rename GitHub Repository | ✓ Complete | Renamed repo to `xoutputredux`, URLs already pointed to new name |
@@ -143,7 +143,6 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | **Moza SDK Reference (for FFB work)** | Full SDK dump from `MOZA_API_CSharp.dll` (38 types). Key unused motor settings: `NaturalFriction`, `RoadSensitivity` (not useful for Xbox rumble), `NaturalInertiaRatio`, `SpeedDampingStartPoint`, `HandsOffProtection`, `LimitWheelSpeed`, `EqualizerAmp` (frequency-band FFB EQ). Effect types available: `ETConstantForce`, `ETSine` (magnitude/period/phase/offset), `ETSpring`, `ETDamper`, `ETInertia`, `ETFriction` — all condition effects share: positiveCoefficient, negativeCoefficient, positiveSaturation, negativeSaturation, offset, deadBand. Base `Effect` class has: attackLevel/Time, fadeLevel/Time, duration, samplePeriod, gain, triggerButton, xDirection, rgdAxes. Error codes: NORMAL, NOINSTALLSDK, NODEVICES, OUTOFRANGE, PARAMETERERR, CREATEFFECTERR, FFBERR, FIRMWARETOOOLD, PITHOUSENOTREADY. | Reference |
 | **Steering Wheel Axis Tuning (Extended)** | Phase 1 (response curve) complete. Remaining ideas: (1) Per-axis inner/outer deadzone at binding level, (2) S-curve or custom curve editor, (3) Additional curve presets. | Low |
 | **Visual-Only Preview (No ViGEm)** | Run input through the mapping pipeline and display output in the editor's Test tab *without* creating a ViGEm controller. Currently Start/Stop creates a real emulated controller; a visual-only mode would allow previewing mappings without affecting games. | Low |
-| **Portable Mode (Revisit)** | Code exists (detects `portable.txt`, stores settings in `data\` subfolder) but removed from release artifacts and docs because it's untested. Needs: automated test coverage for portable paths, manual QA pass, then re-add to release workflow and docs. | Low |
 
 ---
 

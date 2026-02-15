@@ -15,6 +15,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -59,8 +60,14 @@
                          Background="#3C3C3C" Foreground="#4CAF50"/>
         </StackPanel>
 
+        <!-- Portable mode note -->
+        <TextBlock x:Name="PortableModeNote"
+                   Text="Portable mode: download the portable ZIP from the release page to update."
+                   Foreground="#FFA726" FontSize="11" TextWrapping="Wrap"
+                   Grid.Row="4" Margin="0,15,0,0" Visibility="Collapsed"/>
+
         <!-- Buttons -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button x:Name="ViewOnGitHubButton" Content="View on GitHub"
                     Width="120" Height="32" Margin="0,0,10,0"
                     Click="ViewOnGitHubButton_Click"

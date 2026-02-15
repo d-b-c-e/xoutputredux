@@ -595,6 +595,10 @@
                                           Checked="StartWithWindows_Changed" Unchecked="StartWithWindows_Changed"/>
                                 <TextBlock Text="Application will start minimized to tray when Windows starts."
                                            Foreground="Gray" Margin="20,5,0,0" FontSize="11"/>
+                                <TextBlock x:Name="StartWithWindowsPortableWarning"
+                                           Text="Not available in portable mode — the exe path may change."
+                                           Foreground="#FFA500" Margin="20,5,0,0" FontSize="11"
+                                           Visibility="Collapsed"/>
 
                                 <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
                                     <TextBlock Text="Startup Profile:" VerticalAlignment="Center"/>

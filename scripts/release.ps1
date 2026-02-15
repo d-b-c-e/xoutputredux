@@ -37,8 +37,8 @@ if (-not (Test-Path $DistDir)) {
     New-Item -ItemType Directory -Path $DistDir | Out-Null
 }
 
-# Determine total steps
-$totalSteps = 2
+# Determine total steps (build + portable ZIP + installer, plus optional Stream Deck + Moza)
+$totalSteps = 3
 if (-not $SkipStreamDeck) { $totalSteps++ }
 if (-not $SkipMozaPlugin) { $totalSteps++ }
 $currentStep = 0
@@ -160,6 +160,46 @@ if (-not $SkipMozaPlugin) {
         }
     } else {
         Write-Host "Moza plugin project not found at: $MozaPluginProject" -ForegroundColor Yellow
+    }
+}
+
+# Create portable ZIP
+$currentStep++
+Write-Host "`n[$currentStep/$totalSteps] Creating portable ZIP..." -ForegroundColor Yellow
+
+$PortableStagingDir = Join-Path $ProjectRoot "portable-staging"
+$PortableZipName = "XOutputRedux-$Version-Portable.zip"
+$PortableZipPath = Join-Path $DistDir $PortableZipName
+
+try {
+    # Clean staging directory
+    if (Test-Path $PortableStagingDir) {
+        Remove-Item -Recurse -Force $PortableStagingDir
+    }
+
+    # Copy publish output to staging
+    Copy-Item -Path $PublishDir -Destination $PortableStagingDir -Recurse
+
+    # Create portable.txt marker (activates portable mode on launch)
+    Set-Content -Path (Join-Path $PortableStagingDir "portable.txt") -Value "This file enables portable mode. Settings are stored in the data\ subfolder."
+
+    # Create empty data directory (so users see where configs go)
+    New-Item -ItemType Directory -Path (Join-Path $PortableStagingDir "data") | Out-Null
+
+    # Remove existing ZIP if present
+    if (Test-Path $PortableZipPath) {
+        Remove-Item $PortableZipPath
+    }
+
+    Compress-Archive -Path "$PortableStagingDir\*" -DestinationPath $PortableZipPath -CompressionLevel Optimal
+    Write-Host "Created: $PortableZipName" -ForegroundColor Green
+} catch {
+    Write-Host "Portable ZIP creation failed: $_" -ForegroundColor Red
+    throw
+} finally {
+    # Clean up staging directory
+    if (Test-Path $PortableStagingDir) {
+        Remove-Item -Recurse -Force $PortableStagingDir
     }
 }
 

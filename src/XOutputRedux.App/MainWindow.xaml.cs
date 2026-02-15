@@ -127,6 +127,11 @@ public partial class MainWindow : Window
         {
             PortableModeWarning.Visibility = Visibility.Visible;
             PortableModeText.Visibility = Visibility.Visible;
+
+            // Disable "Start with Windows" — exe path may change in portable mode
+            StartWithWindowsCheckBox.IsChecked = false;
+            StartWithWindowsCheckBox.IsEnabled = false;
+            StartWithWindowsPortableWarning.Visibility = Visibility.Visible;
         }
 
         // Set version in About tab
@@ -1627,6 +1632,7 @@ public partial class MainWindow : Window
 
     private void StartWithWindows_Changed(object sender, RoutedEventArgs e)
     {
+        if (AppPaths.IsPortable) return;
         AppSettings.SetStartWithWindows(StartWithWindowsCheckBox.IsChecked == true);
     }
 
