@@ -109,7 +109,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 13: Stream Deck Plugin | ✓ Complete | Native C# plugin with IPC, profile/monitor toggles |
 | 14: Backup/Restore Settings | ✓ Complete | Export/import to `.xorbackup` file (ZIP containing all settings, profiles, games.json) |
 | 15: Portable Mode | ✓ Complete | Drop `portable.txt` next to exe to store all config in `data\` subfolder. Release script produces portable ZIP. "Start with Windows" disabled, update dialog opens release page instead of downloading installer. |
-| 16: Code Signing | ⏳ Applied | SignPath Foundation application submitted 2026-02-07. CODESIGNING.md + README added. Awaiting approval (typically a few weeks), then wire into CI. |
+| 16: Code Signing | ✗ Declined | SignPath Foundation application declined 2026-03-09 (no project history). CODESIGNING.md and README references removed. |
 | 17: Rebrand to XOutput Redux | ✓ Complete | Codebase renamed to XOutput Redux |
 | 18: Rename GitHub Repository | ✓ Complete | Renamed repo to `xoutputredux`, URLs already pointed to new name |
 | 19: Quick Add Game Hotkey | ✓ Complete | Global hotkey (Ctrl+Shift+G) to add focused game to running profile |
@@ -615,6 +615,28 @@ Additional source repositories in workspace for reference:
 - `E:\Source\XOutputRedux\XOutput` - Original XOutput (archived)
 - `E:\Source\XOutputRedux\ViGEmBus` - ViGEmBus driver source
 - `E:\Source\XOutputRedux\HidHide` - HidHide driver source
+
+---
+
+## MCP Tools (dbce-mcp-server)
+
+The `dbce-mcp-server` provides tools globally via MCP. Key tools for this project:
+
+### Input Testing (via InputBridge companion)
+
+- `set_axis`, `press_button`, `steer`, `throttle`, `brake` — Send virtual joystick inputs via vJoy to test the XOutput mapping pipeline without physical hardware. Verify axis mapping, deadzone handling, OR-logic, and response curves.
+- `act_and_observe` — Execute input actions + capture screenshot in one call for tight test loops.
+
+### UI Verification
+
+- `screenshot` — Capture the WPF UI to verify dark mode, profile editor layout, controller visualization, mapping state. Use `window_title` to target the XOutput window.
+- `mouse_click`, `mouse_move`, `send_key` — Interact with the WPF UI for testing interactive mapping flows, keyboard shortcuts, and multi-step workflows.
+
+### Tool Selection
+
+- For testing the input mapping pipeline: use vJoy tools (`set_axis`, `press_button`) to send virtual inputs, then verify the output via XOutput's Xbox controller visualization.
+- For UI testing: use `screenshot` to see + `mouse_click`/`send_key` to interact.
+- Do NOT use Playwright MCP for this project — it's a native WPF app, not a web app.
 
 ---
 
