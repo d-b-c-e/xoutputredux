@@ -139,6 +139,9 @@ Adds a **Moza Wheel** tab to the profile editor with hardware settings that are 
 | Center Spring | 0-100% | Force pulling wheel back to center |
 | Natural Inertia | 100-500% | Simulated weight of the steering wheel |
 | Speed Damping | 0-100% | Resistance increasing with turning speed |
+| Natural Friction | 0-100% | Constant grip resistance, wheel feels "connected" even without game FFB |
+| Speed Damping Start Point | 0-100% | Threshold speed where Speed Damping engages |
+| Hands Off Protection | 0-100% | Safety feature, caps torque when hands leave wheel |
 
 **Installation:**
 1. Download `XOutputRedux-x.x.x-MozaPlugin.zip` from the [Releases page](https://github.com/d-b-c-e/xoutputredux/releases)
@@ -157,6 +160,10 @@ plugins\
 ```
 
 4. Restart XOutputRedux — the "Moza Wheel" tab will appear in the profile editor
+
+**Advanced FFB Features:**
+- **ETSine Rumble Translation** - Converts Xbox rumble motor data to Moza SDK's native ETSine periodic effect for actual wheel vibration (instead of a dull constant force push)
+- **Ambient Effects** - Always-on Spring, Friction, and Damper effects that layer on top of game FFB, giving the wheel a baseline "driving feel" in arcade games with no native wheel support
 
 **Note:** The plugin is completely optional. XOutputRedux works exactly the same without it. Profiles with Moza settings will still load if the plugin is removed (the data is preserved in the profile JSON but the tab won't appear).
 
@@ -190,7 +197,7 @@ dotnet run --project src/XOutputRedux.App
 dotnet test
 
 # Create release (requires Inno Setup 6)
-.\release.ps1
+.\scripts\release.ps1
 ```
 
 ## Project Structure
@@ -206,14 +213,15 @@ XOutputRedux/
 │   │   └── Assets/                  # Icons, banners, branding assets
 │   ├── XOutputRedux.StreamDeck/     # Stream Deck plugin
 │   ├── XOutputRedux.Moza.Plugin/   # Moza wheel plugin (optional, built separately)
-│   └── XOutputRedux.Moza.Helper/   # Out-of-process Moza SDK helper (keeps SDK alive)
+│   ├── XOutputRedux.Moza.Helper/   # Out-of-process Moza SDK helper (keeps SDK alive)
+│   └── XOutputRedux.HidSharper/    # Forked/slimmed HidSharp library (Windows-only HID)
 └── tests/
     └── XOutputRedux.Tests/
 ```
 
 ## Current Status
 
-**v0.9.6-alpha** - Test tab in profile editor with Start/Stop and live controller visualization; reusable Xbox controller test view; per-axis response curves; collapsible advanced settings.
+**v0.9.7-alpha** - Moza FFB enhancements (ETSine rumble, ambient effects, 3 new SDK settings); portable mode with release ZIP; code signing evaluation complete.
 
 ### What's Working
 - Device detection (DirectInput and RawInput/HID devices)

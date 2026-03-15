@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.7-alpha] - 2026-03-14
+
+### Added
+- Moza FFB Tier 1: Natural Friction, Speed Damping Start Point, and Hands Off Protection SDK settings in the Moza plugin
+- Moza FFB Tier 2: ETSine rumble translation — converts Xbox rumble motor data to Moza SDK's native periodic vibration effect via `IForceFeedbackHandler` plugin interface
+- Moza FFB Tier 3: Ambient persistent effects (Spring, Friction, Damper) that layer on top of game FFB for baseline wheel feel
+- Portable mode release ZIP with `portable.txt` marker and empty `data\` folder
+- Portable mode UI guards: "Start with Windows" disabled, update dialog opens release page instead of downloading installer
+
+### Removed
+- Code signing plans — SignPath Foundation application declined (2026-03-09, insufficient project history)
+- `CODESIGNING.md` and code signing references from README
+
 ## [0.9.6-alpha] - 2026-02-08
 
 ### Added

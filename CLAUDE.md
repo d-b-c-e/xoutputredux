@@ -114,9 +114,10 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 18: Rename GitHub Repository | ✓ Complete | Renamed repo to `xoutputredux`, URLs already pointed to new name |
 | 19: Quick Add Game Hotkey | ✓ Complete | Global hotkey (Ctrl+Shift+G) to add focused game to running profile |
 | 20: Plugin System | ✓ Complete | Simple plugin loader, per-profile plugin data, profile editor tab injection |
-| 21: Moza Wheel Plugin | ✓ Complete | XOutputRedux.Moza.Plugin — 8 wheel settings via out-of-process helper exe + Pit House SDK. Auto-scales steering axis when rotation differs from device reference. |
+| 21: Moza Wheel Plugin | ✓ Complete | XOutputRedux.Moza.Plugin — 11 wheel settings via out-of-process helper exe + Pit House SDK. Auto-scales steering axis when rotation differs from device reference. |
 | 22: Axis Response Curves | ✓ Complete | Per-binding Sensitivity parameter (power/gamma curve, 0.1–5.0), symmetric for axes, simple power for triggers. Visual curve preview in profile editor. |
 | 23: Test Tab in Profile Editor | ✓ Complete | Reusable `XboxControllerTestView` UserControl shared by MainWindow and ProfileEditorWindow. Start/Stop toggle button in editor fires events handled by MainWindow. Live controller state forwarded via `Dispatcher.BeginInvoke`. |
+| 24: Moza FFB Enhancements | ✓ Complete | Tier 1: Natural Friction, Speed Damping Start Point, Hands Off Protection SDK settings. Tier 2: ETSine rumble translation via `IForceFeedbackHandler` plugin interface. Tier 3: Ambient Spring/Friction/Damper persistent effects. |
 
 ### Completed Dependency Upgrades
 
@@ -131,16 +132,12 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 |------|-----------|--------|
 | **Upgrade to .NET 10** | .NET 8 LTS ends Nov 2026; .NET 10 is next LTS | ~1 day |
 
-*Note: These are maintenance/future-proofing upgrades, not performance improvements. See [CLAUDE_DEPENDENCY_ANALYSIS.md](CLAUDE_DEPENDENCY_ANALYSIS.md) for detailed analysis.*
+*Note: These are maintenance/future-proofing upgrades, not performance improvements. See [CLAUDE_DEPENDENCY_ANALYSIS.md](notes/CLAUDE_DEPENDENCY_ANALYSIS.md) for detailed analysis.*
 
 ### Future Enhancements
 
 | Item | Description | Priority |
 |------|-------------|----------|
-| **Moza FFB Enhancement — Tier 1: Additional SDK Settings** | Add three missing Moza SDK motor settings to the plugin: (1) **Natural Friction** (`setMotorNaturalFriction`, 0–100) — constant grip resistance, makes wheel feel "connected" even with no game FFB; (2) **Speed Damping Start Point** (`setMotorSpeedDampingStartPoint`, 0–100) — threshold speed where Speed Damping engages, avoids mushy feel during small corrections; (3) **Hands Off Protection** (`setMotorHandsOffProtection`, 0–100) — safety feature, caps torque when hands leave wheel. These are simple get/set slider additions to MozaDevice, MozaEditorTab, MozaHelper, and MozaPlugin. | Medium |
-| **Moza FFB Enhancement — Tier 2: ETSine Rumble Translation** | Replace ConstantForce DirectInput FFB with Moza SDK's native `ETSine` periodic effect for Moza wheels. Xbox rumble (two motors, 0–255) currently maps to a one-directional constant push at 10Hz — feels dull on a wheel. ETSine converts rumble intensity → sine wave magnitude with configurable period/frequency, producing actual vibration. The Moza SDK exposes `createWheelbaseETSine()` with full envelope control (attack/fade/duration/gain) plus magnitude, offset, phase, period. Plugin would intercept the FFB pipeline (`IForceFeedbackDevice.SendForceFeedback`) and route through the Moza SDK effect engine instead of DirectInput. Requires MozaHelper.exe to host the effect (SDK must stay alive). **Note:** `setMotorRoadSensitivity` was investigated but is irrelevant — it amplifies surface-texture FFB from games that send native DirectInput effects; our scenario only has Xbox rumble data, so there's nothing for it to amplify. | Medium |
-| **Moza FFB Enhancement — Tier 3: Ambient Persistent Effects** | Create always-on background FFB effects via Moza SDK that run alongside game FFB, giving the wheel a baseline "driving feel" even in games with zero FFB. Uses `createWheelbaseETSpring()` (position-dependent centering), `createWheelbaseETFriction()` (direction-independent resistance), and `createWheelbaseETDamper()` (velocity-dependent resistance). Each condition effect has positiveCoefficient, negativeCoefficient, positiveSaturation, negativeSaturation, offset, and deadBand. Configurable in Moza tab with master enable + per-effect intensity sliders. These effects layer on top of whatever the game sends, creating a convincing wheel feel for arcade racers that have no native wheel support. | Medium |
-| **Moza SDK Reference (for FFB work)** | Full SDK dump from `MOZA_API_CSharp.dll` (38 types). Key unused motor settings: `NaturalFriction`, `RoadSensitivity` (not useful for Xbox rumble), `NaturalInertiaRatio`, `SpeedDampingStartPoint`, `HandsOffProtection`, `LimitWheelSpeed`, `EqualizerAmp` (frequency-band FFB EQ). Effect types available: `ETConstantForce`, `ETSine` (magnitude/period/phase/offset), `ETSpring`, `ETDamper`, `ETInertia`, `ETFriction` — all condition effects share: positiveCoefficient, negativeCoefficient, positiveSaturation, negativeSaturation, offset, deadBand. Base `Effect` class has: attackLevel/Time, fadeLevel/Time, duration, samplePeriod, gain, triggerButton, xDirection, rgdAxes. Error codes: NORMAL, NOINSTALLSDK, NODEVICES, OUTOFRANGE, PARAMETERERR, CREATEFFECTERR, FFBERR, FIRMWARETOOOLD, PITHOUSENOTREADY. | Reference |
 | **Steering Wheel Axis Tuning (Extended)** | Phase 1 (response curve) complete. Remaining ideas: (1) Per-axis inner/outer deadzone at binding level, (2) S-curve or custom curve editor, (3) Additional curve presets. | Low |
 | **Visual-Only Preview (No ViGEm)** | Run input through the mapping pipeline and display output in the editor's Test tab *without* creating a ViGEm controller. Currently Start/Stop creates a real emulated controller; a visual-only mode would allow previewing mappings without affecting games. | Low |
 
@@ -478,23 +475,28 @@ public bool HideDevice(string deviceInstancePath)
 - `AppSettings.cs` - Persists app options (minimize to tray, start with Windows, startup profile)
 - `AppLogger.cs` - File-based async logging for debugging
 - `DarkModeHelper.cs` - Windows DWM API for dark title bars
+- `ForceFeedbackService.cs` - Routes Xbox rumble to physical devices; delegates to plugin FFB handlers when available
 - `PluginLoader.cs` - Discovers and loads plugins from `plugins/` subdirectory
 - `ViewModels/` - DeviceViewModel, ProfileViewModel
 
 ### Plugin System (`XOutputRedux.Core/Plugins`)
-- `IXOutputPlugin.cs` - Plugin interface (Initialize, CreateEditorTab, OnProfileStart/Stop, GetAxisRangeOverrides)
+- `IXOutputPlugin.cs` - Plugin interface (Initialize, CreateEditorTab, OnProfileStart/Stop, GetAxisRangeOverrides, CreateForceFeedbackHandler)
+- `IForceFeedbackHandler.cs` - Plugin FFB interface (HandleForceFeedback, Start/Stop) for intercepting Xbox rumble data
 - `AxisRangeOverride` record - Describes per-axis input range overrides applied by plugins at profile start
 - Plugins are loaded from `plugins/<Name>/` subdirectory next to exe
 - Plugin data stored in profile JSON under `pluginData` dictionary keyed by plugin ID
 - DLLs matching `*.Plugin.dll` are scanned; each plugin gets its own `AssemblyLoadContext`
 
 ### Moza Wheel Plugin (`XOutputRedux.Moza.Plugin`)
-- `MozaPlugin.cs` - IXOutputPlugin implementation, spawns helper exe, parses ref-rotation, calculates axis auto-scaling
-- `MozaDevice.cs` - Trimmed Moza SDK wrapper (reads only, used for editor defaults)
-- `MozaEditorTab.cs` - WPF tab UI built in code (enable checkbox, rotation slider, FFB slider)
-- `XOutputRedux.Moza.Helper/Program.cs` - Out-of-process helper that applies SDK settings and keeps SDK alive
+- `MozaPlugin.cs` - IXOutputPlugin implementation, spawns helper exe, parses ref-rotation, calculates axis auto-scaling, creates FFB handler
+- `MozaDevice.cs` - Trimmed Moza SDK wrapper (reads settings, used for editor defaults)
+- `MozaEditorTab.cs` - WPF tab UI built in code (enable checkbox, rotation slider, FFB slider, ambient effects toggles)
+- `MozaForceFeedbackHandler.cs` - IForceFeedbackHandler that sends ETSine vibration and ambient effects to MozaHelper via named pipe
+- `XOutputRedux.Moza.Helper/Program.cs` - Out-of-process helper that applies SDK settings, hosts ETSine/ambient effects, and keeps SDK alive
 - Requires Moza Pit House running; SDK DLLs bundled in plugin folder
 - **Axis auto-scaling**: When target rotation < reference rotation, the steering axis only uses a fraction of 0-65535. The plugin queries the reference rotation before changing it, calculates axisMin/axisMax, and returns `AxisRangeOverride` to auto-scale the binding's InputRange at profile start.
+- **ETSine rumble**: Translates Xbox rumble (large/small motor 0-255) to Moza SDK `createWheelbaseETSine()` periodic effect for actual wheel vibration instead of constant force push.
+- **Ambient effects**: Always-on Spring/Friction/Damper effects via Moza SDK that layer on top of game FFB for baseline wheel feel in games with no native wheel support.
 
 ---
 
@@ -642,4 +644,4 @@ The `dbce-mcp-server` provides tools globally via MCP. Key tools for this projec
 
 ## Development History
 
-See [CLAUDENOTES.md](CLAUDENOTES.md) for detailed session notes and development history.
+See [CLAUDENOTES.md](notes/CLAUDENOTES.md) for detailed session notes and development history.
