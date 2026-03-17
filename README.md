@@ -32,6 +32,7 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 ### Download
 Download the latest release from the [Releases page](https://github.com/d-b-c-e/xoutputredux/releases):
 - **Setup installer** (`XOutputRedux-x.x.x-Setup.exe`) - Recommended, includes options for PATH and startup
+- **Portable mode** - Drop a `portable.txt` file next to `XOutputRedux.exe` to store all config in a `data\` subfolder (useful for USB drives or no-install setups)
 
 ### Prerequisites
 1. Install the [ViGEmBus driver](https://github.com/nefarius/ViGEmBus/releases) (required)
