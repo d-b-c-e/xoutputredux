@@ -16,6 +16,7 @@ public class ProfileViewModel : INotifyPropertyChanged
     public string Name => Profile.Name;
     public string? Description => Profile.Description;
     public int TotalBindings => Profile.TotalBindings;
+    public string DefaultIndicator => Profile.IsDefault ? "\u2605" : "";
     public MappingProfile Profile { get; }
 
     public string Status
