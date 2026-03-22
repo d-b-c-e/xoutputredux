@@ -99,7 +99,7 @@ public partial class XboxControllerTestView : UserControl
 
     public void ShowOverlay(string? message = null)
     {
-        OverlayText.Text = message ?? " — Start a profile to see controller output";
+        OverlayText.Text = message ?? " — Start or Preview a profile to see controller output";
         OverlayText.Visibility = Visibility.Visible;
     }
 

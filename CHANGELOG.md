@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- Per-binding inner/outer deadzones (0.0–0.49) — eliminate drift near center or snap to full deflection near edges, with visual deadzone regions in curve preview
+- Visual-only Preview mode in profile editor — test mappings in real-time without creating a ViGEm controller, editor stays editable during preview
+- Digital-to-axis mapping — map HAT switches and D-pad buttons to analog stick axes with per-binding direction (Positive/Negative), auto-defaults when capturing buttons on axis outputs
+- Diagnostic logging for axis evaluation in Preview mode (OutputMapping.DiagnosticLogging)
+
+### Changed
+- Upgraded from .NET 8.0 to .NET 10.0 (all projects, CI workflows, installer)
+- "Start with Windows" now uses a Scheduled Task (ONLOGON trigger) instead of the Run registry key — reliable with Windows Fast Startup
+- Device Refresh button now fully recreates DirectInput device handles, supporting hot-swapped wheels without restarting the app
+- Profile schema v2 → v4 (backward-compatible: v3 adds deadzones, v4 adds digital direction)
+- Removed unnecessary `Microsoft.Win32.Registry` NuGet package (now in-box with .NET 10)
+
+### Fixed
+- "Start with Windows" not working after Shut Down (only worked after Restart) — caused by Windows Fast Startup skipping Run key items
+- Crash (InvalidOperationException) when concurrent dictionary access in profile editor input monitoring — switched to ConcurrentDictionary
+- Preview mode stopping device polling, breaking input capture in the profile editor after stopping preview
+
 ## [0.9.7-alpha] - 2026-03-14
 
 ### Added

@@ -423,6 +423,7 @@ FodyWeavers.xsd
 
 # Claude Code local settings
 .claude/*
+!.claude/session-notes.md
 !.claude/.screenshots/
 .claude/.screenshots/*.png
 .screenshot/

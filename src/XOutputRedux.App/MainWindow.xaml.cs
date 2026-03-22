@@ -414,6 +414,10 @@ public partial class MainWindow : Window
     private void RefreshDevices()
     {
         _devices.Clear();
+
+        // Recreate DirectInput devices from scratch to pick up hardware changes
+        // (e.g., swapped wheel on same base, new USB device, changed capabilities)
+        _deviceManager.RecreateDirectInputDevices();
         _deviceManager.RefreshDevices();
 
         foreach (var device in _deviceManager.Devices)
@@ -604,6 +608,8 @@ public partial class MainWindow : Window
         EditProfile_Click(sender, e);
     }
 
+    private MappingEngine? _previewMappingEngine;
+
     private void EditProfile_Click(object sender, RoutedEventArgs e)
     {
         if (ProfileListView.SelectedItem is not ProfileViewModel selected) return;
@@ -631,6 +637,17 @@ public partial class MainWindow : Window
             UpdateStartStopButton();
         };
 
+        // Wire up preview events from editor
+        editor.PreviewStartRequested += (s, _) =>
+        {
+            StartPreview(editor);
+        };
+
+        editor.PreviewStopRequested += (s, _) =>
+        {
+            StopPreview(editor);
+        };
+
         // If profile is already running, reflect that in the editor
         if (selected.IsRunning)
             editor.SetProfileRunning(true);
@@ -638,6 +655,10 @@ public partial class MainWindow : Window
         _openEditorWindow = editor;
         editor.ShowDialog();
         _openEditorWindow = null;
+
+        // Clean up preview if editor is closed while previewing
+        if (editor.IsPreviewing)
+            StopPreview(editor);
 
         if (editor.WasSaved)
         {
@@ -1144,6 +1165,87 @@ public partial class MainWindow : Window
             Dispatcher.BeginInvoke(() => TestView.UpdateState(state));
 
             // Forward to open editor window if any
+            var editor = _openEditorWindow;
+            if (editor != null)
+                editor.Dispatcher.BeginInvoke(() => editor.UpdateControllerState(state));
+        }
+    }
+
+    private void StartPreview(ProfileEditorWindow editor)
+    {
+        try
+        {
+            // Use the editor's cloned profile (includes unsaved edits)
+            var profile = editor.GetEditorProfile();
+
+            _previewMappingEngine = new MappingEngine();
+            _previewMappingEngine.ActiveProfile = profile;
+
+            // Start devices and subscribe to preview handler
+            // (only if not already running from a real profile)
+            if (_runningProfile == null)
+            {
+                foreach (var device in _deviceManager.Devices)
+                {
+                    device.InputChanged += Device_InputChanged_Preview;
+                    device.Start();
+                }
+            }
+            else
+            {
+                // Devices already running — just subscribe the preview handler
+                foreach (var device in _deviceManager.Devices)
+                {
+                    device.InputChanged += Device_InputChanged_Preview;
+                }
+            }
+
+            // Enable diagnostic logging during preview
+            OutputMapping.DiagnosticLogging = true;
+            OutputMapping.SetDiagnosticLog(msg => AppLogger.Info(msg));
+
+            editor.SetPreviewRunning(true);
+            StatusText.Text = $"Preview: {profile.Name}";
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Failed to start preview", ex);
+            editor.SetPreviewRunning(false);
+        }
+    }
+
+    private void StopPreview(ProfileEditorWindow editor)
+    {
+        // Unsubscribe preview handler only — don't stop devices.
+        // The editor may still be using them for input monitoring/capture.
+        foreach (var device in _deviceManager.Devices)
+        {
+            device.InputChanged -= Device_InputChanged_Preview;
+        }
+
+        _previewMappingEngine = null;
+        OutputMapping.DiagnosticLogging = false;
+        OutputMapping.SetDiagnosticLog(null);
+        editor.SetPreviewRunning(false);
+        StatusText.Text = "Preview stopped";
+    }
+
+    private void Device_InputChanged_Preview(object? sender, InputChangedEventArgs e)
+    {
+        if (_previewMappingEngine == null) return;
+
+        if (sender is IInputDevice device)
+        {
+            _previewMappingEngine.UpdateInput(device.UniqueId, e.Source.Index, e.NewValue);
+            var state = _previewMappingEngine.Evaluate();
+
+            // Diagnostic: log RightStickX when it deviates from center
+            if (Math.Abs(state.RightStickX - 0.5) > 0.01)
+            {
+                AppLogger.Info($"[Preview] RSX={state.RightStickX:F3} trigger={e.Source.Name} idx={e.Source.Index} val={e.NewValue:F3}");
+            }
+
+            // Forward to editor only — no ViGEm controller
             var editor = _openEditorWindow;
             if (editor != null)
                 editor.Dispatcher.BeginInvoke(() => editor.UpdateControllerState(state));

@@ -37,7 +37,7 @@ public partial class ProfileEditorWindow : Window
     private readonly Dictionary<XboxOutput, DateTime> _outputLastActive = new();
     private DateTime _captureStartTime;
     private readonly Dictionary<string, double> _captureBaseline = new(); // device:sourceIndex -> baseline value
-    private readonly Dictionary<(string deviceId, int sourceIndex), double> _latestInputValues = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(string deviceId, int sourceIndex), double> _latestInputValues = new();
     private const int CaptureGracePeriodMs = 300; // Grace period to establish baseline before detecting
 
     // Force feedback
@@ -56,10 +56,13 @@ public partial class ProfileEditorWindow : Window
 
     public bool WasSaved { get; private set; }
     public bool IsProfileRunning { get; private set; }
+    public bool IsPreviewing { get; private set; }
     private readonly bool _isReadOnly;
 
     public event EventHandler? ProfileStartRequested;
     public event EventHandler? ProfileStopRequested;
+    public event EventHandler? PreviewStartRequested;
+    public event EventHandler? PreviewStopRequested;
 
     public ProfileEditorWindow(MappingProfile profile, InputDeviceManager deviceManager, HidHideService? hidHideService = null, DeviceSettings? deviceSettings = null, bool readOnly = false, IReadOnlyList<IXOutputPlugin>? plugins = null)
     {
@@ -440,11 +443,20 @@ public partial class ProfileEditorWindow : Window
         }
 
         // Add the binding
+        // Auto-default digital direction when binding a button/DPad to an axis output
+        var digitalDir = DigitalAxisDirection.None;
+        if (_selectedOutput.Output.IsAxis() &&
+            (source.Type == Input.InputSourceType.Button || source.Type == Input.InputSourceType.DPad))
+        {
+            digitalDir = DigitalAxisDirection.Positive;
+        }
+
         var binding = new InputBinding
         {
             DeviceId = device.UniqueId,
             SourceIndex = source.Index,
-            DisplayName = $"{device.Name}: {source.Name}"
+            DisplayName = $"{device.Name}: {source.Name}",
+            DigitalDirection = digitalDir
         };
 
         _profile.AddBinding(_selectedOutput.Output, binding);
@@ -559,26 +571,79 @@ public partial class ProfileEditorWindow : Window
                 ResetRangeButton.IsEnabled = !_isReadOnly;
                 RangeHintText.Text = "";
 
-                // Load sensitivity
-                _updatingSensitivitySlider = true;
+                // Load axis tuning values
+                _updatingAxisTuningSliders = true;
+                InnerDeadzoneSlider.Value = _selectedBinding.Binding.InnerDeadzone;
+                InnerDeadzoneValueText.Text = _selectedBinding.Binding.InnerDeadzone.ToString("F2");
+                OuterDeadzoneSlider.Value = _selectedBinding.Binding.OuterDeadzone;
+                OuterDeadzoneValueText.Text = _selectedBinding.Binding.OuterDeadzone.ToString("F2");
                 SensitivitySlider.Value = _selectedBinding.Binding.Sensitivity;
                 SensitivityValueText.Text = _selectedBinding.Binding.Sensitivity.ToString("F2");
-                _updatingSensitivitySlider = false;
+                _updatingAxisTuningSliders = false;
+                InnerDeadzoneSlider.IsEnabled = !_isReadOnly;
+                OuterDeadzoneSlider.IsEnabled = !_isReadOnly;
                 SensitivitySlider.IsEnabled = !_isReadOnly;
-                ResetSensitivityButton.IsEnabled = !_isReadOnly;
+                ResetAxisTuningButton.IsEnabled = !_isReadOnly;
                 UpdateCurvePreview();
             }
 
             AxisTuningPanel.Visibility = isAxisOrTrigger
                 ? System.Windows.Visibility.Visible
                 : System.Windows.Visibility.Collapsed;
+
+            // Show digital direction selector for axis outputs
+            bool isAxisOutput = _selectedOutput?.Output.IsAxis() == true;
+            var directionVisibility = isAxisOutput
+                ? System.Windows.Visibility.Visible
+                : System.Windows.Visibility.Collapsed;
+            DigitalDirectionLabel.Visibility = directionVisibility;
+            DigitalDirectionComboBox.Visibility = directionVisibility;
+            DigitalDirectionHelp.Visibility = directionVisibility;
+            if (isAxisOutput)
+            {
+                _updatingDigitalDirection = true;
+                DigitalDirectionComboBox.SelectedIndex = (int)_selectedBinding.Binding.DigitalDirection;
+                DigitalDirectionComboBox.IsEnabled = !_isReadOnly;
+                _updatingDigitalDirection = false;
+            }
         }
         else
         {
             InvertCheckBox.IsEnabled = false;
             ThresholdSlider.IsEnabled = false;
             AdvancedSettingsExpander.Visibility = System.Windows.Visibility.Collapsed;
+            DigitalDirectionLabel.Visibility = System.Windows.Visibility.Collapsed;
+            DigitalDirectionComboBox.Visibility = System.Windows.Visibility.Collapsed;
+            DigitalDirectionHelp.Visibility = System.Windows.Visibility.Collapsed;
         }
+    }
+
+    private bool _updatingDigitalDirection;
+
+    private void DigitalDirection_Changed(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (_updatingDigitalDirection || _selectedBinding == null) return;
+        _selectedBinding.Binding.DigitalDirection = (XOutputRedux.Core.Mapping.DigitalAxisDirection)DigitalDirectionComboBox.SelectedIndex;
+    }
+
+    private void DigitalDirectionHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        HelpDialog.Show(
+            "Digital Direction lets you map buttons (like a HAT/D-pad) to an axis.\n\n" +
+            "ANALOG (default):\n" +
+            "Uses the input's analog value directly. Normal for axes and triggers.\n\n" +
+            "POSITIVE (right/down):\n" +
+            "When pressed, pushes the axis to full right (X) or full down (Y).\n\n" +
+            "NEGATIVE (left/up):\n" +
+            "When pressed, pushes the axis to full left (X) or full up (Y).\n\n" +
+            "EXAMPLE — Map HAT to Right Stick:\n" +
+            "1. Bind HAT Right to RightStickX, set Direction = Positive\n" +
+            "2. Bind HAT Left to RightStickX, set Direction = Negative\n" +
+            "3. Bind HAT Down to RightStickY, set Direction = Positive\n" +
+            "4. Bind HAT Up to RightStickY, set Direction = Negative\n\n" +
+            "When no button is pressed, the axis stays centered.",
+            "Digital Direction Help",
+            this);
     }
 
     private void InvertCheckBox_Changed(object sender, RoutedEventArgs e)
@@ -714,25 +779,63 @@ public partial class ProfileEditorWindow : Window
             this);
     }
 
-    private bool _updatingSensitivitySlider;
+    private bool _updatingAxisTuningSliders;
+
+    private void InnerDeadzoneSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_updatingAxisTuningSliders || _selectedBinding == null) return;
+        _selectedBinding.Binding.InnerDeadzone = InnerDeadzoneSlider.Value;
+        InnerDeadzoneValueText.Text = InnerDeadzoneSlider.Value.ToString("F2");
+        UpdateCurvePreview();
+    }
+
+    private void OuterDeadzoneSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_updatingAxisTuningSliders || _selectedBinding == null) return;
+        _selectedBinding.Binding.OuterDeadzone = OuterDeadzoneSlider.Value;
+        OuterDeadzoneValueText.Text = OuterDeadzoneSlider.Value.ToString("F2");
+        UpdateCurvePreview();
+    }
 
     private void SensitivitySlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (_updatingSensitivitySlider || _selectedBinding == null) return;
+        if (_updatingAxisTuningSliders || _selectedBinding == null) return;
         _selectedBinding.Binding.Sensitivity = SensitivitySlider.Value;
         SensitivityValueText.Text = SensitivitySlider.Value.ToString("F2");
         UpdateCurvePreview();
     }
 
-    private void ResetSensitivityButton_Click(object sender, RoutedEventArgs e)
+    private void ResetAxisTuningButton_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedBinding == null) return;
         _selectedBinding.Binding.Sensitivity = 1.0;
-        _updatingSensitivitySlider = true;
+        _selectedBinding.Binding.InnerDeadzone = 0.0;
+        _selectedBinding.Binding.OuterDeadzone = 0.0;
+        _updatingAxisTuningSliders = true;
         SensitivitySlider.Value = 1.0;
         SensitivityValueText.Text = "1.00";
-        _updatingSensitivitySlider = false;
+        InnerDeadzoneSlider.Value = 0.0;
+        InnerDeadzoneValueText.Text = "0.00";
+        OuterDeadzoneSlider.Value = 0.0;
+        OuterDeadzoneValueText.Text = "0.00";
+        _updatingAxisTuningSliders = false;
         UpdateCurvePreview();
+    }
+
+    private void DeadzoneHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        HelpDialog.Show(
+            "Deadzones define regions of the axis that snap to minimum or maximum.\n\n" +
+            "INNER DEADZONE:\n" +
+            "Values near center (axes) or zero (triggers) are treated as no input.\n" +
+            "Useful for eliminating drift or jitter near the resting position.\n\n" +
+            "OUTER DEADZONE:\n" +
+            "Values near full deflection are treated as maximum input.\n" +
+            "Useful when your axis doesn't quite reach its physical limit.\n\n" +
+            "The remaining range between the deadzones is remapped to 0\u2013100%.\n" +
+            "Deadzones are applied before the sensitivity curve.",
+            "Deadzone Help",
+            this);
     }
 
     private void SensitivityHelp_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -802,25 +905,83 @@ public partial class ProfileEditorWindow : Window
         };
         CurvePreviewCanvas.Children.Add(refLine);
 
-        // Draw response curve
+        double innerDZ = InnerDeadzoneSlider.Value;
+        double outerDZ = OuterDeadzoneSlider.Value;
+
+        // Draw deadzone regions (translucent red shading)
+        if (innerDZ > 0.001 || outerDZ > 0.001)
+        {
+            var dzBrush = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromArgb(0x30, 0xFF, 0x44, 0x44));
+
+            if (innerDZ > 0.001)
+            {
+                if (isAxis)
+                {
+                    // Symmetric inner deadzone around center
+                    double left = width * (0.5 - innerDZ / 2.0);
+                    double dzWidth = width * innerDZ;
+                    var innerRect = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = dzWidth, Height = height, Fill = dzBrush
+                    };
+                    System.Windows.Controls.Canvas.SetLeft(innerRect, left);
+                    CurvePreviewCanvas.Children.Add(innerRect);
+                }
+                else
+                {
+                    var innerRect = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = width * innerDZ, Height = height, Fill = dzBrush
+                    };
+                    CurvePreviewCanvas.Children.Add(innerRect);
+                }
+            }
+
+            if (outerDZ > 0.001)
+            {
+                if (isAxis)
+                {
+                    // Left outer
+                    var leftRect = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = width * outerDZ / 2.0, Height = height, Fill = dzBrush
+                    };
+                    CurvePreviewCanvas.Children.Add(leftRect);
+                    // Right outer
+                    var rightRect = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = width * outerDZ / 2.0, Height = height, Fill = dzBrush
+                    };
+                    System.Windows.Controls.Canvas.SetLeft(rightRect, width * (1.0 - outerDZ / 2.0));
+                    CurvePreviewCanvas.Children.Add(rightRect);
+                }
+                else
+                {
+                    var outerRect = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = width * outerDZ, Height = height, Fill = dzBrush
+                    };
+                    System.Windows.Controls.Canvas.SetLeft(outerRect, width * (1.0 - outerDZ));
+                    CurvePreviewCanvas.Children.Add(outerRect);
+                }
+            }
+        }
+
+        // Draw response curve (with deadzones + sensitivity applied)
+        // Use a temporary InputBinding to get the exact same transform pipeline
+        var previewBinding = new XOutputRedux.Core.Mapping.InputBinding
+        {
+            DeviceId = "preview", SourceIndex = 0,
+            InnerDeadzone = innerDZ, OuterDeadzone = outerDZ, Sensitivity = sensitivity
+        };
+
         var points = new System.Windows.Media.PointCollection();
         int steps = (int)width;
         for (int i = 0; i <= steps; i++)
         {
             double input = (double)i / steps;
-            double output;
-
-            if (isAxis)
-            {
-                double deflection = Math.Abs(input - 0.5) * 2.0;
-                double curved = Math.Pow(deflection, sensitivity);
-                output = 0.5 + Math.Sign(input - 0.5) * curved * 0.5;
-            }
-            else
-            {
-                output = Math.Pow(input, sensitivity);
-            }
-
+            double output = previewBinding.TransformValue(input, isAxisOutput: isAxis);
             points.Add(new System.Windows.Point(i, height * (1 - output)));
         }
 
@@ -1573,6 +1734,7 @@ public partial class ProfileEditorWindow : Window
         {
             EditorStartButton.Content = "Stop";
             EditorStartButton.Background = new SolidColorBrush(Color.FromRgb(0xF4, 0x43, 0x36)); // Red
+            EditorPreviewButton.IsEnabled = false; // Can't preview while running
             EditorTestStatus.Text = "Running";
             EditorTestStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
             EditorTestView.HideOverlay();
@@ -1586,8 +1748,9 @@ public partial class ProfileEditorWindow : Window
         {
             EditorStartButton.Content = "Start";
             EditorStartButton.Background = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50)); // Green
+            EditorPreviewButton.IsEnabled = true;
             EditorTestStatus.Text = "";
-            EditorTestView.ShowOverlay("Start a profile to see controller output");
+            EditorTestView.ShowOverlay("Preview or Start a profile to see controller output");
             EditorTestView.SetProfileStatus("Not Running", false);
             EditorTestView.Reset();
 
@@ -1597,17 +1760,68 @@ public partial class ProfileEditorWindow : Window
         }
     }
 
+    public void SetPreviewRunning(bool previewing)
+    {
+        IsPreviewing = previewing;
+        Cursor = System.Windows.Input.Cursors.Arrow;
+        EditorPreviewButton.IsEnabled = true;
+
+        if (previewing)
+        {
+            EditorPreviewButton.Content = "Stop Preview";
+            EditorPreviewButton.Background = new SolidColorBrush(Color.FromRgb(0xF4, 0x43, 0x36)); // Red
+            EditorStartButton.IsEnabled = false; // Can't start while previewing
+            EditorTestStatus.Text = "Preview";
+            EditorTestStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD4)); // Blue
+            EditorTestView.HideOverlay();
+            EditorTestView.SetProfileStatus($"Preview: {_profile.Name}", true);
+            // Don't lock the editor — user can edit mappings live during preview
+        }
+        else
+        {
+            EditorPreviewButton.Content = "Preview";
+            EditorPreviewButton.Background = new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD4)); // Blue
+            EditorStartButton.IsEnabled = true;
+            EditorTestStatus.Text = "";
+            EditorTestView.ShowOverlay("Preview or Start a profile to see controller output");
+            EditorTestView.SetProfileStatus("Not Running", false);
+            EditorTestView.Reset();
+        }
+    }
+
     public void UpdateControllerState(XboxControllerState state)
     {
-        if (IsProfileRunning)
+        if (IsProfileRunning || IsPreviewing)
             EditorTestView.UpdateState(state);
     }
+
+    /// <summary>
+    /// Gets the current editor profile for preview mode.
+    /// This is the cloned profile with any unsaved edits.
+    /// </summary>
+    public MappingProfile GetEditorProfile() => _profile;
 
     private void SetEditorReadOnly(bool readOnly)
     {
         // Toggle Save button and capture controls
         SaveButton.IsEnabled = !readOnly;
         CaptureButton.IsEnabled = !readOnly;
+    }
+
+    private void EditorPreview_Click(object sender, RoutedEventArgs e)
+    {
+        if (IsPreviewing)
+        {
+            PreviewStopRequested?.Invoke(this, EventArgs.Empty);
+        }
+        else
+        {
+            Cursor = System.Windows.Input.Cursors.Wait;
+            EditorPreviewButton.IsEnabled = false;
+            EditorTestStatus.Text = "Starting preview...";
+            EditorTestStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x9E, 0x9E, 0x9E));
+            PreviewStartRequested?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void EditorStart_Click(object sender, RoutedEventArgs e)
@@ -1618,6 +1832,10 @@ public partial class ProfileEditorWindow : Window
         }
         else
         {
+            // Stop preview if active before starting real profile
+            if (IsPreviewing)
+                PreviewStopRequested?.Invoke(this, EventArgs.Empty);
+
             Cursor = System.Windows.Input.Cursors.Wait;
             EditorStartButton.IsEnabled = false;
             EditorTestStatus.Text = "Starting...";

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -20,6 +21,7 @@ public class AppSettings
     private const string StartupRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string StartupApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
     private const string AppName = "XOutputRedux";
+    private const string TaskName = "XOutputRedux";
 
     /// <summary>
     /// Schema version of this settings file. Used for migration.
@@ -205,27 +207,38 @@ public class AppSettings
 
     /// <summary>
     /// Gets whether the app is configured to start with Windows.
-    /// Checks both the Run key and the StartupApproved status.
+    /// Uses a Scheduled Task (logon trigger) which is reliable with Fast Startup.
+    /// Falls back to checking the legacy Run key for migration detection.
     /// </summary>
     public static bool GetStartWithWindows()
     {
         try
         {
-            // First check if we're in the Run key
-            using var runKey = Registry.CurrentUser.OpenSubKey(StartupRegistryKey, false);
-            if (runKey?.GetValue(AppName) == null)
-                return false;
-
-            // Also check if we're approved to run (not disabled in Task Manager)
-            using var approvedKey = Registry.CurrentUser.OpenSubKey(StartupApprovedKey, false);
-            if (approvedKey?.GetValue(AppName) is byte[] data && data.Length >= 4)
+            // Check for our scheduled task
+            var psi = new ProcessStartInfo
             {
-                // First 4 bytes: 02 = enabled, 03 = disabled
-                return data[0] == 0x02;
+                FileName = "schtasks.exe",
+                Arguments = $"/Query /TN \"{TaskName}\" /FO CSV /NH",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+
+            using var process = Process.Start(psi);
+            if (process == null) return false;
+
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(5000);
+
+            // schtasks /Query returns exit code 0 if the task exists
+            if (process.ExitCode == 0 && output.Contains(TaskName))
+            {
+                // Check if it's enabled (Ready) vs disabled
+                return output.Contains("Ready") || output.Contains("Running");
             }
 
-            // If no StartupApproved entry, assume enabled (Windows may not have created it yet)
-            return true;
+            return false;
         }
         catch
         {
@@ -235,66 +248,95 @@ public class AppSettings
 
     /// <summary>
     /// Sets whether the app should start with Windows.
+    /// Creates/removes a Scheduled Task with a logon trigger.
+    /// This is more reliable than the Run key when Fast Startup is enabled.
     /// </summary>
     public static void SetStartWithWindows(bool enabled)
     {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(StartupRegistryKey, true);
-            if (key == null) return;
+            // Always clean up legacy Run key entries from older versions
+            CleanupLegacyRunKey();
 
             if (enabled)
             {
                 var exePath = Environment.ProcessPath;
-                if (!string.IsNullOrEmpty(exePath))
-                {
-                    // Start minimized when launched at startup
-                    key.SetValue(AppName, $"\"{exePath}\" --minimized");
+                if (string.IsNullOrEmpty(exePath)) return;
 
-                    // Also enable in StartupApproved (required for Windows to actually run the app)
-                    SetStartupApproved(true);
-                }
+                // Delete existing task first (in case exe path changed)
+                DeleteScheduledTask();
+
+                // Create a scheduled task that runs at user logon
+                // /SC ONLOGON: triggers on any user logon (including Fast Startup resume)
+                // /RL LIMITED: runs without elevated privileges
+                // /DELAY 0000:05: 5 second delay to let desktop settle
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "schtasks.exe",
+                    Arguments = $"/Create /TN \"{TaskName}\" /TR \"\\\"{exePath}\\\" --minimized\" /SC ONLOGON /RL LIMITED /DELAY 0000:05 /F",
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                };
+
+                using var process = Process.Start(psi);
+                process?.WaitForExit(10000);
             }
             else
             {
-                key.DeleteValue(AppName, false);
-
-                // Also remove from StartupApproved
-                SetStartupApproved(false);
+                DeleteScheduledTask();
             }
         }
         catch
         {
-            // Ignore registry errors
+            // Ignore errors
         }
     }
 
     /// <summary>
-    /// Enables or disables the startup item in the StartupApproved registry.
-    /// Windows uses this to control whether items in the Run key actually execute.
+    /// Deletes the scheduled task if it exists.
     /// </summary>
-    private static void SetStartupApproved(bool enabled)
+    private static void DeleteScheduledTask()
     {
         try
         {
-            // Create the key if it doesn't exist
-            using var key = Registry.CurrentUser.CreateSubKey(StartupApprovedKey, true);
-            if (key == null) return;
+            var psi = new ProcessStartInfo
+            {
+                FileName = "schtasks.exe",
+                Arguments = $"/Delete /TN \"{TaskName}\" /F",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
 
-            if (enabled)
-            {
-                // Binary format: first 4 bytes = 02 00 00 00 (enabled), remaining 8 bytes = zeros
-                byte[] enabledValue = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-                key.SetValue(AppName, enabledValue, RegistryValueKind.Binary);
-            }
-            else
-            {
-                key.DeleteValue(AppName, false);
-            }
+            using var process = Process.Start(psi);
+            process?.WaitForExit(5000);
         }
         catch
         {
-            // Ignore errors - startup may still work even if this fails
+            // Task may not exist — that's fine
+        }
+    }
+
+    /// <summary>
+    /// Removes legacy Run key and StartupApproved entries from older versions.
+    /// These were unreliable with Windows Fast Startup.
+    /// </summary>
+    private static void CleanupLegacyRunKey()
+    {
+        try
+        {
+            using var runKey = Registry.CurrentUser.OpenSubKey(StartupRegistryKey, true);
+            runKey?.DeleteValue(AppName, false);
+
+            using var approvedKey = Registry.CurrentUser.OpenSubKey(StartupApprovedKey, true);
+            approvedKey?.DeleteValue(AppName, false);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 

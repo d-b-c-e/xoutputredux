@@ -57,6 +57,8 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
+; Create scheduled task for "Start with Windows" (reliable with Fast Startup unlike Run key)
+Filename: "schtasks.exe"; Parameters: "/Create /TN ""XOutputRedux"" /TR """"""{app}\{#MyAppExeName}"""""" --minimized"" /SC ONLOGON /RL LIMITED /DELAY 0000:05 /F"; Tasks: startwithwindows; Flags: runhidden
 ; shellexec + runasoriginaluser: Launch as the non-elevated user who started the installer
 ; Skip auto-launch if "run as admin" was selected (causes elevation conflict)
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent shellexec runasoriginaluser; Check: CanAutoLaunch
@@ -64,9 +66,10 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 [Registry]
 ; Add to PATH if selected
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Tasks: addtopath; Check: NeedsAddPath('{app}')
-; Start with Windows if selected (requires both Run and StartupApproved entries)
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "XOutputRedux"; ValueData: """{app}\{#MyAppExeName}"" --minimized"; Tasks: startwithwindows; Flags: uninsdeletevalue
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"; ValueType: binary; ValueName: "XOutputRedux"; ValueData: "02 00 00 00 00 00 00 00 00 00 00 00"; Tasks: startwithwindows; Flags: uninsdeletevalue
+; Legacy Run key entries removed — now using Scheduled Task (see [Run] section)
+; Clean up legacy entries from older versions on install
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "XOutputRedux"; Flags: deletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"; ValueType: none; ValueName: "XOutputRedux"; Flags: deletevalue
 ; Always run as administrator if selected (sets Windows compatibility layer)
 Root: HKCU; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"; ValueType: string; ValueName: "{app}\{#MyAppExeName}"; ValueData: "RUNASADMIN"; Tasks: runasadmin; Flags: uninsdeletevalue
 
@@ -95,15 +98,20 @@ begin
   Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
 end;
 
-// Remove from PATH on uninstall
+// Remove from PATH and delete scheduled task on uninstall
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   OrigPath, NewPath: string;
   AppDir: string;
   P: Integer;
+  ResultCode: Integer;
 begin
   if CurUninstallStep = usPostUninstall then
   begin
+    // Remove scheduled task
+    Exec('schtasks.exe', '/Delete /TN "XOutputRedux" /F', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
+    // Remove from PATH
     AppDir := ExpandConstant('{app}');
     if RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment', 'Path', OrigPath) then
     begin

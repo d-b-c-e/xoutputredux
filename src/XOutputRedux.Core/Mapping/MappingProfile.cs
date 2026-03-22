@@ -150,7 +150,10 @@ public class MappingProfile
                     MinValue = binding.MinValue,
                     MaxValue = binding.MaxValue,
                     ButtonThreshold = binding.ButtonThreshold,
-                    Sensitivity = binding.Sensitivity
+                    Sensitivity = binding.Sensitivity,
+                    InnerDeadzone = binding.InnerDeadzone,
+                    OuterDeadzone = binding.OuterDeadzone,
+                    DigitalDirection = binding.DigitalDirection
                 });
             }
         }
@@ -183,7 +186,7 @@ public class MappingProfileData
     /// <summary>
     /// Current schema version. Increment when making breaking changes.
     /// </summary>
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 4;
 
     /// <summary>
     /// Schema version of this profile data. Used for migration.
@@ -225,6 +228,20 @@ public class MappingProfileData
         if (SchemaVersion < 2)
         {
             SchemaVersion = 2;
+        }
+
+        // v2 -> v3: Added InnerDeadzone and OuterDeadzone to InputBindingData
+        // No data transformation needed - defaults (0.0) match pre-deadzone behavior.
+        if (SchemaVersion < 3)
+        {
+            SchemaVersion = 3;
+        }
+
+        // v3 -> v4: Added DigitalDirection to InputBindingData
+        // No data transformation needed - default (None) matches pre-digital-axis behavior.
+        if (SchemaVersion < 4)
+        {
+            SchemaVersion = 4;
         }
 
         SchemaVersion = CurrentSchemaVersion;
@@ -321,6 +338,9 @@ public class InputBindingData
     public double MaxValue { get; set; } = 1.0;
     public double ButtonThreshold { get; set; } = 0.5;
     public double Sensitivity { get; set; } = 1.0;
+    public double InnerDeadzone { get; set; } = 0.0;
+    public double OuterDeadzone { get; set; } = 0.0;
+    public DigitalAxisDirection DigitalDirection { get; set; } = DigitalAxisDirection.None;
 
     public static InputBindingData FromBinding(InputBinding binding)
     {
@@ -333,7 +353,10 @@ public class InputBindingData
             MinValue = binding.MinValue,
             MaxValue = binding.MaxValue,
             ButtonThreshold = binding.ButtonThreshold,
-            Sensitivity = binding.Sensitivity
+            Sensitivity = binding.Sensitivity,
+            InnerDeadzone = binding.InnerDeadzone,
+            OuterDeadzone = binding.OuterDeadzone,
+            DigitalDirection = binding.DigitalDirection
         };
     }
 
@@ -348,7 +371,10 @@ public class InputBindingData
             MinValue = MinValue,
             MaxValue = MaxValue,
             ButtonThreshold = ButtonThreshold,
-            Sensitivity = Sensitivity
+            Sensitivity = Sensitivity,
+            InnerDeadzone = InnerDeadzone,
+            OuterDeadzone = OuterDeadzone,
+            DigitalDirection = DigitalDirection
         };
     }
 }

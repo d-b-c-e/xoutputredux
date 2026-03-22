@@ -7,6 +7,17 @@ namespace XOutputRedux.Core.Mapping;
 public class OutputMapping
 {
     /// <summary>
+    /// Enable diagnostic logging for axis evaluation.
+    /// </summary>
+    public static bool DiagnosticLogging { get; set; }
+    internal static Action<string>? _diagnosticLog;
+
+    /// <summary>
+    /// Sets the diagnostic log callback.
+    /// </summary>
+    public static void SetDiagnosticLog(Action<string>? callback) => _diagnosticLog = callback;
+
+    /// <summary>
     /// The Xbox output this mapping targets.
     /// </summary>
     public XboxOutput Output { get; }
@@ -70,17 +81,35 @@ public class OutputMapping
 
     /// <summary>
     /// Evaluates axis output using max deflection from center.
+    /// Supports digital-to-axis bindings where buttons push the axis in a direction.
     /// </summary>
     private double EvaluateAxis(Func<string, int, double?> getInputValue)
     {
         double maxDeflection = 0.0;
         double result = 0.5; // Default to center
 
+        // Track digital direction contributions separately
+        bool hasDigitalBindings = false;
+        double digitalSum = 0.0; // -1 to +1, summed from digital direction bindings
+
         foreach (var binding in Bindings)
         {
             double? inputValue = getInputValue(binding.DeviceId, binding.SourceIndex);
-            if (inputValue.HasValue)
+            if (!inputValue.HasValue) continue;
+
+            if (binding.DigitalDirection != DigitalAxisDirection.None)
             {
+                // Digital-to-axis: button pushes axis in a direction
+                hasDigitalBindings = true;
+                bool pressed = inputValue.Value >= binding.ButtonThreshold;
+                if (pressed)
+                {
+                    digitalSum += binding.DigitalDirection == DigitalAxisDirection.Positive ? 1.0 : -1.0;
+                }
+            }
+            else
+            {
+                // Analog binding: use transformed value with max deflection
                 double transformed = binding.TransformValue(inputValue.Value, isAxisOutput: true);
                 double deflection = Math.Abs(transformed - 0.5);
                 if (deflection > maxDeflection)
@@ -89,6 +118,26 @@ public class OutputMapping
                     result = transformed;
                 }
             }
+        }
+
+        // When digital bindings exist, they always take priority over analog bindings.
+        // Digital bindings represent intentional button-to-axis mappings (e.g., HAT to stick),
+        // and their center (0.5) when released must override any analog noise.
+        if (hasDigitalBindings)
+        {
+            result = 0.5 + Math.Clamp(digitalSum, -1.0, 1.0) * 0.5;
+        }
+
+        // Diagnostic logging for axis outputs (throttled: only when result deviates from center)
+        if (DiagnosticLogging && Math.Abs(result - 0.5) > 0.01)
+        {
+            var info = $"[EvalAxis] {Output}={result:F3} bindings={Bindings.Count} hasDigital={hasDigitalBindings} digitalSum={digitalSum:F1} maxAnalogDefl={maxDeflection:F3}";
+            foreach (var b in Bindings)
+            {
+                var iv = getInputValue(b.DeviceId, b.SourceIndex);
+                info += $"\n  srcIdx={b.SourceIndex} dir={b.DigitalDirection} input={iv?.ToString("F3") ?? "null"}";
+            }
+            _diagnosticLog?.Invoke(info);
         }
 
         return result;

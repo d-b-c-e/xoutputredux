@@ -1,6 +1,19 @@
 namespace XOutputRedux.Core.Mapping;
 
 /// <summary>
+/// Direction a digital input pushes an axis when used as a button-to-axis binding.
+/// </summary>
+public enum DigitalAxisDirection
+{
+    /// <summary>No direction — use the input's analog value (default behavior).</summary>
+    None,
+    /// <summary>When pressed, push the axis toward 1.0 (right/down).</summary>
+    Positive,
+    /// <summary>When pressed, push the axis toward 0.0 (left/up).</summary>
+    Negative
+}
+
+/// <summary>
 /// Represents a binding from a physical input source to an output.
 /// </summary>
 public class InputBinding
@@ -54,6 +67,24 @@ public class InputBinding
     public double Sensitivity { get; set; } = 1.0;
 
     /// <summary>
+    /// Inner deadzone (0.0 - 0.49). Input values below this threshold
+    /// (after min/max scaling) are treated as zero (triggers) or center (axes).
+    /// </summary>
+    public double InnerDeadzone { get; set; } = 0.0;
+
+    /// <summary>
+    /// Outer deadzone (0.0 - 0.49). Input values above (1.0 - OuterDeadzone)
+    /// (after min/max scaling) are treated as full deflection.
+    /// </summary>
+    public double OuterDeadzone { get; set; } = 0.0;
+
+    /// <summary>
+    /// For button-to-axis mappings: which direction this button pushes the axis.
+    /// None = use analog value (default). Positive = push to 1.0. Negative = push to 0.0.
+    /// </summary>
+    public DigitalAxisDirection DigitalDirection { get; set; } = DigitalAxisDirection.None;
+
+    /// <summary>
     /// Transforms an input value according to this binding's settings.
     /// </summary>
     /// <param name="inputValue">The raw input value (0.0 - 1.0).</param>
@@ -70,6 +101,12 @@ public class InputBinding
         // Clamp to 0-1 range
         scaled = Math.Clamp(scaled, 0.0, 1.0);
 
+        // Apply deadzones (remap effective range to 0-1)
+        if (InnerDeadzone > 0.001 || OuterDeadzone > 0.001)
+        {
+            scaled = ApplyDeadzones(scaled, isAxisOutput);
+        }
+
         // Apply response curve (if not linear)
         if (Math.Abs(Sensitivity - 1.0) > 0.001)
         {
@@ -83,6 +120,46 @@ public class InputBinding
         }
 
         return scaled;
+    }
+
+    /// <summary>
+    /// Applies inner and outer deadzones.
+    /// For triggers: values below inner → 0, above (1-outer) → 1, rest remapped linearly.
+    /// For axes: symmetric deadzones around center (0.5).
+    /// </summary>
+    private double ApplyDeadzones(double value, bool isAxis)
+    {
+        if (isAxis)
+        {
+            // Work in deflection space (0-1 from center)
+            double deflection = Math.Abs(value - 0.5) * 2.0;
+            double sign = Math.Sign(value - 0.5);
+
+            double effectiveRange = 1.0 - InnerDeadzone - OuterDeadzone;
+            if (effectiveRange <= 0.001) return 0.5; // deadzones consume entire range
+
+            if (deflection <= InnerDeadzone)
+                deflection = 0.0;
+            else if (deflection >= 1.0 - OuterDeadzone)
+                deflection = 1.0;
+            else
+                deflection = (deflection - InnerDeadzone) / effectiveRange;
+
+            return 0.5 + sign * deflection * 0.5;
+        }
+        else
+        {
+            // Trigger: simple linear remap
+            double effectiveRange = 1.0 - InnerDeadzone - OuterDeadzone;
+            if (effectiveRange <= 0.001) return 0.0;
+
+            if (value <= InnerDeadzone)
+                return 0.0;
+            if (value >= 1.0 - OuterDeadzone)
+                return 1.0;
+
+            return (value - InnerDeadzone) / effectiveRange;
+        }
     }
 
     /// <summary>

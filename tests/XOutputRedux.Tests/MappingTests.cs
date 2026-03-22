@@ -399,4 +399,286 @@ public class MappingTests
     }
 
     #endregion
+
+    #region Deadzone Tests
+
+    [TestMethod]
+    public void InputBinding_InnerDeadzone_Trigger_BelowThreshold_ReturnsZero()
+    {
+        var binding = new InputBinding { DeviceId = "dev1", SourceIndex = 0, InnerDeadzone = 0.1 };
+
+        Assert.AreEqual(0.0, binding.TransformValue(0.0), 0.001);
+        Assert.AreEqual(0.0, binding.TransformValue(0.05), 0.001);
+        Assert.AreEqual(0.0, binding.TransformValue(0.1), 0.001);
+    }
+
+    [TestMethod]
+    public void InputBinding_InnerDeadzone_Trigger_AboveThreshold_RemapsToFullRange()
+    {
+        var binding = new InputBinding { DeviceId = "dev1", SourceIndex = 0, InnerDeadzone = 0.1 };
+
+        // 0.1 maps to 0, 1.0 maps to 1.0. Range is [0.1, 1.0] -> [0, 1]
+        // 0.55 = midpoint of [0.1, 1.0] -> 0.5
+        Assert.AreEqual(0.5, binding.TransformValue(0.55), 0.001);
+        Assert.AreEqual(1.0, binding.TransformValue(1.0), 0.001);
+    }
+
+    [TestMethod]
+    public void InputBinding_OuterDeadzone_Trigger_AboveThreshold_ReturnsOne()
+    {
+        var binding = new InputBinding { DeviceId = "dev1", SourceIndex = 0, OuterDeadzone = 0.1 };
+
+        Assert.AreEqual(1.0, binding.TransformValue(0.9), 0.001);
+        Assert.AreEqual(1.0, binding.TransformValue(0.95), 0.001);
+        Assert.AreEqual(1.0, binding.TransformValue(1.0), 0.001);
+    }
+
+    [TestMethod]
+    public void InputBinding_OuterDeadzone_Trigger_BelowThreshold_RemapsToFullRange()
+    {
+        var binding = new InputBinding { DeviceId = "dev1", SourceIndex = 0, OuterDeadzone = 0.1 };
+
+        // Range [0, 0.9] -> [0, 1]. 0.45 = midpoint -> 0.5
+        Assert.AreEqual(0.0, binding.TransformValue(0.0), 0.001);
+        Assert.AreEqual(0.5, binding.TransformValue(0.45), 0.001);
+    }
+
+    [TestMethod]
+    public void InputBinding_BothDeadzones_Trigger_RemapsCorrectly()
+    {
+        var binding = new InputBinding { DeviceId = "dev1", SourceIndex = 0, InnerDeadzone = 0.1, OuterDeadzone = 0.1 };
+
+        // Effective range [0.1, 0.9] -> [0, 1]
+        Assert.AreEqual(0.0, binding.TransformValue(0.05), 0.001);  // in inner DZ
+        Assert.AreEqual(0.0, binding.TransformValue(0.1), 0.001);   // edge of inner
+        Assert.AreEqual(0.5, binding.TransformValue(0.5), 0.001);   // midpoint
+        Assert.AreEqual(1.0, binding.TransformValue(0.9), 0.001);   // edge of outer
+        Assert.AreEqual(1.0, binding.TransformValue(0.95), 0.001);  // in outer DZ
+    }
+
+    [TestMethod]
+    public void InputBinding_InnerDeadzone_Axis_CenterIsDead()
+    {
+        var binding = new InputBinding { DeviceId = "dev1", SourceIndex = 0, InnerDeadzone = 0.2 };
+
+        // Axis: center is 0.5, deflection of 0.1 (20% of half-range) is within 0.2 inner DZ
+        Assert.AreEqual(0.5, binding.TransformValue(0.5, isAxisOutput: true), 0.001);
+        Assert.AreEqual(0.5, binding.TransformValue(0.55, isAxisOutput: true), 0.001); // 10% deflection < 20% DZ
+        Assert.AreEqual(0.5, binding.TransformValue(0.45, isAxisOutput: true), 0.001);
+    }
+
+    [TestMethod]
+    public void InputBinding_InnerDeadzone_Axis_ExtremesPreserved()
+    {
+        var binding = new InputBinding { DeviceId = "dev1", SourceIndex = 0, InnerDeadzone = 0.2 };
+
+        Assert.AreEqual(0.0, binding.TransformValue(0.0, isAxisOutput: true), 0.001);
+        Assert.AreEqual(1.0, binding.TransformValue(1.0, isAxisOutput: true), 0.001);
+    }
+
+    [TestMethod]
+    public void InputBinding_OuterDeadzone_Axis_ExtremesSnap()
+    {
+        var binding = new InputBinding { DeviceId = "dev1", SourceIndex = 0, OuterDeadzone = 0.1 };
+
+        // 90%+ deflection should snap to full
+        Assert.AreEqual(0.0, binding.TransformValue(0.05, isAxisOutput: true), 0.001); // 90% left deflection
+        Assert.AreEqual(1.0, binding.TransformValue(0.95, isAxisOutput: true), 0.001); // 90% right deflection
+    }
+
+    [TestMethod]
+    public void InputBinding_NoDeadzones_NoChange()
+    {
+        var binding = new InputBinding { DeviceId = "dev1", SourceIndex = 0 };
+
+        Assert.AreEqual(0.0, binding.TransformValue(0.0), 0.001);
+        Assert.AreEqual(0.25, binding.TransformValue(0.25), 0.001);
+        Assert.AreEqual(0.5, binding.TransformValue(0.5), 0.001);
+        Assert.AreEqual(1.0, binding.TransformValue(1.0), 0.001);
+    }
+
+    [TestMethod]
+    public void InputBinding_Deadzone_WithSensitivity_AppliedInOrder()
+    {
+        // Deadzones first, then sensitivity curve
+        var binding = new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 0,
+            InnerDeadzone = 0.1, Sensitivity = 2.0
+        };
+
+        // Input 0.55 for trigger: after inner DZ remap: (0.55-0.1)/0.9 = 0.5, then power: 0.5^2 = 0.25
+        Assert.AreEqual(0.25, binding.TransformValue(0.55), 0.001);
+    }
+
+    [TestMethod]
+    public void MappingProfile_Clone_CopiesDeadzones()
+    {
+        var original = new MappingProfile { Name = "Test" };
+        original.AddBinding(XboxOutput.LeftTrigger, new InputBinding
+        {
+            DeviceId = "dev1",
+            SourceIndex = 0,
+            InnerDeadzone = 0.15,
+            OuterDeadzone = 0.05
+        });
+
+        var clone = original.Clone();
+        var binding = clone.GetMapping(XboxOutput.LeftTrigger).Bindings[0];
+        Assert.AreEqual(0.15, binding.InnerDeadzone, 0.001);
+        Assert.AreEqual(0.05, binding.OuterDeadzone, 0.001);
+    }
+
+    [TestMethod]
+    public void MappingProfile_RoundTrip_PreservesDeadzones()
+    {
+        var original = new MappingProfile { Name = "Test" };
+        original.AddBinding(XboxOutput.RightTrigger, new InputBinding
+        {
+            DeviceId = "dev1",
+            SourceIndex = 0,
+            InnerDeadzone = 0.2,
+            OuterDeadzone = 0.1
+        });
+
+        var data = MappingProfileData.FromProfile(original);
+        var restored = data.ToProfile();
+
+        var binding = restored.GetMapping(XboxOutput.RightTrigger).Bindings[0];
+        Assert.AreEqual(0.2, binding.InnerDeadzone, 0.001);
+        Assert.AreEqual(0.1, binding.OuterDeadzone, 0.001);
+    }
+
+    #endregion
+
+    #region Digital Axis Direction Tests
+
+    [TestMethod]
+    public void DigitalAxis_PositiveButton_Pressed_ReturnsFullRight()
+    {
+        var mapping = new OutputMapping(XboxOutput.RightStickX);
+        mapping.AddBinding(new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 0,
+            DigitalDirection = DigitalAxisDirection.Positive
+        });
+
+        // Button pressed (value = 1.0, above threshold 0.5)
+        double result = mapping.Evaluate((d, i) => 1.0);
+        Assert.AreEqual(1.0, result, 0.001);
+    }
+
+    [TestMethod]
+    public void DigitalAxis_NegativeButton_Pressed_ReturnsFullLeft()
+    {
+        var mapping = new OutputMapping(XboxOutput.RightStickX);
+        mapping.AddBinding(new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 0,
+            DigitalDirection = DigitalAxisDirection.Negative
+        });
+
+        double result = mapping.Evaluate((d, i) => 1.0);
+        Assert.AreEqual(0.0, result, 0.001);
+    }
+
+    [TestMethod]
+    public void DigitalAxis_NoButtonsPressed_ReturnsCenter()
+    {
+        var mapping = new OutputMapping(XboxOutput.RightStickX);
+        mapping.AddBinding(new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 0,
+            DigitalDirection = DigitalAxisDirection.Positive
+        });
+        mapping.AddBinding(new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 1,
+            DigitalDirection = DigitalAxisDirection.Negative
+        });
+
+        // Neither pressed
+        double result = mapping.Evaluate((d, i) => 0.0);
+        Assert.AreEqual(0.5, result, 0.001);
+    }
+
+    [TestMethod]
+    public void DigitalAxis_BothButtonsPressed_CancelsToCenter()
+    {
+        var mapping = new OutputMapping(XboxOutput.RightStickX);
+        mapping.AddBinding(new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 0,
+            DigitalDirection = DigitalAxisDirection.Positive
+        });
+        mapping.AddBinding(new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 1,
+            DigitalDirection = DigitalAxisDirection.Negative
+        });
+
+        // Both pressed — cancel out
+        double result = mapping.Evaluate((d, i) => 1.0);
+        Assert.AreEqual(0.5, result, 0.001);
+    }
+
+    [TestMethod]
+    public void DigitalAxis_MixedWithAnalog_DigitalAlwaysWins()
+    {
+        var mapping = new OutputMapping(XboxOutput.RightStickX);
+        // Analog binding with significant deflection
+        mapping.AddBinding(new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 0,
+            DigitalDirection = DigitalAxisDirection.None
+        });
+        // Digital positive not pressed
+        mapping.AddBinding(new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 1,
+            DigitalDirection = DigitalAxisDirection.Positive
+        });
+
+        // Analog at 0.0 (full left deflection), digital not pressed → digital center wins
+        double result = mapping.Evaluate((d, i) => i == 0 ? 0.0 : 0.0);
+        Assert.AreEqual(0.5, result, 0.001);
+
+        // Digital positive pressed → digital wins with 1.0
+        result = mapping.Evaluate((d, i) => i == 0 ? 0.0 : 1.0);
+        Assert.AreEqual(1.0, result, 0.001);
+    }
+
+    [TestMethod]
+    public void MappingProfile_Clone_CopiesDigitalDirection()
+    {
+        var original = new MappingProfile { Name = "Test" };
+        original.AddBinding(XboxOutput.RightStickX, new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 0,
+            DigitalDirection = DigitalAxisDirection.Positive
+        });
+
+        var clone = original.Clone();
+        var binding = clone.GetMapping(XboxOutput.RightStickX).Bindings[0];
+        Assert.AreEqual(DigitalAxisDirection.Positive, binding.DigitalDirection);
+    }
+
+    [TestMethod]
+    public void MappingProfile_RoundTrip_PreservesDigitalDirection()
+    {
+        var original = new MappingProfile { Name = "Test" };
+        original.AddBinding(XboxOutput.RightStickY, new InputBinding
+        {
+            DeviceId = "dev1", SourceIndex = 0,
+            DigitalDirection = DigitalAxisDirection.Negative
+        });
+
+        var data = MappingProfileData.FromProfile(original);
+        var restored = data.ToProfile();
+
+        var binding = restored.GetMapping(XboxOutput.RightStickY).Bindings[0];
+        Assert.AreEqual(DigitalAxisDirection.Negative, binding.DigitalDirection);
+    }
+
+    #endregion
 }

@@ -18,12 +18,15 @@ Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gami
 - **Backup/restore** - Export and import all settings via `.xorbackup` files
 - **Crash reporting** - One-click GitHub issue creation with diagnostic info
 - **Axis response curves** - Per-axis sensitivity tuning with visual curve preview (less sensitive near center for high-rotation wheels, or more sensitive for low-rotation)
+- **Inner/outer deadzones** - Per-axis deadzone configuration to eliminate drift or snap to full deflection
+- **Digital-to-axis mapping** - Map HAT switches or D-pad buttons to analog stick axes (e.g., HAT left/right → RightStickX)
+- **Visual preview mode** - Test mappings in the profile editor without creating a virtual controller
 - **Plugin system** - Optional plugins for device-specific features (e.g., Moza wheel settings)
 
 ## Requirements
 
 - Windows 10/11
-- .NET 8.0 Runtime
+- .NET 10.0 Runtime
 - [ViGEmBus driver](https://github.com/nefarius/ViGEmBus/releases) (required for Xbox controller emulation)
 - [HidHide driver](https://github.com/nefarius/HidHide/releases) (optional, for device hiding)
 

@@ -75,7 +75,7 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 
 | Aspect | Decision | Rationale |
 |--------|----------|-----------|
-| Framework | .NET 8.0 Windows | LTS, WPF support |
+| Framework | .NET 10.0 Windows | LTS, WPF support |
 | Output | Xbox 360 only | Simplicity, universal game support |
 | Emulation | ViGEm only | Current maintained solution |
 | Device hiding | HidHide | Replaces deprecated HidGuardian |
@@ -118,6 +118,11 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 | 22: Axis Response Curves | ✓ Complete | Per-binding Sensitivity parameter (power/gamma curve, 0.1–5.0), symmetric for axes, simple power for triggers. Visual curve preview in profile editor. |
 | 23: Test Tab in Profile Editor | ✓ Complete | Reusable `XboxControllerTestView` UserControl shared by MainWindow and ProfileEditorWindow. Start/Stop toggle button in editor fires events handled by MainWindow. Live controller state forwarded via `Dispatcher.BeginInvoke`. |
 | 24: Moza FFB Enhancements | ✓ Complete | Tier 1: Natural Friction, Speed Damping Start Point, Hands Off Protection SDK settings. Tier 2: ETSine rumble translation via `IForceFeedbackHandler` plugin interface. Tier 3: Ambient Spring/Friction/Damper persistent effects. |
+| 25: .NET 10 Upgrade | ✓ Complete | All projects upgraded from net8.0-windows to net10.0-windows. Removed in-box Microsoft.Win32.Registry NuGet reference. CI workflows updated. |
+| 26: Start with Windows Fix | ✓ Complete | Replaced Run registry key with Scheduled Task (ONLOGON trigger) — reliable with Windows Fast Startup. Installer creates/deletes task, old registry entries cleaned up on migration. |
+| 27: Inner/Outer Deadzone | ✓ Complete | Per-binding InnerDeadzone and OuterDeadzone (0.0–0.49). Applied after input range scaling, before response curve. Symmetric for axes, linear remap for triggers. Visual deadzone regions in curve preview. |
+| 28: Visual-Only Preview | ✓ Complete | "Preview" button in editor Test tab runs inputs through MappingEngine without creating a ViGEm controller. Editor remains editable during preview. |
+| 29: Digital-to-Axis Mapping | ✓ Complete | `DigitalAxisDirection` property on InputBinding (None/Positive/Negative). Maps buttons and HAT switches to stick axes. Auto-defaults to Positive when capturing a button on an axis output. Digital bindings always override analog on the same axis. |
 
 ### Completed Dependency Upgrades
 
@@ -125,21 +130,13 @@ XOutputRedux is based on principles from the archived XOutput project. Key code 
 |------|--------|-------|
 | **Migrate SharpDX → Vortice.DirectInput** | ✓ Complete | Migrated 2026-01-18. Vortice 3.8.2 actively maintained. |
 | **Fork HidSharp → XOutputRedux.HidSharper** | ✓ Complete | Forked 2026-01-18. Windows-only, removed BLE/Serial support, 73 files. |
-
-### Future Roadmap (Late 2026)
-
-| Item | Rationale | Effort |
-|------|-----------|--------|
-| **Upgrade to .NET 10** | .NET 8 LTS ends Nov 2026; .NET 10 is next LTS | ~1 day |
-
-*Note: These are maintenance/future-proofing upgrades, not performance improvements. See [CLAUDE_DEPENDENCY_ANALYSIS.md](notes/CLAUDE_DEPENDENCY_ANALYSIS.md) for detailed analysis.*
+| **Upgrade to .NET 10** | ✓ Complete | Upgraded 2026-03-22. All 10 csproj files, CI workflows, removed in-box NuGet ref. |
 
 ### Future Enhancements
 
 | Item | Description | Priority |
 |------|-------------|----------|
-| **Steering Wheel Axis Tuning (Extended)** | Phase 1 (response curve) complete. Remaining ideas: (1) Per-axis inner/outer deadzone at binding level, (2) S-curve or custom curve editor, (3) Additional curve presets. | Low |
-| **Visual-Only Preview (No ViGEm)** | Run input through the mapping pipeline and display output in the editor's Test tab *without* creating a ViGEm controller. Currently Start/Stop creates a real emulated controller; a visual-only mode would allow previewing mappings without affecting games. | Low |
+| **Steering Wheel Axis Tuning (Extended)** | Phase 1 (response curve) + Phase 2 (inner/outer deadzone) complete. Remaining ideas: (1) S-curve or custom curve editor, (2) Additional curve presets. | Low |
 
 ---
 
@@ -312,7 +309,7 @@ dotnet publish src/XOutputRedux.Moza.Plugin -c Release -o publish-moza-plugin --
 
 # Deploy plugin for local testing (copy to app's output plugins folder)
 # Copy XOutputRedux.Moza.Plugin.dll, MOZA_SDK.dll, MOZA_API_C.dll, MOZA_API_CSharp.dll
-# to: src/XOutputRedux.App/bin/Release/net8.0-windows10.0.17763.0/plugins/Moza/
+# to: src/XOutputRedux.App/bin/Release/net10.0-windows10.0.17763.0/plugins/Moza/
 
 # Create full release (installer + Stream Deck + Moza plugin)
 .\scripts\release.ps1
@@ -324,7 +321,7 @@ dotnet publish src/XOutputRedux.Moza.Plugin -c Release -o publish-moza-plugin --
 ## Requirements
 
 - Windows 10/11
-- .NET 8.0 Runtime
+- .NET 10.0 Runtime
 - ViGEmBus driver installed (https://github.com/nefarius/ViGEmBus/releases)
 - HidHide driver installed (optional, for device hiding) (https://github.com/nefarius/HidHide/releases)
 
@@ -453,8 +450,8 @@ public bool HideDevice(string deviceInstancePath)
 
 ### Mapping System (`XOutputRedux.Core/Mapping`)
 - `XboxOutput.cs` - Xbox controller output enum
-- `InputBinding.cs` - Single input binding with transform settings
-- `OutputMapping.cs` - Multiple inputs → one output with OR logic
+- `InputBinding.cs` - Single input binding with transform settings (sensitivity, deadzones, digital direction)
+- `OutputMapping.cs` - Multiple inputs → one output with OR logic, digital-to-axis support
 - `MappingProfile.cs` - Complete profile with serialization
 - `MappingEngine.cs` - Real-time input evaluation
 - `ProfileManager.cs` - Profile load/save/manage
@@ -469,10 +466,10 @@ public bool HideDevice(string deviceInstancePath)
 ### Application (`XOutputRedux.App`)
 - `Program.cs` - CLI entry point with System.CommandLine
 - `MainWindow.xaml/.cs` - Main GUI with Devices/Profiles/Status/Options/Test tabs
-- `ProfileEditorWindow.xaml/.cs` - Interactive mapping editor with output highlighting, Test tab with Start/Stop toggle
+- `ProfileEditorWindow.xaml/.cs` - Interactive mapping editor with output highlighting, Test tab with Preview/Start buttons, deadzone and digital direction UI
 - `XboxControllerTestView.xaml/.cs` - Reusable Xbox controller visualization UserControl (shared by MainWindow and ProfileEditorWindow)
 - `DeviceSettings.cs` - Persists device friendly names
-- `AppSettings.cs` - Persists app options (minimize to tray, start with Windows, startup profile)
+- `AppSettings.cs` - Persists app options (minimize to tray, start with Windows via Scheduled Task, startup profile)
 - `AppLogger.cs` - File-based async logging for debugging
 - `DarkModeHelper.cs` - Windows DWM API for dark title bars
 - `ForceFeedbackService.cs` - Routes Xbox rumble to physical devices; delegates to plugin FFB handlers when available
@@ -564,7 +561,14 @@ AppLogger.Error("Something failed", exception);
 
 ## Bug Fixes
 
-### v0.9.2-alpha: Start with Windows not working (2026-01-23)
+### v0.9.8-alpha: Start with Windows unreliable with Fast Startup (2026-03-22)
+- **Symptom**: "Start with Windows" worked on Restart but not after Shut Down → power on
+- **Root Cause**: Windows Fast Startup (`HiberbootEnabled=1`) performs hybrid hibernation on "Shut Down". The `HKCU\...\Run` registry key can be skipped on resume.
+- **Diagnosis**: Process command-line inspection showed the running app was launched manually (no `--minimized` flag), confirming auto-start never fired despite correct registry.
+- **Fix**: Replaced Run key + StartupApproved approach with a **Scheduled Task** (`schtasks /Create /SC ONLOGON`), which triggers on every user logon regardless of shutdown type. Legacy registry entries cleaned up on migration.
+- **Files Changed**: `src/XOutputRedux.App/AppSettings.cs`, `installer/XOutputRedux.iss`
+
+### v0.9.2-alpha: Start with Windows not working (2026-01-23) — *superseded by v0.9.8-alpha fix*
 - **Symptom**: "Start with Windows" checkbox was checked but app didn't start at Windows login
 - **Root Cause**: Windows uses TWO registry keys for startup apps:
   1. `HKCU\...\Run` - Contains the command to run
