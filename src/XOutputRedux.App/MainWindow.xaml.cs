@@ -711,6 +711,25 @@ public partial class MainWindow : Window
         }
     }
 
+    private void SetDefaultProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (ProfileListView.SelectedItem is not ProfileViewModel selected) return;
+
+        if (selected.Profile.IsDefault)
+        {
+            // Already default — clear it
+            _profileManager.SetDefaultProfile(null);
+        }
+        else
+        {
+            _profileManager.SetDefaultProfile(selected.FileName);
+        }
+        RefreshProfiles();
+        StatusText.Text = selected.Profile.IsDefault
+            ? $"Set default profile: {selected.Name}"
+            : "Cleared default profile";
+    }
+
     private void DuplicateProfile_Click(object sender, RoutedEventArgs e)
     {
         if (ProfileListView.SelectedItem is not ProfileViewModel selected) return;

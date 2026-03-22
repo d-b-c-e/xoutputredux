@@ -1659,6 +1659,9 @@ public partial class ProfileEditorWindow : Window
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
+        // Copy profile-level settings back to original
+        _originalProfile.IsDefault = _profile.IsDefault;
+
         // Copy bindings from edited profile back to original
         _originalProfile.ClearAllBindings();
         foreach (var output in Enum.GetValues<XboxOutput>())
@@ -1674,7 +1677,10 @@ public partial class ProfileEditorWindow : Window
                     MinValue = binding.MinValue,
                     MaxValue = binding.MaxValue,
                     ButtonThreshold = binding.ButtonThreshold,
-                    Sensitivity = binding.Sensitivity
+                    Sensitivity = binding.Sensitivity,
+                    InnerDeadzone = binding.InnerDeadzone,
+                    OuterDeadzone = binding.OuterDeadzone,
+                    DigitalDirection = binding.DigitalDirection
                 });
             }
         }

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.2] - 2026-03-22
+
+### Added
+- "Set as Default" option in Profiles right-click context menu (toggles default on/off)
+
+### Fixed
+- Default profile checkbox in editor not saving — IsDefault was not copied back to the original profile on save
+- New binding properties (deadzones, digital direction) not persisted when saving from the profile editor
+
 ## [1.0.1] - 2026-03-22
 
 ### Changed

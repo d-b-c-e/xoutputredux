@@ -385,6 +385,7 @@
                             <ListView.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Edit" Click="EditProfile_Click"/>
+                                    <MenuItem Header="Set as Default" Click="SetDefaultProfile_Click"/>
                                     <MenuItem Header="Rename..." Click="RenameProfile_Click"/>
                                     <MenuItem Header="Duplicate..." Click="DuplicateProfile_Click"/>
                                     <Separator/>
