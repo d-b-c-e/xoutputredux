@@ -13,8 +13,8 @@
 
     <!-- Versioning: Major.Minor.Patch.BuildNumber[-suffix] -->
     <!-- BuildNumber auto-generated: YYDDDHHmm (year, day-of-year, hour, minute) -->
-    <VersionPrefix>0.9.7</VersionPrefix>
-    <VersionSuffix>alpha</VersionSuffix>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionSuffix></VersionSuffix>
 
     <!-- Auto-generate build number if not provided: YYDDDHHmm -->
     <_AutoBuildNumber>$([System.DateTime]::Now.ToString('yy'))$([System.DateTime]::Now.DayOfYear.ToString('000'))$([System.DateTime]::Now.ToString('HHmm'))</_AutoBuildNumber>

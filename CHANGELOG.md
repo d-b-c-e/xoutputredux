@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [1.0.0] - 2026-03-22
 
 ### Added
 - Per-binding inner/outer deadzones (0.0–0.49) — eliminate drift near center or snap to full deflection near edges, with visual deadzone regions in curve preview
