@@ -40,6 +40,9 @@ public class RawInputDevice : IInputDevice
     // Throttle parse error logging - only log each report ID once
     private readonly Dictionary<int, int> _parseErrorCounts = new();
 
+    // Reusable dictionary to avoid per-call allocation in hot path
+    private readonly Dictionary<Usage, DataValue> _changedUsages = new();
+
     public RawInputDevice(
         HidDevice device,
         HidStream hidStream,
@@ -83,6 +86,9 @@ public class RawInputDevice : IInputDevice
     {
         if (_running || _disposed) return;
 
+        // Always unsubscribe first to prevent duplicate handler accumulation
+        _inputReceiver.Received -= InputReceiver_Received;
+
         _running = true;
 
         // Use event-based approach for immediate response
@@ -99,10 +105,9 @@ public class RawInputDevice : IInputDevice
 
     public void Stop()
     {
-        if (!_running) return;
-
-        _running = false;
+        // Always unsubscribe regardless of _running state to prevent handler leaks
         _inputReceiver.Received -= InputReceiver_Received;
+        _running = false;
     }
 
     private void InputReceiver_Received(object? sender, EventArgs e)
@@ -124,7 +129,7 @@ public class RawInputDevice : IInputDevice
 
     private void ProcessReports()
     {
-        var changedUsages = new Dictionary<Usage, DataValue>();
+        _changedUsages.Clear();
 
         // Process up to MaxReportsPerLoop reports to prevent queue backup
         int reportsRead = 0;
@@ -153,7 +158,7 @@ public class RawInputDevice : IInputDevice
                         if (usages.Count > 0)
                         {
                             var usage = (Usage)usages[0];
-                            changedUsages[usage] = dataValue;
+                            _changedUsages[usage] = dataValue;
                             InputLogger.Verbose($"[{Name}] Changed[{changeCount}]: Usage={usage} (0x{(uint)usage:X}), Value={dataValue.GetLogicalValue()}");
                         }
                         else
@@ -196,14 +201,14 @@ public class RawInputDevice : IInputDevice
         }
 
         // Update sources with changed values
-        if (changedUsages.Count > 0)
+        if (_changedUsages.Count > 0)
         {
-            InputLogger.Verbose($"[{Name}] Processing {changedUsages.Count} changed usages across {_sources.Length} sources");
+            InputLogger.Verbose($"[{Name}] Processing {_changedUsages.Count} changed usages across {_sources.Length} sources");
 
             foreach (var source in _sources)
             {
                 double oldValue = source.Value;
-                if (source.Refresh(changedUsages))
+                if (source.Refresh(_changedUsages))
                 {
                     InputLogger.Log($"[{Name}] InputChanged: {source.Name} = {source.Value:F3} (was {oldValue:F3})");
                     InputChanged?.Invoke(this, new InputChangedEventArgs
@@ -238,7 +243,7 @@ public class RawInputDevice : IInputDevice
 
         try
         {
-            _inputReceiver.Received -= null; // Clear any handlers
+            _inputReceiver.Received -= InputReceiver_Received;
             _hidStream.Dispose();
         }
         catch

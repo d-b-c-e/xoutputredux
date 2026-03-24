@@ -40,6 +40,15 @@ public partial class ProfileEditorWindow : Window
     private readonly System.Collections.Concurrent.ConcurrentDictionary<(string deviceId, int sourceIndex), double> _latestInputValues = new();
     private const int CaptureGracePeriodMs = 300; // Grace period to establish baseline before detecting
 
+    // Debounce input monitor UI updates to prevent Dispatcher.BeginInvoke flooding
+    private volatile bool _monitorUpdatePending;
+    private volatile string? _pendingMonitorLine;
+    private volatile IInputDevice? _pendingMonitorDevice;
+    private volatile InputChangedEventArgs? _pendingMonitorArgs;
+
+    // Debounce listen handler UI updates
+    private volatile bool _listenUpdatePending;
+
     // Force feedback
     private readonly List<FfbDeviceItem> _ffbDevices = new();
     private bool _isLoadingFfbSettings;
@@ -230,21 +239,28 @@ public partial class ProfileEditorWindow : Window
     {
         if (sender is not IInputDevice device) return;
 
+        // Debounce: the highlight timer already runs at 300ms intervals,
+        // so we don't need to queue a Dispatcher callback for every input change.
+        // Instead, track active state and let the timer handle UI updates.
+        if (_listenUpdatePending) return;
+        _listenUpdatePending = true;
+
         Dispatcher.BeginInvoke(() =>
         {
+            _listenUpdatePending = false;
+
             // Check which outputs this input triggers based on current mappings
             foreach (var outputVm in _outputs)
             {
-                // Check if this device/source is mapped to this output
-                var mapping = outputVm.Mapping;
-                var binding = mapping.Bindings.FirstOrDefault(b =>
-                    b.DeviceId == device.UniqueId && b.SourceIndex == e.Source.Index);
-
-                if (binding != null)
+                // Check all latest input values against mappings
+                foreach (var binding in outputVm.Mapping.Bindings)
                 {
+                    if (!_latestInputValues.TryGetValue((binding.DeviceId, binding.SourceIndex), out var rawValue))
+                        continue;
+
                     // Determine if the input is "active" based on output type
                     bool isActive = false;
-                    double value = binding.Invert ? 1.0 - e.NewValue : e.NewValue;
+                    double value = binding.Invert ? 1.0 - rawValue : rawValue;
 
                     if (outputVm.Output.IsButton())
                     {
@@ -291,12 +307,28 @@ public partial class ProfileEditorWindow : Window
     {
         if (sender is not IInputDevice device) return;
 
-        // Track latest values for axis capture
+        // Track latest values for axis capture (lock-free, safe from any thread)
         _latestInputValues[(device.UniqueId, e.Source.Index)] = e.NewValue;
+
+        // Store latest values for the debounced UI update
+        _pendingMonitorLine = $"{device.Name}: {e.Source.Name} = {e.NewValue:F2}";
+        _pendingMonitorDevice = device;
+        _pendingMonitorArgs = e;
+
+        // Debounce: only queue one Dispatcher callback at a time
+        // This prevents thousands of closures accumulating in the Dispatcher queue
+        if (_monitorUpdatePending) return;
+        _monitorUpdatePending = true;
 
         Dispatcher.BeginInvoke(() =>
         {
-            var line = $"{device.Name}: {e.Source.Name} = {e.NewValue:F2}";
+            _monitorUpdatePending = false;
+
+            var line = _pendingMonitorLine;
+            var dev = _pendingMonitorDevice;
+            var args = _pendingMonitorArgs;
+            if (line == null || dev == null || args == null) return;
+
             _inputMonitorItems.Insert(0, line);
 
             // Keep list manageable
@@ -308,10 +340,10 @@ public partial class ProfileEditorWindow : Window
             // If capturing, check for significant input
             if (_isCapturing && _selectedOutput != null)
             {
-                bool isSignificant = IsSignificantInput(device, e, _selectedOutput.Output);
+                bool isSignificant = IsSignificantInput(dev, args, _selectedOutput.Output);
                 if (isSignificant)
                 {
-                    CaptureBinding(device, e.Source);
+                    CaptureBinding(dev, args.Source);
                 }
             }
         });

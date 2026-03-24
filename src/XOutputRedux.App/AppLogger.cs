@@ -22,6 +22,8 @@ public static class AppLogger
 
     private const int FlushIntervalMs = 100; // Batch writes every 100ms
     private const int MaxBatchSize = 500;    // Max lines per batch
+    private const int MaxQueueSize = 10_000; // Drop messages beyond this to prevent unbounded memory growth
+    private static int _droppedCount;
 
     public static void Initialize()
     {
@@ -97,6 +99,21 @@ public static class AppLogger
 
         try
         {
+            // Drop messages if queue is too large to prevent unbounded memory growth
+            if (LogQueue.Count >= MaxQueueSize)
+            {
+                Interlocked.Increment(ref _droppedCount);
+                return;
+            }
+
+            // If we previously dropped messages, log a summary
+            var dropped = Interlocked.Exchange(ref _droppedCount, 0);
+            if (dropped > 0)
+            {
+                var dropLine = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} [WARN] Dropped {dropped} log messages (queue overflow)";
+                LogQueue.Enqueue(dropLine);
+            }
+
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
             var callerInfo = caller != null ? $"[{caller}] " : "";
             var line = $"{timestamp} [{level}] {callerInfo}{message}";
