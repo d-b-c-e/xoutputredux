@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.3] - 2026-03-24
+
+### Fixed
+- **Memory leak:** RawInputDevice event handler accumulation — `_inputReceiver.Received` handlers piled up across Start/Stop cycles due to conditional unsubscribe. Now always unsubscribes before subscribing and unconditionally in Stop().
+- **Memory leak:** Dispatcher.BeginInvoke closure flooding in ProfileEditorWindow — Monitor and Listen handlers were queuing ~1,000 closures/sec/device. Added debounce so only one callback is queued at a time.
+- **Memory leak:** AppLogger ConcurrentQueue unbounded growth — log queue had no max size, accumulating hundreds of MB of strings. Capped at 10,000 entries with overflow drop counting.
+- **GC pressure:** ProcessReports hot-path dictionary allocation — Dictionary was created on every call (~86M/day/device). Now reuses a single instance field.
+
 ## [1.0.2] - 2026-03-22
 
 ### Added

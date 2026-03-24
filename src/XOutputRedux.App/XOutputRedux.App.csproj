@@ -13,7 +13,7 @@
 
     <!-- Versioning: Major.Minor.Patch.BuildNumber[-suffix] -->
     <!-- BuildNumber auto-generated: YYDDDHHmm (year, day-of-year, hour, minute) -->
-    <VersionPrefix>1.0.2</VersionPrefix>
+    <VersionPrefix>1.0.3</VersionPrefix>
     <VersionSuffix></VersionSuffix>
 
     <!-- Auto-generate build number if not provided: YYDDDHHmm -->
