@@ -74,7 +74,7 @@ public partial class MainWindow : Window
         _inputHighlightTimer.Tick += InputHighlightTimer_Tick;
 
         // Initialize IPC service for remote control
-        _ipcService = new IpcService();
+        _ipcService = new IpcService(_profileManager);
         _ipcService.StartProfileRequested += IpcService_StartProfileRequested;
         _ipcService.StopRequested += IpcService_StopRequested;
         _ipcService.MonitoringEnableRequested += IpcService_MonitoringEnableRequested;

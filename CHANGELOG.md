@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.4] - 2026-03-28
+
+### Added
+- IPC `list-profiles` command — returns available profile names over the named pipe, so external tools (e.g., LaunchBox plugin) don't need to scan profile files on disk
+- IPC `get-default` command — returns the name of the default profile
+- IPC `start` now resolves the default profile when no profile name is specified (previously returned an error)
+
 ## [1.0.3] - 2026-03-24
 
 ### Fixed

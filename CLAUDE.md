@@ -465,6 +465,7 @@ public bool HideDevice(string deviceInstancePath)
 
 ### Application (`XOutputRedux.App`)
 - `Program.cs` - CLI entry point with System.CommandLine
+- `IpcService.cs` - Named pipe IPC server/client (commands: start, stop, status, monitor-on/off, list-profiles, get-default)
 - `MainWindow.xaml/.cs` - Main GUI with Devices/Profiles/Status/Options/Test tabs
 - `ProfileEditorWindow.xaml/.cs` - Interactive mapping editor with output highlighting, Test tab with Preview/Start buttons, deadzone and digital direction UI
 - `XboxControllerTestView.xaml/.cs` - Reusable Xbox controller visualization UserControl (shared by MainWindow and ProfileEditorWindow)

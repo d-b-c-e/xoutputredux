@@ -1,6 +1,7 @@
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
+using XOutputRedux.Core.Mapping;
 
 namespace XOutputRedux.App;
 
@@ -17,6 +18,12 @@ public class IpcService : IDisposable
     private NamedPipeServerStream? _serverPipe;
     private Task? _serverTask;
     private bool _disposed;
+    private readonly ProfileManager? _profileManager;
+
+    public IpcService(ProfileManager? profileManager = null)
+    {
+        _profileManager = profileManager;
+    }
 
     /// <summary>
     /// Event raised when a start profile command is received.
@@ -111,6 +118,22 @@ public class IpcService : IDisposable
     public static IpcResult SendMonitoringOffCommand()
     {
         return SendCommand(new IpcCommand { Command = "monitor-off" });
+    }
+
+    /// <summary>
+    /// Sends a list-profiles command to the running instance.
+    /// </summary>
+    public static IpcResult SendListProfilesCommand()
+    {
+        return SendCommand(new IpcCommand { Command = "list-profiles" });
+    }
+
+    /// <summary>
+    /// Sends a get-default command to the running instance.
+    /// </summary>
+    public static IpcResult SendGetDefaultCommand()
+    {
+        return SendCommand(new IpcCommand { Command = "get-default" });
     }
 
     private static IpcResult SendCommand(IpcCommand command)
@@ -238,11 +261,17 @@ public class IpcService : IDisposable
         switch (command.Command?.ToLowerInvariant())
         {
             case "start":
-                if (string.IsNullOrEmpty(command.ProfileName))
-                    return new IpcResult { Success = false, Message = "Profile name required" };
+                var profileToStart = command.ProfileName;
+                if (string.IsNullOrEmpty(profileToStart))
+                {
+                    var defaultProfile = _profileManager?.GetDefaultProfile();
+                    if (defaultProfile == null)
+                        return new IpcResult { Success = false, Message = "No profile specified and no default profile configured" };
+                    profileToStart = defaultProfile.Name;
+                }
 
-                StartProfileRequested?.Invoke(command.ProfileName);
-                return new IpcResult { Success = true, Message = $"Starting profile: {command.ProfileName}" };
+                StartProfileRequested?.Invoke(profileToStart);
+                return new IpcResult { Success = true, Message = $"Starting profile: {profileToStart}" };
 
             case "stop":
                 StopRequested?.Invoke();
@@ -264,6 +293,23 @@ public class IpcService : IDisposable
             case "monitor-off":
                 MonitoringDisableRequested?.Invoke();
                 return new IpcResult { Success = true, Message = "Game monitoring disabled" };
+
+            case "list-profiles":
+                if (_profileManager == null)
+                    return new IpcResult { Success = false, Message = "Profile manager not available" };
+                var profileNames = _profileManager.Profiles.Values.Select(p => p.Name).OrderBy(n => n).ToList();
+                return new IpcResult { Success = true, Profiles = profileNames };
+
+            case "get-default":
+                if (_profileManager == null)
+                    return new IpcResult { Success = false, Message = "Profile manager not available" };
+                var defProfile = _profileManager.GetDefaultProfile();
+                return new IpcResult
+                {
+                    Success = defProfile != null,
+                    Message = defProfile != null ? defProfile.Name : "No default profile configured",
+                    ProfileName = defProfile?.Name
+                };
 
             default:
                 return new IpcResult { Success = false, Message = $"Unknown command: {command.Command}" };
@@ -316,6 +362,8 @@ public class IpcResult
     public bool Success { get; set; }
     public string? Message { get; set; }
     public IpcStatus? Status { get; set; }
+    public List<string>? Profiles { get; set; }
+    public string? ProfileName { get; set; }
 }
 
 /// <summary>
