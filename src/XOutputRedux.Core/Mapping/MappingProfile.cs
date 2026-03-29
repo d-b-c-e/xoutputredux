@@ -128,6 +128,7 @@ public class MappingProfile
         {
             Name = Name + " (Copy)",
             Description = Description,
+            IsDefault = IsDefault,
             CreatedAt = DateTime.Now,
             ModifiedAt = DateTime.Now,
             ForceFeedbackSettings = ForceFeedbackSettings?.Clone(),

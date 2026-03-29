@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.5] - 2026-03-29
+
+### Fixed
+- "Default Profile" checkbox in profile editor not reflecting actual default status — `MappingProfile.Clone()` was not copying `IsDefault`, so the editor always showed it unchecked
+
 ## [1.0.4] - 2026-03-28
 
 ### Added
