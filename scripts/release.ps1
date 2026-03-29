@@ -32,10 +32,11 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "XOutputRedux Release v$Version" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-# Create dist directory
-if (-not (Test-Path $DistDir)) {
-    New-Item -ItemType Directory -Path $DistDir | Out-Null
+# Clean and create dist directory (prevents stale artifacts from prior releases)
+if (Test-Path $DistDir) {
+    Remove-Item -Path $DistDir -Recurse -Force
 }
+New-Item -ItemType Directory -Path $DistDir | Out-Null
 
 # Determine total steps (build + portable ZIP + installer, plus optional Stream Deck + Moza)
 $totalSteps = 3
