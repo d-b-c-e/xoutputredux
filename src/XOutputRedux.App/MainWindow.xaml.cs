@@ -102,6 +102,19 @@ public partial class MainWindow : Window
     {
         AppLogger.Info("MainWindow loaded");
 
+        // Defer heavy startup init (driver checks, HidHide, global hotkey, plugin
+        // loading, optional minimized Show) to the next dispatcher pass. Loaded fires
+        // during the window's first Show(); running this work synchronously re-enters
+        // WPF's window-creation path and throws "The root Visual of a VisualTarget
+        // cannot have a parent" on .NET 10's stricter WPF. BeginInvoke at Loaded
+        // priority runs it after the show pass completes, breaking the re-entrancy.
+        Dispatcher.BeginInvoke(
+            System.Windows.Threading.DispatcherPriority.Loaded,
+            new Action(InitializeAfterLoaded));
+    }
+
+    private void InitializeAfterLoaded()
+    {
         // Enable dark title bar
         DarkModeHelper.EnableDarkTitleBar(this);
 
