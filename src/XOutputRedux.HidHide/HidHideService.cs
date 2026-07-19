@@ -214,7 +214,12 @@ public class HidHideService : IDisposable
         var (success, output) = ExecuteCommandWithOutput("--cloak-state");
         if (!success) return null;
 
-        return output?.Trim().Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+        // HidHideCLI --cloak-state reports "--cloak-on" or "--cloak-off" (not true/false).
+        var s = output?.Trim();
+        if (string.IsNullOrEmpty(s)) return null;
+        if (s.Contains("cloak-on", StringComparison.OrdinalIgnoreCase)) return true;
+        if (s.Contains("cloak-off", StringComparison.OrdinalIgnoreCase)) return false;
+        return null;
     }
 
     /// <summary>

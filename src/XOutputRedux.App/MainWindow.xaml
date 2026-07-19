@@ -504,6 +504,8 @@
                                     <TextBlock x:Name="HidHideStatusText" Text="Checking..." FontWeight="Bold" VerticalAlignment="Center"/>
                                     <Button x:Name="InstallHidHideButton" Content="Install" Margin="10,0,0,0"
                                             Padding="10,3" Click="InstallHidHide_Click" Visibility="Collapsed"/>
+                                    <Button x:Name="ManageHidHideButton" Content="Manage…" Margin="8,0,0,0"
+                                            Padding="10,3" Click="ManageHidHide_Click"/>
                                 </StackPanel>
                                 <TextBlock x:Name="HidHideInfoText" Foreground="Gray" Margin="0,5,0,0"/>
                             </StackPanel>

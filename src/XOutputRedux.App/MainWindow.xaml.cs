@@ -321,6 +321,12 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ManageHidHide_Click(object sender, RoutedEventArgs e)
+    {
+        var win = new HidHideManagerWindow(_hidHideService) { Owner = this };
+        win.ShowDialog();
+    }
+
     private async void InstallHidHide_Click(object sender, RoutedEventArgs e)
     {
         InstallHidHideButton.IsEnabled = false;
