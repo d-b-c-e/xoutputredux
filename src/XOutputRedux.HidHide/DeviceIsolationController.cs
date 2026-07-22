@@ -109,6 +109,17 @@ public class DeviceIsolationController
                 keptNames.Add(d.Product ?? d.Description ?? d.DeviceInstancePath ?? "(unknown)");
             }
 
+            // Safety: if no keep-visible device is actually connected, hiding
+            // everything else would leave the user with ZERO working devices.
+            // Refuse before touching anything.
+            if (keptNames.Count == 0)
+            {
+                return IsolationApplyResult.Fail(
+                    "None of the keep-visible devices are currently connected - " +
+                    "refusing to hide all remaining devices. Plug in the kept device " +
+                    "(or edit the profile) and try again.");
+            }
+
             var toHide = new List<(string Path, string Name)>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var d in devices)
