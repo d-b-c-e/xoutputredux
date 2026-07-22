@@ -373,6 +373,12 @@ public class IpcStatus
 {
     public bool IsRunning { get; set; }
     public string? ProfileName { get; set; }
+
+    /// <summary>
+    /// Type of the running profile ("Mapping" or "DeviceIsolation"), null when
+    /// nothing is running. Additive — older IPC clients ignore it.
+    /// </summary>
+    public string? ProfileType { get; set; }
     public bool IsMonitoring { get; set; }
     public string? ViGEmStatus { get; set; }
     public string? HidHideStatus { get; set; }

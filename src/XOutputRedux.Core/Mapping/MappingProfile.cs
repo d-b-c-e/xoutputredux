@@ -37,6 +37,19 @@ public class MappingProfile
     public bool IsDefault { get; set; }
 
     /// <summary>
+    /// What this profile does when started (XInput mapping vs. device isolation).
+    /// </summary>
+    public ProfileType ProfileType { get; set; } = ProfileType.Mapping;
+
+    /// <summary>
+    /// Device-isolation settings (only meaningful when
+    /// <see cref="ProfileType"/> is <see cref="ProfileType.DeviceIsolation"/>).
+    /// Isolation profiles have no XInput mapping — the kept device passes
+    /// through natively so DirectInput force feedback keeps working.
+    /// </summary>
+    public DeviceIsolationSettings? DeviceIsolation { get; set; }
+
+    /// <summary>
     /// Force feedback settings for this profile.
     /// </summary>
     public ForceFeedbackSettings? ForceFeedbackSettings { get; set; }
@@ -129,6 +142,8 @@ public class MappingProfile
             Name = Name + " (Copy)",
             Description = Description,
             IsDefault = IsDefault,
+            ProfileType = ProfileType,
+            DeviceIsolation = DeviceIsolation?.Clone(),
             CreatedAt = DateTime.Now,
             ModifiedAt = DateTime.Now,
             ForceFeedbackSettings = ForceFeedbackSettings?.Clone(),
@@ -187,7 +202,7 @@ public class MappingProfileData
     /// <summary>
     /// Current schema version. Increment when making breaking changes.
     /// </summary>
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     /// <summary>
     /// Schema version of this profile data. Used for migration.
@@ -199,6 +214,16 @@ public class MappingProfileData
     public DateTime CreatedAt { get; set; }
     public DateTime ModifiedAt { get; set; }
     public bool IsDefault { get; set; }
+
+    /// <summary>
+    /// Profile behavior type. Serialized as a string ("Mapping" /
+    /// "DeviceIsolation") for readability; absent in pre-v5 profiles,
+    /// which default to Mapping.
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public ProfileType ProfileType { get; set; } = ProfileType.Mapping;
+
+    public DeviceIsolationSettingsData? DeviceIsolation { get; set; }
     public List<OutputMappingData> Mappings { get; set; } = new();
     public ForceFeedbackSettingsData? ForceFeedback { get; set; }
     public HidHideSettingsData? HidHide { get; set; }
@@ -245,6 +270,14 @@ public class MappingProfileData
             SchemaVersion = 4;
         }
 
+        // v4 -> v5: Added ProfileType and DeviceIsolation.
+        // No data transformation needed - default (Mapping, null) matches
+        // pre-isolation behavior.
+        if (SchemaVersion < 5)
+        {
+            SchemaVersion = 5;
+        }
+
         SchemaVersion = CurrentSchemaVersion;
     }
 
@@ -260,6 +293,8 @@ public class MappingProfileData
             CreatedAt = profile.CreatedAt,
             ModifiedAt = profile.ModifiedAt,
             IsDefault = profile.IsDefault,
+            ProfileType = profile.ProfileType,
+            DeviceIsolation = DeviceIsolationSettingsData.FromSettings(profile.DeviceIsolation),
             ForceFeedback = profile.ForceFeedbackSettings != null
                 ? ForceFeedbackSettingsData.FromSettings(profile.ForceFeedbackSettings)
                 : null,
@@ -292,6 +327,8 @@ public class MappingProfileData
             CreatedAt = CreatedAt,
             ModifiedAt = ModifiedAt,
             IsDefault = IsDefault,
+            ProfileType = ProfileType,
+            DeviceIsolation = DeviceIsolation?.ToSettings(),
             ForceFeedbackSettings = ForceFeedback?.ToSettings(),
             HidHideSettings = HidHide?.ToSettings(),
             PluginData = PluginData != null

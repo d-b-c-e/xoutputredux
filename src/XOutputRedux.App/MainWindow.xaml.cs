@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using XOutputRedux.App.ViewModels;
 using XOutputRedux.Core.Games;
+using XOutputRedux.Core.HidHide;
 using XOutputRedux.Core.Mapping;
 using XOutputRedux.Core.Plugins;
 using XOutputRedux.Emulation;
@@ -39,6 +40,7 @@ public partial class MainWindow : Window
     private ForceFeedbackService? _ffbService;
     private ProfileViewModel? _runningProfile;
     private List<string> _hiddenDevices = new();
+    private readonly DeviceIsolationController _isolationController;
     private bool _isExiting;
     private bool _isCleanedUp;
     private bool _isListeningForInput;
@@ -65,6 +67,10 @@ public partial class MainWindow : Window
         _profileManager = new ProfileManager(AppPaths.Profiles);
         _vigemService = new ViGEmService();
         _hidHideService = new HidHideService();
+        _isolationController = new DeviceIsolationController(_hidHideService, AppPaths.BaseDirectory)
+        {
+            Log = msg => AppLogger.Info(msg)
+        };
         _deviceSettings = new DeviceSettings();
         _deviceSettings.Load();
         _appSettings = AppSettings.Load();
@@ -227,6 +233,17 @@ public partial class MainWindow : Window
             if (_hidHideService.WhitelistSelf())
             {
                 AppLogger.Info("Whitelisted XOutputRedux in HidHide");
+            }
+
+            // Recover any devices left hidden by a device-isolation session
+            // that crashed or was killed (reads the isolation recovery journal).
+            try
+            {
+                _isolationController.RecoverStaleState();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("Device-isolation stale-state recovery failed", ex);
             }
 
             // Clean up stale cloaking state from a previous crash/abnormal exit.
@@ -633,6 +650,13 @@ public partial class MainWindow : Window
     {
         if (ProfileListView.SelectedItem is not ProfileViewModel selected) return;
 
+        // Isolation profiles have no XInput mapping — open the dedicated editor
+        if (selected.Profile.ProfileType == ProfileType.DeviceIsolation)
+        {
+            EditIsolationProfile(selected);
+            return;
+        }
+
         // No longer force read-only when running — editor manages its own state
         var editor = new ProfileEditorWindow(selected.Profile, _deviceManager, _hidHideService, _deviceSettings, false, _plugins);
         editor.Owner = this;
@@ -727,6 +751,51 @@ public partial class MainWindow : Window
             RefreshProfiles();
             ProfileListView.SelectedItem = _profiles.FirstOrDefault(p => p.FileName == dialog.InputText);
             StatusText.Text = $"Created profile: {dialog.InputText}";
+        }
+    }
+
+    private void NewIsolationProfile_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new InputDialog("New Isolation Profile", "Enter profile name:");
+        if (dialog.ShowDialog() != true || string.IsNullOrWhiteSpace(dialog.InputText)) return;
+
+        var name = dialog.InputText.Trim();
+        if (_profileManager.Profiles.ContainsKey(name))
+        {
+            MessageBox.Show($"A profile named '{name}' already exists.", "New Isolation Profile",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var profile = new MappingProfile
+        {
+            Name = name,
+            ProfileType = ProfileType.DeviceIsolation,
+            DeviceIsolation = new DeviceIsolationSettings { Enabled = true }
+        };
+
+        var window = new IsolationProfileWindow(profile, _hidHideService) { Owner = this };
+        window.ShowDialog();
+
+        if (window.WasSaved)
+        {
+            _profileManager.SaveProfile(name, profile);
+            RefreshProfiles();
+            ProfileListView.SelectedItem = _profiles.FirstOrDefault(p => p.FileName == name);
+            StatusText.Text = $"Created isolation profile: {name}";
+        }
+    }
+
+    private void EditIsolationProfile(ProfileViewModel selected)
+    {
+        var window = new IsolationProfileWindow(selected.Profile, _hidHideService) { Owner = this };
+        window.ShowDialog();
+
+        if (window.WasSaved)
+        {
+            _profileManager.SaveProfile(selected.FileName, selected.Profile);
+            RefreshProfiles();
+            StatusText.Text = $"Saved isolation profile: {selected.Name}";
         }
     }
 
@@ -881,6 +950,15 @@ public partial class MainWindow : Window
         // Stop any running profile first
         StopProfile();
 
+        // Device-isolation profiles are pure HidHide passthrough: no virtual
+        // controller, no mapping engine — the kept device stays fully native
+        // so DirectInput force feedback keeps working.
+        if (profile.Profile.ProfileType == ProfileType.DeviceIsolation)
+        {
+            StartIsolationProfile(profile);
+            return;
+        }
+
         if (!_vigemService.IsAvailable)
         {
             MessageBox.Show("ViGEm is not installed. Cannot start emulation.", "Error",
@@ -975,6 +1053,81 @@ public partial class MainWindow : Window
             MessageBox.Show($"Failed to start profile: {ex.Message}", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
             StopProfile();
+        }
+    }
+
+    /// <summary>
+    /// Starts a device-isolation profile: hides every HID gaming device except
+    /// the profile's keep-visible set. Reverts on any failure — devices are
+    /// never left hidden by a failed start.
+    /// </summary>
+    private void StartIsolationProfile(ProfileViewModel profile)
+    {
+        if (!_hidHideService.IsAvailable)
+        {
+            MessageBox.Show(
+                "HidHide is not installed. Device-isolation profiles require HidHide.\n\n" +
+                "Install it from the Setup tab first.",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        var isolation = profile.Profile.DeviceIsolation;
+        var keepPaths = (isolation?.KeepDevices ?? new List<IsolationDevice>())
+            .Select(d => d.DeviceInstancePath)
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .ToList();
+
+        if (isolation is not { Enabled: true } || keepPaths.Count == 0)
+        {
+            MessageBox.Show(
+                "This isolation profile has no keep-visible devices configured.\n\n" +
+                "Edit the profile and check at least one device to keep.",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        try
+        {
+            var result = _isolationController.Apply(keepPaths);
+            if (!result.Success)
+            {
+                _isolationController.Revert();
+                MessageBox.Show($"Failed to start isolation profile: {result.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            AppLogger.Info($"Isolation profile '{profile.Name}' started: {result.Message}");
+
+            profile.IsRunning = true;
+            _runningProfile = profile;
+            UpdateStartStopButton();
+            ActiveProfileText.Text = $"Running: {profile.Name} (isolation)";
+            StatusText.Text = $"Started isolation profile: {profile.Name} - " +
+                $"{result.HiddenCount} device(s) hidden, {result.KeptPresentCount} kept visible" +
+                (result.FailedCount > 0 ? $", {result.FailedCount} FAILED to hide (run as administrator?)" : "");
+            TrayIcon.ToolTipText = $"XOutputRedux - {profile.Name} (isolation)";
+
+            // No virtual controller — leave the test tab overlay in place
+            TestView.SetProfileStatus($"Isolation: {profile.Name} (no virtual controller)", true);
+
+            ToastNotificationService.ShowProfileStarted(profile.Name);
+            App.SetActiveProfile(profile.Name);
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Failed to start isolation profile", ex);
+            try
+            {
+                _isolationController.Revert();
+            }
+            catch (Exception rex)
+            {
+                AppLogger.Error("Isolation revert after failed start also failed", rex);
+            }
+            MessageBox.Show($"Failed to start isolation profile: {ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -1124,6 +1277,17 @@ public partial class MainWindow : Window
 
         // Unhide any devices we hid when starting the profile
         UnhideProfileDevices();
+
+        // Revert device isolation if active (no-op otherwise). Never skipped:
+        // devices must not stay hidden past profile stop.
+        try
+        {
+            _isolationController.Revert();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Device-isolation revert failed", ex);
+        }
 
         // Detach force feedback service first
         _ffbService?.Detach();
@@ -1474,6 +1638,7 @@ public partial class MainWindow : Window
         {
             IsRunning = _runningProfile != null,
             ProfileName = _runningProfile?.Name,
+            ProfileType = _runningProfile?.Profile.ProfileType.ToString(),
             IsMonitoring = _gameMonitorService?.IsEnabled ?? false,
             ViGEmStatus = _vigemService.IsAvailable ? "Available" : "Not installed",
             HidHideStatus = _hidHideService.IsAvailable ? "Available" : "Not installed"

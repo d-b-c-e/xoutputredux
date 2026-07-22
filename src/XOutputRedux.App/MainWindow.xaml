@@ -370,6 +370,9 @@
 
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                             <Button Content="New Profile" Padding="15,5" Click="NewProfile_Click"/>
+                            <Button Content="New Isolation Profile" Padding="15,5" Margin="10,0,0,0"
+                                    Click="NewIsolationProfile_Click"
+                                    ToolTip="Create a profile that hides every gaming device except a chosen one (via HidHide) while it runs — no virtual controller, native DirectInput force feedback preserved"/>
                             <Separator Margin="20,0"/>
                             <Button x:Name="StartStopButton" Content="Start" Padding="20,5"
                                     Click="StartStopProfile_Click" IsEnabled="False"
@@ -396,10 +399,12 @@
                                 <GridView>
                                     <GridViewColumn Header="" Width="30"
                                                     DisplayMemberBinding="{Binding DefaultIndicator}"/>
-                                    <GridViewColumn Header="Name" Width="250"
+                                    <GridViewColumn Header="Name" Width="220"
                                                     DisplayMemberBinding="{Binding Name}"/>
-                                    <GridViewColumn Header="Bindings" Width="80"
-                                                    DisplayMemberBinding="{Binding TotalBindings}"/>
+                                    <GridViewColumn Header="Type" Width="80"
+                                                    DisplayMemberBinding="{Binding ProfileTypeText}"/>
+                                    <GridViewColumn Header="Bindings" Width="90"
+                                                    DisplayMemberBinding="{Binding BindingsText}"/>
                                     <GridViewColumn Header="Status" Width="100"
                                                     DisplayMemberBinding="{Binding Status}"/>
                                 </GridView>

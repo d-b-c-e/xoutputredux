@@ -140,3 +140,24 @@ Three underlying problems this exposed:
 ## Implementation notes
 - Reuse XOutputRedux's existing HidHide integration (the `Nefarius.Drivers.HidHide` client library, or shell out to `HidHideCLI`). Surface: cloak get/set, blacklist get/add/remove, whitelist get, device enumeration (gaming + all) with present/absent status.
 - This is the "what is HidHide doing right now, and let me fix it" view the incident proved was missing.
+
+## Device-Isolation Profile — "hide all devices except the wheel", per-exe (feature request, 2026-07-21)
+
+> **STATUS: IMPLEMENTED (2026-07-22)** on branch `feature/device-isolation`.
+> - New profile type `DeviceIsolation` (profile schema v5): stores a keep-visible device list (`deviceIsolation.keepDevices[]`, HidHide instance paths + friendly names), no XInput mapping.
+> - On start (UI, IPC `start`, or game monitor): captures prior HidHide state (hidden list + cloak), hides every *present* HID gaming device not in the keep list, enables cloak. On stop: unhides only what it hid, restores prior cloak exactly (composes with manual hides / other profiles' HidHideSettings).
+> - Crash safety: recovery journal (`isolation-recovery.json`) written before hiding; replayed at next startup. Revert verifies against HidHide's actual hidden list and re-journals failures.
+> - UI: "New Isolation Profile" button + dedicated keep-device picker (`IsolationProfileWindow`), "Type" column in the profile list.
+> - Per-game binding: works through the existing LaunchBox XOutput plugin unchanged (it starts/stops profiles by name over IPC; the profile type decides the behavior in-app). Assign the isolation profile to the game (e.g. Virtua Racing `vr.exe`) via right-click → XOutput Redux.
+> - Note: exe-binding via XOutputRedux's own Games tab / game monitor also works, since the monitor path calls the same `StartProfile`.
+
+**Use case (Virtua Racing / wanszai PC port, and any auto-detecting DInput wheel game):** games that AUTO-DETECT a DirectInput wheel grab the *first* device in enumeration. On this rig that's **vJoy** (a live but input-less virtual joystick from the InputBridge test rig) or the **DS-8X shifter** — not the Moza. The game shows "wheel detected" (green) but reads no inputs, and its `input_device` value is self-managed (not a device selector), with no in-game device picker. So there is no in-game way to point it at the Moza.
+
+**Proposed feature:** a XOutputRedux profile *type* that, instead of DInput→XInput translation, simply **hides every input device EXCEPT a chosen wheel** (via HidHide), **bound to a specific game executable**, applied on launch and reverted on exit — reusing the launch/exit hooks the XOutput LaunchBox plugin already has. This lets the game use its **native wheel + DirectInput FFB**, rather than Xbox/XInput emulation (which loses FFB — that's the "Plan C" fallback).
+
+- Bind to an exe (e.g. `vr.exe`), pick the wheel to keep visible, hide the rest (vJoy, shifter, stalk, gamepads).
+- **Preserves native DirectInput/FFB** — no XInput translation.
+- Works for **any input API** (RawInput/DInput/XInput), unlike the DevReorder workaround which is dinput8-only.
+- Reuses the existing per-game profile + HidHide machinery (ties into the HidHide Manager panel already built).
+
+**Interim workaround now in use:** DevReorder `dinput8.dll` proxy + `devreorder.ini` dropped into the game folder (per-app; hides vJoy/shifter/stalk, shows only `MOZA R12 Base`). Works, but is dinput8-only and manual per game — the XOutputRedux feature would generalize it cleanly. Related: [[input-hardware-ezconfig-2026-07]].

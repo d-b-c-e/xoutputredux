@@ -19,6 +19,21 @@ public class ProfileViewModel : INotifyPropertyChanged
     public string DefaultIndicator => Profile.IsDefault ? "\u2605" : "";
     public MappingProfile Profile { get; }
 
+    /// <summary>
+    /// Human-readable profile type for the list view.
+    /// </summary>
+    public string ProfileTypeText =>
+        Profile.ProfileType == ProfileType.DeviceIsolation ? "Isolation" : "Mapping";
+
+    /// <summary>
+    /// Bindings column text: mapping profiles show the binding count,
+    /// isolation profiles show how many devices are kept visible.
+    /// </summary>
+    public string BindingsText =>
+        Profile.ProfileType == ProfileType.DeviceIsolation
+            ? $"{Profile.DeviceIsolation?.KeepDevices.Count ?? 0} kept"
+            : Profile.TotalBindings.ToString();
+
     public string Status
     {
         get => _status;
