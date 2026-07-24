@@ -93,9 +93,16 @@ public class DeviceIsolationController
             // Enumerate gaming devices and split into kept / to-hide
             var devices = _svc.GetGamingDevices().Where(d => d.Present).ToList();
 
-            bool IsKept(HidHideDevice d) =>
-                (d.DeviceInstancePath != null && keepSet.Contains(d.DeviceInstancePath)) ||
-                (d.BaseContainerDeviceInstancePath != null && keepSet.Contains(d.BaseContainerDeviceInstancePath));
+            // Match on the EFFECTIVE path (base-container-preferred, but falling
+            // back to the device instance path when the base container is empty —
+            // e.g. vJoy/root devices), and also on the raw device instance path so
+            // keep-lists saved under either identity still match.
+            bool IsKept(HidHideDevice d)
+            {
+                var eff = HidHideDevice.EffectivePath(d);
+                return (eff != null && keepSet.Contains(eff)) ||
+                       (d.DeviceInstancePath != null && keepSet.Contains(d.DeviceInstancePath));
+            }
 
             // Every path belonging to a kept device is protected — a kept
             // wheel's sibling HID interface must never be swept into the hide
@@ -105,7 +112,8 @@ public class DeviceIsolationController
             foreach (var d in devices.Where(IsKept))
             {
                 if (d.DeviceInstancePath != null) protectedPaths.Add(d.DeviceInstancePath);
-                if (d.BaseContainerDeviceInstancePath != null) protectedPaths.Add(d.BaseContainerDeviceInstancePath);
+                var eff = HidHideDevice.EffectivePath(d);
+                if (!string.IsNullOrWhiteSpace(eff)) protectedPaths.Add(eff);
                 keptNames.Add(d.Product ?? d.Description ?? d.DeviceInstancePath ?? "(unknown)");
             }
 
@@ -126,8 +134,11 @@ public class DeviceIsolationController
             {
                 if (IsKept(d)) continue;
 
-                // Prefer the base container path (hides the whole composite device)
-                var path = d.BaseContainerDeviceInstancePath ?? d.DeviceInstancePath;
+                // Prefer the base container path (hides the whole composite device),
+                // but fall back to the device instance path when the base container
+                // is empty/whitespace (e.g. vJoy and other root/virtual devices) —
+                // otherwise the path would be "" and the device would leak through.
+                var path = HidHideDevice.EffectivePath(d);
                 if (string.IsNullOrWhiteSpace(path)) continue;
                 if (protectedPaths.Contains(path)) continue;
                 if (!seen.Add(path)) continue;

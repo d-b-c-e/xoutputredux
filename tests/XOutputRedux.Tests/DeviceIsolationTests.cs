@@ -173,4 +173,69 @@ public class DeviceIsolationTests
         // v5 introduced ProfileType + DeviceIsolation
         Assert.IsTrue(MappingProfileData.CurrentSchemaVersion >= 5);
     }
+
+    // ── EffectivePath: empty base-container fallback (the isolation leak bug) ──
+
+    [TestMethod]
+    public void EffectivePath_EmptyBaseContainer_FallsBackToDeviceInstancePath_AndIsHideable()
+    {
+        // vJoy / root virtual device: reports an EMPTY-STRING base container.
+        var vjoy = new HidHideDevice
+        {
+            Present = true,
+            GamingDevice = true,
+            Product = "vJoy Device",
+            DeviceInstancePath = @"HID\HIDCLASS\1&2d595ca7&0&0000",
+            BaseContainerDeviceInstancePath = ""
+        };
+
+        var path = HidHideDevice.EffectivePath(vjoy);
+
+        // Must fall back to the (non-empty) device instance path, not "".
+        Assert.AreEqual(@"HID\HIDCLASS\1&2d595ca7&0&0000", path);
+        // Non-empty => passes the string.IsNullOrWhiteSpace(path) guard, so it is
+        // included in the hide set / shown in the picker rather than filtered out.
+        Assert.IsFalse(string.IsNullOrWhiteSpace(path));
+    }
+
+    [TestMethod]
+    public void EffectivePath_WhitespaceBaseContainer_FallsBackToDeviceInstancePath()
+    {
+        var d = new HidHideDevice
+        {
+            DeviceInstancePath = @"HID\HIDCLASS\1&abc&0&0000",
+            BaseContainerDeviceInstancePath = "   "
+        };
+
+        Assert.AreEqual(@"HID\HIDCLASS\1&abc&0&0000", HidHideDevice.EffectivePath(d));
+    }
+
+    [TestMethod]
+    public void EffectivePath_NonEmptyBaseContainer_IsPreferred()
+    {
+        // Normal composite device: base container hides the whole device.
+        var wheel = new HidHideDevice
+        {
+            DeviceInstancePath = @"HID\VID_346E&PID_0006&MI_02\8&32e6eb88&0&0000",
+            BaseContainerDeviceInstancePath = @"USB\VID_346E&PID_0006\5&base&0"
+        };
+
+        Assert.AreEqual(@"USB\VID_346E&PID_0006\5&base&0", HidHideDevice.EffectivePath(wheel));
+    }
+
+    [TestMethod]
+    public void EffectivePath_NullAndEmpty_IsNotHideable()
+    {
+        // A device with no usable identity at all resolves to null/empty and must
+        // be treated as NOT hideable (Apply()/pickers skip it via IsNullOrWhiteSpace).
+        var ghost = new HidHideDevice
+        {
+            DeviceInstancePath = null,
+            BaseContainerDeviceInstancePath = ""
+        };
+
+        var path = HidHideDevice.EffectivePath(ghost);
+
+        Assert.IsTrue(string.IsNullOrWhiteSpace(path));
+    }
 }

@@ -636,4 +636,21 @@ public class HidHideDevice
     public string? Description { get; set; }
     public string? DeviceInstancePath { get; set; }
     public string? BaseContainerDeviceInstancePath { get; set; }
+
+    /// <summary>
+    /// The path used to identify/hide this device: the base-container path when it
+    /// is a real (non-empty, non-whitespace) value — which hides the whole composite
+    /// device — otherwise the device's own instance path.
+    ///
+    /// A plain <c>BaseContainerDeviceInstancePath ?? DeviceInstancePath</c> is WRONG:
+    /// root/virtual devices (e.g. vJoy) report an EMPTY-STRING base container, not
+    /// null, so <c>??</c> never falls back and the path resolves to "" — which
+    /// HidHide cannot hide and every picker filters out, letting the device leak
+    /// through and get auto-selected by the game. Falling back on empty/whitespace
+    /// (not just null) fixes that.
+    /// </summary>
+    public static string? EffectivePath(HidHideDevice d) =>
+        string.IsNullOrWhiteSpace(d.BaseContainerDeviceInstancePath)
+            ? d.DeviceInstancePath
+            : d.BaseContainerDeviceInstancePath;
 }

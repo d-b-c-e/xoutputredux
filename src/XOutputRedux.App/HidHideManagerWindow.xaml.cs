@@ -42,7 +42,7 @@ public partial class HidHideManagerWindow : Window
             var rows = _svc.GetGamingDevices()
                 .Select(d =>
                 {
-                    string path = d.BaseContainerDeviceInstancePath ?? d.DeviceInstancePath ?? "";
+                    string path = HidHideDevice.EffectivePath(d) ?? "";
                     bool isHidden =
                         (d.DeviceInstancePath != null && hidden.Contains(d.DeviceInstancePath))
                         || (d.BaseContainerDeviceInstancePath != null && hidden.Contains(d.BaseContainerDeviceInstancePath))

@@ -76,8 +76,10 @@ public partial class IsolationProfileWindow : Window
             foreach (var d in _svc.GetGamingDevices())
             {
                 // Same identity the HidHide Manager shows and Apply() hides:
-                // base container path preferred (covers the whole composite device)
-                var path = d.BaseContainerDeviceInstancePath ?? d.DeviceInstancePath ?? "";
+                // base container path preferred (covers the whole composite device),
+                // falling back to the device instance path when the base container is
+                // empty (e.g. vJoy/root devices) so they still appear in the picker.
+                var path = HidHideDevice.EffectivePath(d) ?? "";
                 if (string.IsNullOrEmpty(path) || !seen.Add(path)) continue;
 
                 bool isKept = priorByPath != null && priorByPath.TryGetValue(path, out var prior)
