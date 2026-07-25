@@ -443,3 +443,10 @@ notes/OSSRequestForm*
 
 # Claude session state (local only)
 .claude-session.md
+
+# Third-party reference clones (local checkouts, not submodules)
+HidHide/
+HidSharp/
+ViGEmBus/
+XOutput/
+mozaomniprofile/
