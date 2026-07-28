@@ -211,16 +211,55 @@ public class DeviceIsolationTests
     }
 
     [TestMethod]
-    public void EffectivePath_NonEmptyBaseContainer_IsPreferred()
+    public void EffectivePath_PrefersHidDevicePath_NotBaseContainer()
     {
-        // Normal composite device: base container hides the whole device.
+        // Composite device: HidHide's filter attaches to the HID device, NOT the USB
+        // composite parent. Blacklisting the container path is silently accepted and
+        // hides nothing, so the HID instance path must win. (Verified on hardware: a
+        // DS-8X hidden by USB\VID_0483&PID_0531\22201234 kept enumerating in
+        // DirectInput; hiding HID\VID_0483&PID_0531\a&509e5f3&0&0000 removed it.)
         var wheel = new HidHideDevice
         {
             DeviceInstancePath = @"HID\VID_346E&PID_0006&MI_02\8&32e6eb88&0&0000",
             BaseContainerDeviceInstancePath = @"USB\VID_346E&PID_0006\5&base&0"
         };
 
-        Assert.AreEqual(@"USB\VID_346E&PID_0006\5&base&0", HidHideDevice.EffectivePath(wheel));
+        Assert.AreEqual(@"HID\VID_346E&PID_0006&MI_02\8&32e6eb88&0&0000", HidHideDevice.EffectivePath(wheel));
+    }
+
+    [TestMethod]
+    public void MatchPaths_ReturnsEveryIdentity_SoOldProfilesStillMatch()
+    {
+        // Keep-list matching must stay generous: profiles saved earlier (or captured
+        // while the device was powered off) may hold the container path instead.
+        var wheel = new HidHideDevice
+        {
+            DeviceInstancePath = @"HID\VID_346E&PID_0006&MI_02\8&32e6eb88&0&0000",
+            BaseContainerDeviceInstancePath = @"USB\VID_346E&PID_0006\5&base&0",
+            SymbolicLink = @"\\?\hid#vid_346e&pid_0006"
+        };
+
+        var paths = HidHideDevice.MatchPaths(wheel).ToList();
+
+        CollectionAssert.Contains(paths, @"HID\VID_346E&PID_0006&MI_02\8&32e6eb88&0&0000");
+        CollectionAssert.Contains(paths, @"USB\VID_346E&PID_0006\5&base&0");
+        CollectionAssert.Contains(paths, @"\\?\hid#vid_346e&pid_0006");
+    }
+
+    [TestMethod]
+    public void MatchPaths_SkipsEmptyIdentities()
+    {
+        var vjoy = new HidHideDevice
+        {
+            DeviceInstancePath = @"HID\HIDCLASS\1&2d595ca7&0&0000",
+            BaseContainerDeviceInstancePath = "",     // root/virtual devices report empty
+            SymbolicLink = null
+        };
+
+        var paths = HidHideDevice.MatchPaths(vjoy).ToList();
+
+        Assert.AreEqual(1, paths.Count);
+        Assert.AreEqual(@"HID\HIDCLASS\1&2d595ca7&0&0000", paths[0]);
     }
 
     [TestMethod]

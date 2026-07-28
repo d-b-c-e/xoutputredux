@@ -638,19 +638,37 @@ public class HidHideDevice
     public string? BaseContainerDeviceInstancePath { get; set; }
 
     /// <summary>
-    /// The path used to identify/hide this device: the base-container path when it
-    /// is a real (non-empty, non-whitespace) value — which hides the whole composite
-    /// device — otherwise the device's own instance path.
+    /// The path to pass to <c>--dev-hide</c>: ALWAYS the device's own HID instance
+    /// path, falling back to the base container only if that is missing.
     ///
-    /// A plain <c>BaseContainerDeviceInstancePath ?? DeviceInstancePath</c> is WRONG:
-    /// root/virtual devices (e.g. vJoy) report an EMPTY-STRING base container, not
-    /// null, so <c>??</c> never falls back and the path resolves to "" — which
-    /// HidHide cannot hide and every picker filters out, letting the device leak
-    /// through and get auto-selected by the game. Falling back on empty/whitespace
-    /// (not just null) fixes that.
+    /// This must NOT prefer the base-container path. HidHide's filter attaches to the
+    /// HID device, not to the USB composite parent, so blacklisting a container path
+    /// such as <c>USB\VID_0483&amp;PID_0531\22201234</c> is silently accepted and then
+    /// hides nothing — the device keeps enumerating in DirectInput. Hiding the same
+    /// device by <c>HID\VID_0483&amp;PID_0531\a&amp;509e5f3&amp;0&amp;0000</c> removes it
+    /// immediately. (Verified empirically: only devices with an empty container path,
+    /// e.g. vJoy, were actually being hidden while this preferred the container.)
+    ///
+    /// Note the empty-string subtlety: root/virtual devices report an EMPTY base
+    /// container rather than null, so any fallback must test for whitespace, not just
+    /// null. See <see cref="MatchPaths"/> for keep-list matching, which deliberately
+    /// still considers BOTH paths.
     /// </summary>
     public static string? EffectivePath(HidHideDevice d) =>
-        string.IsNullOrWhiteSpace(d.BaseContainerDeviceInstancePath)
-            ? d.DeviceInstancePath
-            : d.BaseContainerDeviceInstancePath;
+        string.IsNullOrWhiteSpace(d.DeviceInstancePath)
+            ? d.BaseContainerDeviceInstancePath
+            : d.DeviceInstancePath;
+
+    /// <summary>
+    /// Every path that can legitimately identify this device, for keep-list matching.
+    /// A saved profile may hold either the HID instance path or the base-container
+    /// path (older profiles, or entries captured while the device was powered off),
+    /// so both must be considered when deciding whether a device is "kept".
+    /// </summary>
+    public static IEnumerable<string> MatchPaths(HidHideDevice d)
+    {
+        if (!string.IsNullOrWhiteSpace(d.DeviceInstancePath)) yield return d.DeviceInstancePath!;
+        if (!string.IsNullOrWhiteSpace(d.BaseContainerDeviceInstancePath)) yield return d.BaseContainerDeviceInstancePath!;
+        if (!string.IsNullOrWhiteSpace(d.SymbolicLink)) yield return d.SymbolicLink!;
+    }
 }
