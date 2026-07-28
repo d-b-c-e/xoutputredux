@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.1.0] - 2026-07-27
+
+### Added
+- **Device Isolation profiles** — a new profile type that hides every gaming device except a chosen keep-list via HidHide, with no virtual controller created. Native DirectInput and force feedback are preserved, so it suits games that auto-grab the first controller they find rather than letting you pick one.
+- **HidHide Manager window** — inspect which devices are currently hidden, the cloak state, and the application whitelist.
+- IPC support for starting and stopping isolation profiles, so external tools (launchers, LaunchBox) can apply isolation before a game starts.
+
+### Fixed
+- **Isolation hid almost nothing.** Devices were blacklisted by their USB *container* path, but HidHide's filter attaches to the HID device — a container path is silently accepted and hides nothing. In practice only devices with an empty container path (vJoy and other root/virtual devices) were ever actually hidden. Now hides by the HID device instance path; keep-list matching still accepts the container path or symbolic link so existing profiles keep working.
+- Isolation no longer applies when the keep-visible device is not connected, which previously hid every device and left no usable controller.
+- Root/virtual devices reporting an empty-string base container resolved to an unusable empty path instead of falling back to the device instance path.
+- **Tray tooltip could stick to the top-left of the screen.** Assigning `ToolTipText` makes Hardcodet rebuild its internal ToolTip; if a popup was open it was orphaned, staying visible and topmost with no tray icon to anchor to — so it rendered at (0,0), on top of fullscreen games.
+- Cloak-state parsing.
+
+### Notes
+- Isolation must be applied **before** the game launches. The built-in game monitor is reactive (~3s poll), and hiding devices a game has already acquired can crash it.
+
 ## [1.0.5] - 2026-03-29
 
 ### Fixed
