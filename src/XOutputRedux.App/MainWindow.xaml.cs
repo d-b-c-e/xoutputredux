@@ -1032,7 +1032,7 @@ public partial class MainWindow : Window
             UpdateStartStopButton();
             ActiveProfileText.Text = $"Running: {profile.Name}";
             StatusText.Text = $"Started profile: {profile.Name}";
-            TrayIcon.ToolTipText = $"XOutputRedux - {profile.Name}";
+            SetTrayToolTip($"XOutputRedux - {profile.Name}");
 
             // Show test tab controller
             TestView.HideOverlay();
@@ -1107,7 +1107,7 @@ public partial class MainWindow : Window
             StatusText.Text = $"Started isolation profile: {profile.Name} - " +
                 $"{result.HiddenCount} device(s) hidden, {result.KeptPresentCount} kept visible" +
                 (result.FailedCount > 0 ? $", {result.FailedCount} FAILED to hide (run as administrator?)" : "");
-            TrayIcon.ToolTipText = $"XOutputRedux - {profile.Name} (isolation)";
+            SetTrayToolTip($"XOutputRedux - {profile.Name} (isolation)");
 
             // No virtual controller — leave the test tab overlay in place
             TestView.SetProfileStatus($"Isolation: {profile.Name} (no virtual controller)", true);
@@ -1320,12 +1320,38 @@ public partial class MainWindow : Window
 
         UpdateStartStopButton();
         ActiveProfileText.Text = "No profile running";
-        TrayIcon.ToolTipText = "XOutputRedux";
+        SetTrayToolTip("XOutputRedux");
 
         // Hide test tab controller
         TestView.ShowOverlay();
         TestView.SetProfileStatus("No Profile Running", false);
         TestView.Reset();
+    }
+
+    /// <summary>
+    /// Sets the tray icon tooltip text.
+    /// </summary>
+    /// <remarks>
+    /// Assigning <see cref="TaskbarIcon.ToolTipText"/> makes Hardcodet rebuild its internal
+    /// ToolTip. If a tooltip popup happens to be open at that moment the old Popup is orphaned:
+    /// it stays visible and topmost, and with no tray icon left to anchor to it renders at (0,0)
+    /// — a strip of text stuck over the top-left of the screen, on top of fullscreen games.
+    /// Closing any open popup first keeps the rebuild clean.
+    /// </remarks>
+    private void SetTrayToolTip(string text)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(() => SetTrayToolTip(text));
+            return;
+        }
+
+        if (TrayIcon.TrayToolTipResolved is { IsOpen: true } popup)
+        {
+            popup.IsOpen = false;
+        }
+
+        TrayIcon.ToolTipText = text;
     }
 
     private void Device_InputChanged(object? sender, InputChangedEventArgs e)
