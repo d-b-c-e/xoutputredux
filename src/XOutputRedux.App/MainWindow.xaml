@@ -385,6 +385,21 @@
                         <ListView x:Name="ProfileListView" Grid.Row="1"
                                   SelectionChanged="ProfileListView_SelectionChanged"
                                   MouseDoubleClick="ProfileListView_DoubleClick">
+                            <!-- The running profile stays identifiable even when the
+                                 selection is on a different row (browsing the list while
+                                 something runs). Foreground + weight only, deliberately:
+                                 setting Background here would override the selection
+                                 highlight and lose "which row am I acting on". -->
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                            <Setter Property="FontWeight" Value="Bold"/>
+                                            <Setter Property="Foreground" Value="{StaticResource AccentGreenBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.ItemContainerStyle>
                             <ListView.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Edit" Click="EditProfile_Click"/>

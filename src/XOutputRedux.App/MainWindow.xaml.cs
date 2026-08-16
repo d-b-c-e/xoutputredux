@@ -720,6 +720,29 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Moves the list selection onto the profile that just started.
+    ///
+    /// A profile can be started without the user ever touching the list — over IPC
+    /// (Isolation-Profile.ps1, a game launcher), by the game monitor, or from a
+    /// -profile command line. Before this, the selection stayed wherever it was, so
+    /// the Start/Stop button kept reading "Start" while a profile was demonstrably
+    /// running: the status column said Running and joy.cpl agreed, but the button
+    /// described a different profile than the one the user was looking at.
+    ///
+    /// Called only from the start paths — never from SelectionChanged, or clicking
+    /// another row to inspect it would snap the selection back and make the list
+    /// impossible to browse while a profile runs.
+    /// </summary>
+    private void SelectRunningProfile()
+    {
+        if (_runningProfile == null) return;
+        if (ReferenceEquals(ProfileListView.SelectedItem, _runningProfile)) return;
+
+        ProfileListView.SelectedItem = _runningProfile;
+        ProfileListView.ScrollIntoView(_runningProfile);
+    }
+
     private void UpdateStartStopButton()
     {
         var selected = ProfileListView.SelectedItem as ProfileViewModel;
@@ -1029,6 +1052,7 @@ public partial class MainWindow : Window
 
             profile.IsRunning = true;
             _runningProfile = profile;
+            SelectRunningProfile();
             UpdateStartStopButton();
             ActiveProfileText.Text = $"Running: {profile.Name}";
             StatusText.Text = $"Started profile: {profile.Name}";
@@ -1102,6 +1126,7 @@ public partial class MainWindow : Window
 
             profile.IsRunning = true;
             _runningProfile = profile;
+            SelectRunningProfile();
             UpdateStartStopButton();
             ActiveProfileText.Text = $"Running: {profile.Name} (isolation)";
             StatusText.Text = $"Started isolation profile: {profile.Name} - " +
