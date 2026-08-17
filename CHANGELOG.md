@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.0] - 2026-08-16
+
+### Fixed
+- **Isolation profiles broke whenever a device was replugged or changed mode.** Profiles store full HID instance paths, which are not stable: a different USB port changes the trailing instance segment, and an XInput pad's `IG_` infix tracks its XInput slot — an X-Arcade panel was observed moving from `IG_00/01/02` to `IG_04/05` purely from cycling its controller mode. The saved profile then matched nothing, so isolation either refused to start ("none of the keep-visible devices are connected") or hid the very device it was meant to keep.
+
+  Exact paths are still tried first. Any keep-list entry that no longer resolves to a present device now falls back to that entry's **hardware identity** — VID/PID plus the `MI_`/`COL` interface qualifiers, with the instance segment, `IG_` and `REV_` stripped. All three path forms a profile may hold are accepted (`HID\...`, `USB\...`, and the `\\?\hid#...#{guid}` symbolic link). Entries with no VID/PID at all (root-enumerated virtual devices such as vJoy) stay on exact matching rather than matching broadly.
+
+  The fallback can only ever keep *more* devices visible, never hide one that should have stayed — the safe direction for a feature whose failure mode is leaving you with no working controller.
+
+### Changed
+- **The running profile is now visible in the list.** A profile started over IPC, by the game monitor, or from `-profile` left the selection wherever it happened to be, so the Start/Stop button described a different profile than the status column — it read "Start" while a profile was demonstrably running. The running row is now bold and green regardless of selection, and starting a profile moves the selection onto it. Row background is deliberately left alone so the selection highlight still shows which row an action applies to.
+
+### Notes
+- If a keep-list falls back to hardware identity, it is logged: look for `matching those by hardware identity instead` in the log when diagnosing why more devices stayed visible than expected.
+
 ## [1.1.0] - 2026-07-27
 
 ### Added
