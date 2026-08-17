@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.1] - 2026-08-17
+
+### Fixed
+- **The isolation device picker listed stale devices that no longer exist.** HidHide reports every device Windows still has a record of, not just the connected ones, and all of them were being shown. An X-Arcade that has been through a few controller modes leaves one entry per XInput slot it ever occupied, so the list filled with near-identical `Controller (TS-UFB01B-X)` rows differing only in their `IG_xx` infix — burying the devices actually worth choosing.
+
+  Absent devices are now listed only when something refers to them: the profile keeps them, or they were ticked earlier in the same editing session. Otherwise they are history rather than a choice.
+
+- **"not connected" rows were labelled "no (remembered)"**, which implied the profile was remembering them when nothing was — they were simply devices HidHide still had records for. Now that only genuinely referenced devices are listed, the label reads honestly.
+
+- **Low-contrast text on the hardware-ID option.** The checkbox label inherited a dark foreground rather than the window's, and its explanatory text was `#808080` at 11pt against a near-black background. Now `#E0E0E0` semibold for the label and `#B0B0B0` at 12pt for the hint.
+
 ## [1.3.0] - 2026-08-17
 
 ### Changed

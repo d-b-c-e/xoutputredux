@@ -27,7 +27,7 @@ public partial class IsolationProfileWindow : Window
         public string Product { get; set; } = "";
         public bool Present { get; set; }
         public string Path { get; set; } = "";
-        public string PresentText => Present ? "Yes" : "no (remembered)";
+        public string PresentText => Present ? "Yes" : "not connected";
     }
 
     public IsolationProfileWindow(MappingProfile profile, HidHideService hidHideService)
@@ -84,12 +84,27 @@ public partial class IsolationProfileWindow : Window
                 // falling back to the device instance path when the base container is
                 // empty (e.g. vJoy/root devices) so they still appear in the picker.
                 var path = HidHideDevice.EffectivePath(d) ?? "";
-                if (string.IsNullOrEmpty(path) || !seen.Add(path)) continue;
+                if (string.IsNullOrEmpty(path)) continue;
+
+                bool inKeepList = keepByPath.ContainsKey(path)
+                    || (d.DeviceInstancePath != null && keepByPath.ContainsKey(d.DeviceInstancePath));
+                bool inSession = priorByPath != null && priorByPath.ContainsKey(path);
+
+                // HidHide reports every device Windows still has a record of, not just
+                // the connected ones. Listing all of them buries the real choices under
+                // stale duplicates - an X-Arcade that has been through a few modes
+                // leaves an entry per XInput slot it ever occupied (IG_00..IG_05).
+                //
+                // Absent devices are therefore only worth showing when something
+                // actually refers to them: the profile keeps them, or they were ticked
+                // earlier in this session. Otherwise they are history, not a choice.
+                if (!d.Present && !inKeepList && !inSession) continue;
+
+                if (!seen.Add(path)) continue;
 
                 bool isKept = priorByPath != null && priorByPath.TryGetValue(path, out var prior)
                     ? prior.Keep
-                    : keepByPath.ContainsKey(path)
-                      || (d.DeviceInstancePath != null && keepByPath.ContainsKey(d.DeviceInstancePath));
+                    : inKeepList;
 
                 rows.Add(new DeviceRow
                 {

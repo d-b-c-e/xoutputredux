@@ -49,8 +49,9 @@
                        Text="Unchecked present devices will be hidden while the profile runs. Devices remembered by the profile but not currently connected stay in the keep list."/>
 
             <CheckBox x:Name="MatchByHardwareIdCheck" Margin="0,8,0,0" IsChecked="True"
+                      Foreground="#E0E0E0" FontWeight="SemiBold"
                       Content="Match kept devices by hardware ID (survives replugging)"/>
-            <TextBlock Margin="22,2,0,0" Foreground="#808080" FontSize="11" TextWrapping="Wrap"
+            <TextBlock Margin="22,3,0,0" Foreground="#B0B0B0" FontSize="12" TextWrapping="Wrap"
                        Text="Recommended. Instance paths change when a device moves to another USB port, and an XInput pad's slot can change on its own — so a profile that matches only on the exact path stops working until you edit it. Turn this OFF only if two of your devices share the same VID/PID and must be told apart (for example two identical wheels, or the two interfaces an X-Arcade exposes)."/>
         </StackPanel>
 
