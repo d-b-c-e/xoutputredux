@@ -96,8 +96,42 @@ public class DeviceIsolationController
             // Keep-list matching is deliberately GENEROUS: a saved profile may hold the
             // HID instance path, the base-container path, or the symbolic link, so any
             // of them identifying this device means "keep it visible".
+            //
+            // Exact paths are tried first, but they are NOT stable. A device replugged
+            // into a different port, or an XInput pad whose IG_ slot moved (an X-Arcade
+            // panel was seen shifting IG_00/01/02 -> IG_04/05 just from cycling its
+            // controller mode), reports a path the saved profile has never seen. The
+            // profile then matches nothing and Apply refuses - or worse, hides the very
+            // device the user meant to keep.
+            //
+            // So: any keep-list entry that resolves to no present device falls back to
+            // that entry's HARDWARE identity (VID/PID, plus MI_/COL). The fallback can
+            // only ever keep MORE devices visible, never hide one that should have
+            // stayed - the safe direction for a feature whose failure mode is "the user
+            // is left with no working controller".
+            var matchedExactly = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var d in devices)
+                foreach (var p in HidHideDevice.MatchPaths(d))
+                    if (keepSet.Contains(p)) matchedExactly.Add(p);
+
+            var staleKeepEntries = keepSet.Where(k => !matchedExactly.Contains(k)).ToList();
+            var fallbackIdentities = new HashSet<string>(
+                staleKeepEntries.Select(HidHideDevice.HardwareIdentity)
+                                .Where(i => !string.IsNullOrEmpty(i))
+                                .Select(i => i!),
+                StringComparer.OrdinalIgnoreCase);
+
+            if (fallbackIdentities.Count > 0)
+            {
+                Log?.Invoke(
+                    $"Isolation: {staleKeepEntries.Count} keep-list path(s) no longer resolve to a present " +
+                    $"device; matching those by hardware identity instead: {string.Join(", ", fallbackIdentities)}");
+            }
+
             bool IsKept(HidHideDevice d) =>
-                HidHideDevice.MatchPaths(d).Any(p => keepSet.Contains(p));
+                HidHideDevice.MatchPaths(d).Any(p => keepSet.Contains(p))
+                || (fallbackIdentities.Count > 0
+                    && HidHideDevice.IdentityKeys(d).Any(fallbackIdentities.Contains));
 
             // Every path belonging to a kept device is protected — a kept
             // wheel's sibling HID interface must never be swept into the hide
