@@ -444,9 +444,14 @@ notes/OSSRequestForm*
 # Claude session state (local only)
 .claude-session.md
 
-# Third-party reference clones (local checkouts, not submodules)
-HidHide/
-HidSharp/
-ViGEmBus/
-XOutput/
-mozaomniprofile/
+# Third-party reference clones (local checkouts, not submodules).
+# Anchored with a leading slash: unanchored "HidHide/" matches a directory of
+# that name at ANY depth, which silently excluded src/XOutputRedux.Core/HidHide/.
+# Files already tracked there were unaffected (ignore rules do not apply to
+# tracked files), so the problem only surfaced when a NEW source file was added
+# and did not appear in git status at all.
+/HidHide/
+/HidSharp/
+/ViGEmBus/
+/XOutput/
+/mozaomniprofile/

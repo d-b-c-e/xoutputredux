@@ -55,16 +55,40 @@ public class DeviceIsolationController
     }
 
     /// <summary>
-    /// Applies isolation: hides every present HID gaming device whose identity
-    /// does not match <paramref name="keepVisiblePaths"/> (matched against both
-    /// the device instance path and the base container path, case-insensitive).
+    /// Applies isolation from a keep-list of paths only, deriving each entry's
+    /// hardware identity from its path. Retained for callers that have nothing
+    /// but paths; prefer the <see cref="IsolationKeepEntry"/> overload, which uses
+    /// the identity persisted in the profile rather than re-deriving it from a
+    /// path that may already be stale.
     /// </summary>
     public IsolationApplyResult Apply(IReadOnlyCollection<string> keepVisiblePaths)
+        => Apply(keepVisiblePaths.Select(p => new IsolationKeepEntry(p, null)).ToList(),
+                 preferHardwareId: true);
+
+    /// <summary>
+    /// Applies isolation: hides every present HID gaming device that is not in the
+    /// keep-list.
+    /// </summary>
+    /// <param name="keepVisible">
+    /// Keep-list entries, each carrying an exact path and optionally the stable
+    /// hardware identity persisted with the profile.
+    /// </param>
+    /// <param name="preferHardwareId">
+    /// When true (the default for isolation profiles), an entry's hardware
+    /// identity is authoritative and the exact path is only a tiebreaker. When
+    /// false, the exact path must match and identity is used only as a fallback
+    /// for entries that resolve to nothing — the pre-1.3.0 behaviour, which is
+    /// what you want when two devices share a VID/PID and must be told apart.
+    /// </param>
+    public IsolationApplyResult Apply(IReadOnlyCollection<IsolationKeepEntry> keepVisible,
+                                      bool preferHardwareId)
     {
         lock (_lock)
         {
             if (IsActive)
                 return IsolationApplyResult.Fail("Device isolation is already active");
+
+            var keepVisiblePaths = keepVisible.Select(e => e.Path).ToList();
 
             if (!_svc.IsAvailable)
                 return IsolationApplyResult.Fail("HidHide is not installed");
@@ -93,45 +117,72 @@ public class DeviceIsolationController
             // Enumerate gaming devices and split into kept / to-hide
             var devices = _svc.GetGamingDevices().Where(d => d.Present).ToList();
 
-            // Keep-list matching is deliberately GENEROUS: a saved profile may hold the
-            // HID instance path, the base-container path, or the symbolic link, so any
-            // of them identifying this device means "keep it visible".
+            // Keep-list matching considers every path form a profile may hold — the
+            // HID instance path, the base-container path, or the symbolic link — plus
+            // the device's hardware identity.
             //
-            // Exact paths are tried first, but they are NOT stable. A device replugged
-            // into a different port, or an XInput pad whose IG_ slot moved (an X-Arcade
-            // panel was seen shifting IG_00/01/02 -> IG_04/05 just from cycling its
-            // controller mode), reports a path the saved profile has never seen. The
-            // profile then matches nothing and Apply refuses - or worse, hides the very
-            // device the user meant to keep.
+            // Identity matters because instance paths are NOT stable: a device
+            // replugged into a different port, or an XInput pad whose IG_ slot moved
+            // (an X-Arcade panel was seen shifting IG_00/01/02 -> IG_04/05 merely from
+            // cycling its controller mode), reports a path the saved profile has never
+            // seen. Matching on the path alone leaves the profile matching nothing —
+            // so Apply either refuses, or hides the very device meant to be kept.
             //
-            // So: any keep-list entry that resolves to no present device falls back to
-            // that entry's HARDWARE identity (VID/PID, plus MI_/COL). The fallback can
-            // only ever keep MORE devices visible, never hide one that should have
-            // stayed - the safe direction for a feature whose failure mode is "the user
-            // is left with no working controller".
-            var matchedExactly = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var d in devices)
-                foreach (var p in HidHideDevice.MatchPaths(d))
-                    if (keepSet.Contains(p)) matchedExactly.Add(p);
-
-            var staleKeepEntries = keepSet.Where(k => !matchedExactly.Contains(k)).ToList();
-            var fallbackIdentities = new HashSet<string>(
-                staleKeepEntries.Select(HidHideDevice.HardwareIdentity)
-                                .Where(i => !string.IsNullOrEmpty(i))
-                                .Select(i => i!),
+            // Identity matching can only ever keep MORE devices visible, never fewer,
+            // which is the safe direction for a feature whose failure mode is leaving
+            // the user with no working controller.
+            // Identities the keep-list authorises. Each entry contributes the
+            // identity persisted with the profile, or one derived from its path.
+            var keepIdentities = new HashSet<string>(
+                keepVisible.Select(e => e.HardwareId ?? HidHideDevice.HardwareIdentity(e.Path))
+                           .Where(i => !string.IsNullOrEmpty(i))
+                           .Select(i => i!),
                 StringComparer.OrdinalIgnoreCase);
 
-            if (fallbackIdentities.Count > 0)
+            HashSet<string> activeIdentities;
+
+            if (preferHardwareId)
             {
-                Log?.Invoke(
-                    $"Isolation: {staleKeepEntries.Count} keep-list path(s) no longer resolve to a present " +
-                    $"device; matching those by hardware identity instead: {string.Join(", ", fallbackIdentities)}");
+                // Identity-first. A saved instance path is expected to go stale, so
+                // it is not required to match at all; the identity carries the
+                // profile's intent. This is what makes a profile survive replugging
+                // without being edited.
+                activeIdentities = keepIdentities;
+                if (activeIdentities.Count > 0)
+                {
+                    Log?.Invoke("Isolation: matching keep-list by hardware identity: " +
+                                string.Join(", ", activeIdentities));
+                }
+            }
+            else
+            {
+                // Exact-path-first, with identity only rescuing entries that
+                // resolve to nothing. Preserves the ability to tell two devices
+                // with the same VID/PID apart.
+                var matchedExactly = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var d in devices)
+                    foreach (var p in HidHideDevice.MatchPaths(d))
+                        if (keepSet.Contains(p)) matchedExactly.Add(p);
+
+                var stale = keepVisible.Where(e => !matchedExactly.Contains(e.Path)).ToList();
+                activeIdentities = new HashSet<string>(
+                    stale.Select(e => e.HardwareId ?? HidHideDevice.HardwareIdentity(e.Path))
+                         .Where(i => !string.IsNullOrEmpty(i))
+                         .Select(i => i!),
+                    StringComparer.OrdinalIgnoreCase);
+
+                if (activeIdentities.Count > 0)
+                {
+                    Log?.Invoke(
+                        $"Isolation: {stale.Count} keep-list path(s) no longer resolve to a present " +
+                        $"device; matching those by hardware identity instead: {string.Join(", ", activeIdentities)}");
+                }
             }
 
             bool IsKept(HidHideDevice d) =>
                 HidHideDevice.MatchPaths(d).Any(p => keepSet.Contains(p))
-                || (fallbackIdentities.Count > 0
-                    && HidHideDevice.IdentityKeys(d).Any(fallbackIdentities.Contains));
+                || (activeIdentities.Count > 0
+                    && HidHideDevice.IdentityKeys(d).Any(activeIdentities.Contains));
 
             // Every path belonging to a kept device is protected — a kept
             // wheel's sibling HID interface must never be swept into the hide
@@ -457,4 +508,30 @@ public class IsolationJournal
     public List<string> HiddenDevicePaths { get; set; } = new();
     public bool PriorCloakOn { get; set; }
     public DateTime TimestampUtc { get; set; }
+}
+
+/// <summary>
+/// One keep-list entry: the exact device path a profile recorded, plus the stable
+/// hardware identity persisted alongside it.
+///
+/// Both are carried because they answer different questions. The path can
+/// distinguish two devices that share a VID/PID; the identity survives the device
+/// being replugged, moved to another port, or shuffled to a different XInput slot.
+/// Neither alone is sufficient for every rig.
+/// </summary>
+public sealed class IsolationKeepEntry
+{
+    public string Path { get; }
+
+    /// <summary>
+    /// Persisted identity, or null for devices that have none (root-enumerated
+    /// virtual devices such as vJoy), which therefore match by path only.
+    /// </summary>
+    public string? HardwareId { get; }
+
+    public IsolationKeepEntry(string path, string? hardwareId)
+    {
+        Path = path ?? "";
+        HardwareId = string.IsNullOrWhiteSpace(hardwareId) ? null : hardwareId;
+    }
 }

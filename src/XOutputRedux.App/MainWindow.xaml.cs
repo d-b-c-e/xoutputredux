@@ -1097,12 +1097,20 @@ public partial class MainWindow : Window
         }
 
         var isolation = profile.Profile.DeviceIsolation;
-        var keepPaths = (isolation?.KeepDevices ?? new List<IsolationDevice>())
-            .Select(d => d.DeviceInstancePath)
-            .Where(p => !string.IsNullOrWhiteSpace(p))
+
+        // Pass the identity persisted with each device, not just its path. The
+        // path is expected to go stale as devices are replugged; the identity is
+        // what keeps the profile working without being re-edited.
+        var keepEntries = (isolation?.KeepDevices ?? new List<IsolationDevice>())
+            .Where(d => !string.IsNullOrWhiteSpace(d.DeviceInstancePath))
+            .Select(d =>
+            {
+                d.EnsureHardwareId();
+                return new IsolationKeepEntry(d.DeviceInstancePath, d.HardwareId);
+            })
             .ToList();
 
-        if (isolation is not { Enabled: true } || keepPaths.Count == 0)
+        if (isolation is not { Enabled: true } || keepEntries.Count == 0)
         {
             MessageBox.Show(
                 "This isolation profile has no keep-visible devices configured.\n\n" +
@@ -1113,7 +1121,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var result = _isolationController.Apply(keepPaths);
+            var result = _isolationController.Apply(keepEntries, isolation.MatchByHardwareId);
             if (!result.Success)
             {
                 _isolationController.Revert();

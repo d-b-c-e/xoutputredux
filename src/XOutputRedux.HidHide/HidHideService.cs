@@ -694,35 +694,13 @@ public class HidHideDevice
     /// VID/PID at all (e.g. root-enumerated virtual devices), so callers fall back to
     /// exact matching for those rather than matching everything.
     /// </summary>
-    public static string? HardwareIdentity(string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path)) return null;
-
-        // The symbolic-link form uses '#' where the instance path uses '\'.
-        var segments = path.Replace('#', '\\')
-                           .Split('\\', StringSplitOptions.RemoveEmptyEntries);
-
-        var idSegment = segments.FirstOrDefault(
-            s => s.Contains("VID_", StringComparison.OrdinalIgnoreCase));
-        if (idSegment == null) return null;
-
-        var tokens = idSegment
-            .Split('&', StringSplitOptions.RemoveEmptyEntries)
-            .Select(t => t.ToUpperInvariant())
-            .Where(t => t.StartsWith("VID_", StringComparison.Ordinal)
-                     || t.StartsWith("PID_", StringComparison.Ordinal)
-                     || t.StartsWith("MI_", StringComparison.Ordinal)
-                     || t.StartsWith("COL", StringComparison.Ordinal))
-            .ToList();
-
-        // Both VID and PID are required — a lone VID would match every device
-        // from that vendor, which is far too broad to keep anything safe.
-        if (!tokens.Any(t => t.StartsWith("VID_", StringComparison.Ordinal)) ||
-            !tokens.Any(t => t.StartsWith("PID_", StringComparison.Ordinal)))
-            return null;
-
-        return string.Join("&", tokens);
-    }
+    /// <remarks>
+    /// The implementation lives in <see cref="Core.HidHide.DeviceIdentity"/> so
+    /// that saved profiles can persist an identity without depending on HidHide.
+    /// This remains as the name callers here already use.
+    /// </remarks>
+    public static string? HardwareIdentity(string? path) =>
+        Core.HidHide.DeviceIdentity.FromPath(path);
 
     /// <summary>
     /// Every hardware identity this device can be recognised by — derived from all of

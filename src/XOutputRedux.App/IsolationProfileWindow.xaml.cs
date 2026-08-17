@@ -55,6 +55,10 @@ public partial class IsolationProfileWindow : Window
     /// </summary>
     private void LoadRows(List<DeviceRow>? priorRows = null)
     {
+        // Reflect the stored matching preference; a profile written before this
+        // option existed has none, and gets the identity-first default.
+        MatchByHardwareIdCheck.IsChecked = _profile.DeviceIsolation?.MatchByHardwareId ?? true;
+
         var keep = _profile.DeviceIsolation?.KeepDevices ?? new List<IsolationDevice>();
         var keepByPath = new Dictionary<string, IsolationDevice>(StringComparer.OrdinalIgnoreCase);
         foreach (var k in keep)
@@ -151,8 +155,21 @@ public partial class IsolationProfileWindow : Window
         _profile.DeviceIsolation = new DeviceIsolationSettings
         {
             Enabled = true,
+            MatchByHardwareId = MatchByHardwareIdCheck.IsChecked == true,
             KeepDevices = kept
-                .Select(r => new IsolationDevice { DeviceInstancePath = r.Path, FriendlyName = r.Product })
+                .Select(r =>
+                {
+                    var d = new IsolationDevice
+                    {
+                        DeviceInstancePath = r.Path,
+                        FriendlyName = r.Product
+                    };
+                    // Record the stable identity now, while the device is in front
+                    // of us. Deriving it later from a path that has since gone
+                    // stale is exactly the failure this is meant to prevent.
+                    d.EnsureHardwareId();
+                    return d;
+                })
                 .ToList()
         };
         _profile.ModifiedAt = DateTime.Now;

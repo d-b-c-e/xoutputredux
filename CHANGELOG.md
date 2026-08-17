@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.0] - 2026-08-17
+
+### Changed
+- **Isolation profiles now identify kept devices by hardware ID, not by instance path.** 1.2.0 added hardware-identity matching as a *fallback* — it only came into play once an entry's exact path failed to resolve, and the identity was reconstructed on the fly from that same (possibly already stale) path. Identity is now **persisted with the profile** as a first-class field and treated as authoritative, with the exact path kept as a tiebreaker.
+
+  In practice this means a profile keeps working after a device is unplugged, moved to another USB port, or — for XInput pads, whose `IG_` slot can change on its own — simply power-cycled, without you opening the profile to re-tick anything.
+
+  Existing profiles are migrated on load: the identity is derived from the stored path and written back on next save. Profiles written before this release have no recorded preference, so they adopt identity-first matching rather than being pinned to the old behaviour they never chose.
+
+### Added
+- **"Match kept devices by hardware ID" option**, per profile, in the isolation profile editor. On by default.
+
+  Turn it off when two devices share a VID/PID and must be told apart — two identical wheels, or the two interfaces an X-Arcade exposes. Hardware identity cannot distinguish those, so identity matching keeps both. That is the safe direction (more devices visible, never fewer) but not always what was intended, which is why it is a choice rather than a hardcoded rule.
+- `DeviceIdentity` in `XOutputRedux.Core`, so saved profiles can carry an identity without depending on HidHide being installed. `HidHideDevice.HardwareIdentity` now delegates to it, leaving one implementation.
+
+### Notes
+- `DeviceIsolationController.Apply` gains an overload taking `IsolationKeepEntry` (path + persisted identity) and an explicit matching preference. The path-only overload is retained and defaults to identity-first.
+- Matching decisions are logged: look for `matching keep-list by hardware identity` when diagnosing why more or fewer devices stayed visible than expected.
+
 ## [1.2.0] - 2026-08-16
 
 ### Fixed
