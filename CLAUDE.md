@@ -2,6 +2,21 @@
 
 Streamlined Xbox controller emulator for Windows. Maps inputs from multiple gaming devices (steering wheels, joysticks, gamepads) to a single emulated Xbox 360 controller.
 
+
+## HidHide upstream is frozen for us — read before touching isolation
+
+The newest **signed** HidHide release is v1.5.230.0 (2024-05); source is ~v1.7.346.
+It is a kernel driver, so unsigned builds cannot load. Upstream fixes we would want —
+notably the **process-lifetime session blacklist (#201)** and **Xbox360/XUSB hiding
+(#210)** — are therefore unreachable, and our own workarounds must stay.
+
+Open on our side: the **`priorHidden` flaw** in `DeviceIsolationController.cs` — an
+interrupted stop leaves a stale blacklist entry that later runs refuse to clear (it
+killed VPX pinball input for a whole session). Fix by reconciling against the journal
+at startup.
+
+Full detail, including the re-check commands: **`docs/hidhide-upstream-status.md`**.
+
 ## Project Goals
 
 1. **Multi-input to single output** - Map multiple physical buttons to same Xbox button (e.g., wheel B button + handbrake → Xbox B)
