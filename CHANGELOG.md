@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.2] - 2026-09-01
+
+### Fixed
+- **Memory grew by about 4 MB an hour and never came back.** An instance left running for twelve days was holding 1.1 GB with no profile started. The device refresh sweep runs every five seconds from launch, and it called Vortice's `SetDataFormat` on every DirectInput device on every pass — before checking whether that device was already known. Vortice 3.8.2 pins the marshalled data format with `GCHandle.Alloc` and never releases it; its `__MarshalFree` is an empty method. Each call permanently pinned 37 handles, about 5.8 KB. At 720 sweeps an hour that is the 4 MB, and twelve days of it is the 1.1 GB.
+
+  `SetDataFormat` now runs only once a device is genuinely being constructed. Over 1,500 sweeps — about two hours of real ticks — the managed heap no longer moves.
+
+### Changed
+- **A refresh sweep no longer creates a COM device for hardware it already knows.** `DirectInputDeviceProvider` caches `InstanceGuid → UniqueId`, so re-identifying a tracked device costs a dictionary lookup rather than a create/query/dispose round trip. The cache is cleared when devices are recreated or the window handle changes, and pruned per-device on disconnect, so a replug still takes the full path.
+
+  This is a robustness change rather than a speed one — it removes the last routine route to the leaking call. It does not make the sweep cheaper: that cost is almost entirely DirectInput's own device enumeration (~208 ms of ~215 ms), and narrowing the enumeration to attached game controllers was measured and is no faster.
+
+### Notes
+- The leak is upstream in Vortice.DirectInput 3.8.2 and still fires once per genuine device connection, and once per device when Refresh Devices is used. That is bounded by user action rather than by uptime.
+
 ## [1.3.1] - 2026-08-17
 
 ### Fixed
