@@ -163,57 +163,81 @@ public class GameMonitorService : IDisposable
             }
         }
 
-        // Check running processes
-        foreach (var process in Process.GetProcesses())
-        {
-            try
-            {
-                string? processPath = null;
-                string? processName = process.ProcessName + ".exe";
+        // Snapshot the process list once so every Process object can be disposed,
+        // including on the paths where a match ends the scan early.
+        var allProcesses = Process.GetProcesses();
+        GameAssociation? detectedGame = null;
+        int detectedProcessId = 0;
 
-                // Quick check by process name first
-                if (exeToGame.TryGetValue(processName, out var matchedGame))
+        try
+        {
+            foreach (var process in allProcesses)
+            {
+                try
                 {
+                    string processName = process.ProcessName + ".exe";
+
+                    // Quick check by process name first
+                    if (!exeToGame.TryGetValue(processName, out var matchedGame))
+                    {
+                        continue;
+                    }
+
                     // Verify by full path if possible
+                    string? processPath;
                     try
                     {
                         processPath = process.MainModule?.FileName;
-                        if (processPath != null &&
-                            processPath.Equals(matchedGame.ExecutablePath, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // Exact match by path
-                            OnGameDetected(matchedGame, process.Id);
-                            return;
-                        }
-                        else if (processPath != null)
-                        {
-                            // Path didn't match, check if exe name still matches (different install location)
-                            var actualExeName = Path.GetFileName(processPath);
-                            if (actualExeName.Equals(Path.GetFileName(matchedGame.ExecutablePath), StringComparison.OrdinalIgnoreCase))
-                            {
-                                // Same exe name, probably the right game
-                                AppLogger.Info($"Matched game by exe name: {matchedGame.Name} (path differs)");
-                                OnGameDetected(matchedGame, process.Id);
-                                return;
-                            }
-                        }
                     }
                     catch
                     {
                         // Can't get full path (access denied), match by process name only
-                        OnGameDetected(matchedGame, process.Id);
-                        return;
+                        detectedGame = matchedGame;
+                        detectedProcessId = process.Id;
+                        break;
+                    }
+
+                    if (processPath == null)
+                    {
+                        continue;
+                    }
+
+                    if (processPath.Equals(matchedGame.ExecutablePath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Exact match by path
+                        detectedGame = matchedGame;
+                        detectedProcessId = process.Id;
+                        break;
+                    }
+
+                    // Path didn't match, check if exe name still matches (different install location)
+                    var actualExeName = Path.GetFileName(processPath);
+                    if (actualExeName.Equals(Path.GetFileName(matchedGame.ExecutablePath), StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Same exe name, probably the right game
+                        AppLogger.Info($"Matched game by exe name: {matchedGame.Name} (path differs)");
+                        detectedGame = matchedGame;
+                        detectedProcessId = process.Id;
+                        break;
                     }
                 }
+                catch
+                {
+                    // Skip processes we can't access
+                }
             }
-            catch
-            {
-                // Skip processes we can't access
-            }
-            finally
+        }
+        finally
+        {
+            foreach (var process in allProcesses)
             {
                 process.Dispose();
             }
+        }
+
+        if (detectedGame != null)
+        {
+            OnGameDetected(detectedGame, detectedProcessId);
         }
     }
 
