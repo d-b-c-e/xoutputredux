@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.6] - 2026-05-08
+
+### Fixed
+- **Profile editor changes silently dropped when editing the default profile** — `MainWindow.SaveProfile_Click` only persisted the edited profile when `IsDefault` *changed*. If the profile was already the default, nothing was written to disk, losing HidHide selections, binding tweaks, and other edits. Now always saves the edited profile, then clears defaults from siblings if needed.
+- **HidHide selections only hid one HID interface per device** — saved entries stored a specific MI_XX instance path (e.g. `MI_02`), so multi-collection devices like the Moza R12 wheel kept other interfaces visible to games. Settings now save a stable VID/PID identifier and runtime hides every matching HID interface together.
+- **HidHide checkboxes appeared unchecked after reopen** — saved instance paths didn't match displayed entries when HidHide returned interfaces in a different order across sessions. Editor now matches by VID/PID, with full-path fallback for virtual devices that don't expose VID/PID (e.g. vJoy).
+- **Virtual ViGEm Xbox 360 controller cloaked alongside the user's physical Xbox controller** — both share VID:PID `045E:028E`, so the new VID/PID-based hide logic was hiding the emulated controller too. `MainWindow.StartProfile` now snapshots gaming-device instance paths *before* connecting ViGEm, and `HideProfileDevices` only hides paths from that snapshot.
+- Added a `ViGEm Xbox 360 controller connected` log line after `Connect()` for positive confirmation when diagnosing emulation issues.
+
 ## [1.0.5] - 2026-03-29
 
 ### Fixed

@@ -39,6 +39,7 @@ public partial class MainWindow : Window
     private ForceFeedbackService? _ffbService;
     private ProfileViewModel? _runningProfile;
     private List<string> _hiddenDevices = new();
+    private HashSet<string> _preEmulationDevicePaths = new(StringComparer.OrdinalIgnoreCase);
     private bool _isExiting;
     private bool _isCleanedUp;
     private bool _isListeningForInput;
@@ -662,15 +663,15 @@ public partial class MainWindow : Window
 
         if (editor.WasSaved)
         {
+            // Always persist the edited profile. SetDefaultProfile only writes
+            // profiles whose IsDefault flag *changed*, so if the user edited
+            // the already-default profile it would silently drop all changes.
+            _profileManager.SaveProfile(selected.FileName, selected.Profile);
+
             // If this profile is now the default, clear default from others
             if (selected.Profile.IsDefault)
             {
                 _profileManager.SetDefaultProfile(selected.FileName);
-            }
-            else
-            {
-                // Just save this profile
-                _profileManager.SaveProfile(selected.FileName, selected.Profile);
             }
             RefreshProfiles();
             StatusText.Text = $"Saved profile: {selected.Name}";
@@ -895,9 +896,23 @@ public partial class MainWindow : Window
             // Apply plugin axis overrides (e.g., Moza steering auto-scale)
             ApplyPluginAxisOverrides(profile.Profile);
 
+            // Snapshot existing gaming-device paths BEFORE ViGEm creates its
+            // virtual Xbox 360 controller. The emulated controller shares
+            // VID/PID 045E:028E with real Xbox 360 controllers, so without
+            // this snapshot the VID/PID-based hide logic would cloak the
+            // virtual controller along with the user's physical joystick.
+            _preEmulationDevicePaths = _hidHideService.IsAvailable
+                ? new HashSet<string>(
+                    _hidHideService.GetGamingDevices()
+                        .Where(d => d.Present && !string.IsNullOrEmpty(d.DeviceInstancePath))
+                        .Select(d => d.DeviceInstancePath!),
+                    StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             // Create controller
             _activeController = _vigemService.CreateXboxController();
             _activeController.Connect();
+            AppLogger.Info("ViGEm Xbox 360 controller connected");
 
             // Set up mapping engine
             _activeMappingEngine = new MappingEngine();
@@ -1032,16 +1047,55 @@ public partial class MainWindow : Window
         // Enable cloaking if not already enabled
         _hidHideService.EnableCloaking();
 
-        foreach (var devicePath in hidHideSettings.DevicesToHide)
+        // Each entry in DevicesToHide is a VID/PID (or, for legacy profiles, a
+        // full HID instance path). Expand it into every matching HID interface
+        // so all collections of the physical device are hidden together —
+        // hiding only one MI_XX leaves the device visible to games.
+        // Filter out anything that didn't exist before ViGEm connected so we
+        // don't accidentally cloak the virtual Xbox 360 controller (it shares
+        // VID/PID 045E:028E with real Xbox controllers).
+        var gamingDevices = _hidHideService.GetGamingDevices()
+            .Where(d => d.Present && !string.IsNullOrEmpty(d.DeviceInstancePath))
+            .Where(d => _preEmulationDevicePaths.Count == 0
+                        || _preEmulationDevicePaths.Contains(d.DeviceInstancePath!))
+            .ToList();
+
+        foreach (var entry in hidHideSettings.DevicesToHide)
         {
-            if (_hidHideService.HideDevice(devicePath))
+            // VID/PID entries fan out to every matching HID interface; a
+            // full instance path (e.g. virtual vJoy device with no VID/PID,
+            // or a legacy saved profile) is hidden as-is.
+            var vidPid = HidHideService.ExtractVidPid(entry);
+            List<string> matchingPaths;
+            if (!string.IsNullOrEmpty(vidPid))
             {
-                _hiddenDevices.Add(devicePath);
-                AppLogger.Info($"Hidden device: {devicePath}");
+                matchingPaths = gamingDevices
+                    .Where(d => HidHideService.ExtractVidPid(d.DeviceInstancePath!) == vidPid)
+                    .Select(d => d.DeviceInstancePath!)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                if (matchingPaths.Count == 0)
+                {
+                    AppLogger.Warning($"No HidHide gaming devices found for {vidPid}");
+                    continue;
+                }
             }
             else
             {
-                AppLogger.Warning($"Failed to hide device: {devicePath}");
+                matchingPaths = new List<string> { entry };
+            }
+
+            foreach (var devicePath in matchingPaths)
+            {
+                if (_hidHideService.HideDevice(devicePath))
+                {
+                    _hiddenDevices.Add(devicePath);
+                    AppLogger.Info($"Hidden device: {devicePath}");
+                }
+                else
+                {
+                    AppLogger.Warning($"Failed to hide device: {devicePath}");
+                }
             }
         }
 
