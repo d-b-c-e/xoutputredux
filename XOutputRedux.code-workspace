@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "XOutput"
+		},
+		{
+			"name": "ViGEmBus",
+			"path": "ViGEmBus"
+		},
+		{
+			"name": "HidHide",
+			"path": "HidHide"
+		},
+		{
+			"path": "xoutputredux"
+		}
+	],
+	"settings": {}
+}
