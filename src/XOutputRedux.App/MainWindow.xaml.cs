@@ -37,6 +37,14 @@ public partial class MainWindow : Window
 
     private XboxController? _activeController;
     private MappingEngine? _activeMappingEngine;
+    private KeyboardMappingEngine? _keyboardEngine;
+    private KeyboardSink? _keyboardSink;
+    private bool _keyboardOutputSuspended;
+
+    // Reused across input events so the keyboard hot path stays allocation-free.
+    private readonly List<KeyCode> _keysPressedBuffer = new();
+    private readonly List<KeyCode> _keysReleasedBuffer = new();
+
     private ForceFeedbackService? _ffbService;
     private ProfileViewModel? _runningProfile;
     private List<string> _hiddenDevices = new();
@@ -982,7 +990,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!_vigemService.IsAvailable)
+        // A profile that only produces keyboard output needs no virtual controller —
+        // and must not create one, or a keyboard-only game may still see a gamepad.
+        bool needsController = profile.Profile.TotalBindings > 0
+                               || !profile.Profile.HasKeyboardOutput;
+
+        if (needsController && !_vigemService.IsAvailable)
         {
             MessageBox.Show("ViGEm is not installed. Cannot start emulation.", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
@@ -1016,12 +1029,34 @@ public partial class MainWindow : Window
             ApplyPluginAxisOverrides(profile.Profile);
 
             // Create controller
-            _activeController = _vigemService.CreateXboxController();
-            _activeController.Connect();
+            if (needsController)
+            {
+                _activeController = _vigemService.CreateXboxController();
+                _activeController.Connect();
+            }
+            else
+            {
+                AppLogger.Info($"Profile '{profile.Name}' is keyboard-only — skipping ViGEm controller");
+            }
 
             // Set up mapping engine
             _activeMappingEngine = new MappingEngine();
             _activeMappingEngine.ActiveProfile = profile.Profile;
+
+            // Set up keyboard output
+            if (profile.Profile.HasKeyboardOutput)
+            {
+                _keyboardEngine = new KeyboardMappingEngine(profile.Profile.KeyboardMappings);
+                _keyboardSink = new KeyboardSink
+                {
+                    TargetProcessName = profile.Profile.KeyboardTargetProcess
+                };
+                _keyboardOutputSuspended = false;
+
+                AppLogger.Info(
+                    $"Keyboard output enabled: {_keyboardEngine.BindingCount} binding(s), " +
+                    $"target process = {profile.Profile.KeyboardTargetProcess ?? "(any)"}");
+            }
 
             // Subscribe to device input changes
             foreach (var device in _deviceManager.Devices)
@@ -1048,7 +1083,10 @@ public partial class MainWindow : Window
                     AppLogger.Error($"Plugin {plugin.Id} failed to get FFB handler", pex);
                 }
             }
-            _ffbService?.Attach(_activeController, profile.Profile, pluginFfbHandler);
+            if (_activeController != null)
+            {
+                _ffbService?.Attach(_activeController, profile.Profile, pluginFfbHandler);
+            }
 
             profile.IsRunning = true;
             _runningProfile = profile;
@@ -1301,6 +1339,10 @@ public partial class MainWindow : Window
 
     private void StopProfile()
     {
+        // Release any held keys first — a key still down at this point would stay
+        // stuck down in the game with nothing left running to lift it.
+        StopKeyboardOutput();
+
         // Notify plugins
         foreach (var plugin in _plugins)
         {
@@ -1389,15 +1431,19 @@ public partial class MainWindow : Window
 
     private void Device_InputChanged(object? sender, InputChangedEventArgs e)
     {
-        if (_activeMappingEngine == null || _activeController == null) return;
+        if (_activeMappingEngine == null) return;
 
         if (sender is IInputDevice device)
         {
             _activeMappingEngine.UpdateInput(device.UniqueId, e.Source.Index, e.NewValue);
 
-            // Evaluate and send to controller
+            // Keyboard output runs off the same input event; a keyboard-only profile has
+            // no controller, so this must not sit behind the ViGEm path.
+            PumpKeyboardOutput(device.UniqueId, e.Source.Index, e.NewValue);
+
+            // Evaluate and send to controller (null for keyboard-only profiles)
             var state = _activeMappingEngine.Evaluate();
-            _activeController.SendInput(new XboxInput
+            _activeController?.SendInput(new XboxInput
             {
                 A = state.A,
                 B = state.B,
@@ -1430,6 +1476,73 @@ public partial class MainWindow : Window
             if (editor != null)
                 editor.Dispatcher.BeginInvoke(() => editor.UpdateControllerState(state));
         }
+    }
+
+    /// <summary>
+    /// Feeds one input change through the keyboard engine and emits any key transitions.
+    /// </summary>
+    private void PumpKeyboardOutput(string deviceId, int sourceIndex, double value)
+    {
+        var engine = _keyboardEngine;
+        var sink = _keyboardSink;
+        if (engine == null || sink == null) return;
+
+        try
+        {
+            engine.UpdateInput(deviceId, sourceIndex, value);
+
+            // While the target window is not focused, hold no keys. Releasing on the
+            // transition matters: a key that was down when focus left would otherwise
+            // stay stuck down in the game.
+            if (!sink.CanSend())
+            {
+                if (!_keyboardOutputSuspended)
+                {
+                    _keyboardOutputSuspended = true;
+                    engine.ReleaseAll(_keysReleasedBuffer);
+                    sink.ReleaseKeys(_keysReleasedBuffer);
+                }
+                return;
+            }
+
+            _keyboardOutputSuspended = false;
+
+            if (engine.Evaluate(_keysPressedBuffer, _keysReleasedBuffer))
+            {
+                sink.Send(_keysPressedBuffer, _keysReleasedBuffer);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Error("Keyboard output failed", ex);
+        }
+    }
+
+    /// <summary>
+    /// Releases every held key and tears down keyboard output.
+    /// </summary>
+    private void StopKeyboardOutput()
+    {
+        var engine = _keyboardEngine;
+        var sink = _keyboardSink;
+
+        if (engine != null && sink != null)
+        {
+            try
+            {
+                engine.ReleaseAll(_keysReleasedBuffer);
+                sink.ReleaseKeys(_keysReleasedBuffer);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("Failed to release held keys on profile stop", ex);
+            }
+        }
+
+        sink?.Dispose();
+        _keyboardSink = null;
+        _keyboardEngine = null;
+        _keyboardOutputSuspended = false;
     }
 
     private void StartPreview(ProfileEditorWindow editor)

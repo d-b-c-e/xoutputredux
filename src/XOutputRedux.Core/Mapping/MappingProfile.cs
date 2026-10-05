@@ -50,6 +50,29 @@ public class MappingProfile
     public DeviceIsolationSettings? DeviceIsolation { get; set; }
 
     /// <summary>
+    /// Keyboard output bindings. When non-empty, matching physical inputs are emitted as
+    /// synthetic keystrokes instead of (or alongside) Xbox output.
+    /// </summary>
+    /// <remarks>
+    /// SPIKE: a separate list rather than part of <see cref="Mappings"/>, because that
+    /// dictionary is keyed on <see cref="XboxOutput"/> and keyboard output is an open set.
+    /// Folds into the mappings list once the key becomes an output-target union.
+    /// </remarks>
+    public List<KeyboardBinding> KeyboardMappings { get; set; } = new();
+
+    /// <summary>
+    /// Optional process name that must own the foreground window for keyboard output to
+    /// be emitted (e.g. "doom2"). Null means always emit.
+    /// </summary>
+    public string? KeyboardTargetProcess { get; set; }
+
+    /// <summary>
+    /// Whether this profile produces any keyboard output.
+    /// </summary>
+    [JsonIgnore]
+    public bool HasKeyboardOutput => KeyboardMappings.Count > 0;
+
+    /// <summary>
     /// Force feedback settings for this profile.
     /// </summary>
     public ForceFeedbackSettings? ForceFeedbackSettings { get; set; }
@@ -146,6 +169,19 @@ public class MappingProfile
             DeviceIsolation = DeviceIsolation?.Clone(),
             CreatedAt = DateTime.Now,
             ModifiedAt = DateTime.Now,
+            KeyboardTargetProcess = KeyboardTargetProcess,
+            KeyboardMappings = KeyboardMappings
+                .Select(b => new KeyboardBinding
+                {
+                    DeviceId = b.DeviceId,
+                    SourceIndex = b.SourceIndex,
+                    Key = b.Key,
+                    DisplayName = b.DisplayName,
+                    Invert = b.Invert,
+                    PressThreshold = b.PressThreshold,
+                    ReleaseThreshold = b.ReleaseThreshold
+                })
+                .ToList(),
             ForceFeedbackSettings = ForceFeedbackSettings?.Clone(),
             HidHideSettings = HidHideSettings?.Clone(),
             PluginData = PluginData?.ToDictionary(
@@ -225,6 +261,16 @@ public class MappingProfileData
 
     public DeviceIsolationSettingsData? DeviceIsolation { get; set; }
     public List<OutputMappingData> Mappings { get; set; } = new();
+
+    /// <summary>
+    /// Keyboard output bindings. Nullable and additive — profiles written before keyboard
+    /// output existed simply omit it, so no schema bump or migration step is required.
+    /// </summary>
+    public List<KeyboardBindingData>? KeyboardMappings { get; set; }
+
+    /// <summary>Process that must be focused for keyboard output. Null = always emit.</summary>
+    public string? KeyboardTargetProcess { get; set; }
+
     public ForceFeedbackSettingsData? ForceFeedback { get; set; }
     public HidHideSettingsData? HidHide { get; set; }
     public Dictionary<string, JsonObject>? PluginData { get; set; }
@@ -295,6 +341,10 @@ public class MappingProfileData
             IsDefault = profile.IsDefault,
             ProfileType = profile.ProfileType,
             DeviceIsolation = DeviceIsolationSettingsData.FromSettings(profile.DeviceIsolation),
+            KeyboardTargetProcess = profile.KeyboardTargetProcess,
+            KeyboardMappings = profile.KeyboardMappings.Count > 0
+                ? profile.KeyboardMappings.Select(KeyboardBindingData.FromBinding).ToList()
+                : null,
             ForceFeedback = profile.ForceFeedbackSettings != null
                 ? ForceFeedbackSettingsData.FromSettings(profile.ForceFeedbackSettings)
                 : null,
@@ -329,6 +379,8 @@ public class MappingProfileData
             IsDefault = IsDefault,
             ProfileType = ProfileType,
             DeviceIsolation = DeviceIsolation?.ToSettings(),
+            KeyboardTargetProcess = KeyboardTargetProcess,
+            KeyboardMappings = KeyboardMappings?.Select(b => b.ToBinding()).ToList() ?? new(),
             ForceFeedbackSettings = ForceFeedback?.ToSettings(),
             HidHideSettings = HidHide?.ToSettings(),
             PluginData = PluginData != null
