@@ -1255,7 +1255,7 @@ public partial class ProfileEditorWindow : Window
             foreach (var device in gamingDevices.Where(d => d.Present))
             {
                 // De-duplicate by VID/PID (same as HardwareId deduplication in main device list)
-                var vidPid = ExtractVidPid(device.DeviceInstancePath ?? "");
+                var vidPid = HidHideService.ExtractVidPid(device.DeviceInstancePath ?? "");
                 if (!string.IsNullOrEmpty(vidPid))
                 {
                     if (seenVidPids.Contains(vidPid))
@@ -1287,10 +1287,17 @@ public partial class ProfileEditorWindow : Window
             HidHideEnabledCheckBox.IsChecked = settings.Enabled;
             UpdateHidHideControlsEnabled(settings.Enabled);
 
-            // Mark devices that are in the profile's hide list
+            // Mark devices that are in the profile's hide list. We match on a
+            // stable identifier (VID/PID when available, full instance path
+            // otherwise — virtual devices like vJoy have no VID/PID) so saved
+            // entries keep matching across HidHide enumeration order changes.
+            var savedIds = new HashSet<string>(
+                settings.DevicesToHide.Select(GetDeviceIdentifier),
+                StringComparer.OrdinalIgnoreCase);
             foreach (var deviceVm in _hidHideDevices)
             {
-                deviceVm.IsSelected = settings.DevicesToHide.Contains(deviceVm.DeviceInstancePath);
+                var id = GetDeviceIdentifier(deviceVm.DeviceInstancePath);
+                deviceVm.IsSelected = !string.IsNullOrEmpty(id) && savedIds.Contains(id);
             }
         }
         else
@@ -1586,12 +1593,30 @@ public partial class ProfileEditorWindow : Window
         var settings = _profile.HidHideSettings;
         settings.Enabled = HidHideEnabledCheckBox.IsChecked == true;
 
-        // Get selected devices
+        // Save a stable identifier per checked device — VID/PID when the
+        // device exposes one (lets MainWindow hide every HID interface of the
+        // physical device), else fall back to the full instance path so
+        // virtual devices like vJoy still persist.
         settings.DevicesToHide.Clear();
+        var added = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var deviceVm in _hidHideDevices.Where(d => d.IsSelected))
         {
-            settings.DevicesToHide.Add(deviceVm.DeviceInstancePath);
+            var id = GetDeviceIdentifier(deviceVm.DeviceInstancePath);
+            if (!string.IsNullOrEmpty(id) && added.Add(id))
+            {
+                settings.DevicesToHide.Add(id);
+            }
         }
+    }
+
+    /// <summary>
+    /// Returns a stable identifier for a HidHide device path: the VID/PID token
+    /// when present, otherwise the full instance path.
+    /// </summary>
+    private static string GetDeviceIdentifier(string? devicePath)
+    {
+        if (string.IsNullOrEmpty(devicePath)) return "";
+        return HidHideService.ExtractVidPid(devicePath) ?? devicePath;
     }
 
     /// <summary>
@@ -1604,7 +1629,7 @@ public partial class ProfileEditorWindow : Window
 
         // Extract VID/PID from HidHide device instance path
         // Format: "HID\VID_346E&PID_0006\..." or "USB\VID_046D&PID_C294\..."
-        var vidPid = ExtractVidPid(hidHideDevice.DeviceInstancePath);
+        var vidPid = HidHideService.ExtractVidPid(hidHideDevice.DeviceInstancePath);
         if (string.IsNullOrEmpty(vidPid))
             return null;
 
@@ -1621,20 +1646,6 @@ public partial class ProfileEditorWindow : Window
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// Extracts VID_XXXX&PID_XXXX from a device path.
-    /// </summary>
-    private static string? ExtractVidPid(string devicePath)
-    {
-        // Look for VID_XXXX&PID_XXXX pattern
-        var match = System.Text.RegularExpressions.Regex.Match(
-            devicePath,
-            @"VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4}",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-        return match.Success ? match.Value.ToUpperInvariant() : null;
     }
 
     #endregion

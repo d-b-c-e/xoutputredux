@@ -255,9 +255,10 @@ Examples:
   },
   "hidHide": {
     "enabled": true,
-    "deviceIds": [
-      "HID\\VID_346E&PID_0006",
-      "HID\\VID_1234&PID_5678"
+    "devicesToHide": [
+      "VID_346E&PID_0006",
+      "VID_10F5&PID_7096",
+      "HID\\HIDCLASS\\1&2d595ca7&3&0000"
     ]
   }
 }
@@ -576,6 +577,23 @@ AppLogger.Error("Something failed", exception);
 ---
 
 ## Bug Fixes
+
+### v1.0.6: HidHide save/load drops checks, hides only one HID interface, cloaks ViGEm (2026-05-08)
+- **Symptom 1**: Profile editor's HidHide checkboxes wouldn't persist — save the profile with multiple devices checked, reopen, and only one (or none) was still checked.
+- **Symptom 2**: Even when a device was "hidden", games still saw it (multi-collection devices like Moza R12 expose MI_00, MI_01, MI_02).
+- **Symptom 3**: After fix #2, the new ViGEm Xbox 360 controller stopped appearing — Steam saw it, but `joy.cpl` and games didn't.
+- **Symptom 4**: Editing the *default* profile silently dropped *all* changes (HidHide, bindings, deadzones).
+- **Root Causes**:
+  1. `MainWindow` save path: `_profileManager.SetDefaultProfile(...)` only writes profiles whose `IsDefault` flag *changed* — so editing the already-default profile never wrote anything to disk.
+  2. `ProfileEditorWindow`: HidHide saved a specific MI_XX instance path, and the load step matched checkboxes to saved entries by full-path equality. HidHide returns gaming devices in non-deterministic order, so the path saved last session might not match any displayed entry this session.
+  3. Hide path called `HidHideCLI --dev-hide <path>` once per saved entry, leaving sibling MI_XX interfaces visible.
+  4. ViGEm-emulated Xbox 360 controllers share VID:PID `045E:028E` with real Xbox 360 controllers. Once the hide logic expanded to "all interfaces matching VID/PID", the freshly-created virtual controller got cloaked along with the user's physical Xbox-class joystick.
+- **Fix**:
+  1. `MainWindow.OpenProfileEditor`: always call `SaveProfile(...)`, then call `SetDefaultProfile(...)` only to clear the flag from siblings.
+  2. `ProfileEditorWindow.LoadHidHideSettings/UpdateHidHideSettings`: store and match by VID/PID. Devices with no parseable VID/PID (e.g. vJoy) fall back to the full instance path.
+  3. `MainWindow.HideProfileDevices`: each saved VID/PID fans out to every present `--dev-gaming` interface with that VID/PID; full-path entries hide as-is.
+  4. `MainWindow.StartProfile`: snapshot HidHide's gaming-device instance paths into `_preEmulationDevicePaths` *before* `ViGEmService.CreateXboxController()`. `HideProfileDevices` filters to that snapshot, so anything that appeared after Connect() (the virtual controller) is left alone.
+- **Files Changed**: `src/XOutputRedux.App/MainWindow.xaml.cs`, `src/XOutputRedux.App/ProfileEditorWindow.xaml.cs`, `src/XOutputRedux.HidHide/HidHideService.cs` (added static `ExtractVidPid` helper).
 
 ### v0.9.8-alpha: Start with Windows unreliable with Fast Startup (2026-03-22)
 - **Symptom**: "Start with Windows" worked on Restart but not after Shut Down → power on

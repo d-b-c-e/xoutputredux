@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
 namespace XOutputRedux.HidHide;
@@ -220,6 +221,17 @@ public class HidHideService : IDisposable
         if (s.Contains("cloak-on", StringComparison.OrdinalIgnoreCase)) return true;
         if (s.Contains("cloak-off", StringComparison.OrdinalIgnoreCase)) return false;
         return null;
+    }
+
+    /// <summary>
+    /// Extracts the VID_XXXX&amp;PID_XXXX token from a device instance path.
+    /// Returns null when the path doesn't contain a VID/PID pair.
+    /// </summary>
+    public static string? ExtractVidPid(string devicePath)
+    {
+        if (string.IsNullOrEmpty(devicePath)) return null;
+        var match = Regex.Match(devicePath, @"VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4}", RegexOptions.IgnoreCase);
+        return match.Success ? match.Value.ToUpperInvariant() : null;
     }
 
     /// <summary>
